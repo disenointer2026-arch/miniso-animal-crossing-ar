@@ -107,30 +107,45 @@ function drawFace(button) {
     const ratio = icon.naturalWidth / icon.naturalHeight;
     const iw = ratio >= 1 ? size : size * ratio;
     const ih = ratio >= 1 ? size / ratio : size;
-    ctx.drawImage(icon, cx - iw / 2, cy - ih / 2, iw, ih);
+    // Los SVG son siluetas sin color (la pagina los tine con CSS): se tinen aqui
+    const tint = button.userData.tint;
+    const tctx = tint.getContext('2d');
+    tctx.globalCompositeOperation = 'source-over';
+    tctx.clearRect(0, 0, tint.width, tint.height);
+    tctx.drawImage(icon, (tint.width - iw) / 2, (tint.height - ih) / 2, iw, ih);
+    tctx.globalCompositeOperation = 'source-in';
+    tctx.fillStyle = '#5F4C45';
+    tctx.fillRect(0, 0, tint.width, tint.height);
+    ctx.drawImage(tint, cx - tint.width / 2, cy - tint.height / 2);
   }
 
   // Etiqueta pequena y nombre de la categoria (el canvas si dibuja tildes)
   const font = 'Nunito, "Segoe UI", Roboto, system-ui, sans-serif';
   ctx.fillStyle = '#5F4C45';
   ctx.textBaseline = 'middle';
-  ctx.font = `800 24px ${font}`;
-  ctx.fillText(direction < 0 ? `‹ ${theme.tag}` : `${theme.tag} ›`, 178, 44);
+  ctx.font = `800 28px ${font}`;
+  ctx.fillText(direction < 0 ? `‹ ${theme.tag}` : `${theme.tag} ›`, 176, 40);
   const words = target.label.split(' ');
   const lines = [];
-  ctx.font = `800 40px ${font}`;
+  ctx.font = `800 44px ${font}`;
   for (const word of words) {
     const last = lines[lines.length - 1];
-    if (last && ctx.measureText(`${last} ${word}`).width < 300) {
+    if (last && ctx.measureText(`${last} ${word}`).width < 318) {
       lines[lines.length - 1] = `${last} ${word}`;
     } else {
       lines.push(word);
     }
   }
   const two = lines.length > 1;
-  ctx.font = `800 ${two ? 34 : 42}px ${font}`;
+  // El nombre se reduce hasta caber en el ancho disponible
+  let size = two ? 44 : 58;
+  ctx.font = `800 ${size}px ${font}`;
+  while (size > 26 && lines.slice(0, 2).some((line) => ctx.measureText(line).width > 316)) {
+    size -= 2;
+    ctx.font = `800 ${size}px ${font}`;
+  }
   lines.slice(0, 2).forEach((line, i) => {
-    ctx.fillText(line, 178, two ? 92 + i * 38 : 106);
+    ctx.fillText(line, 176, two ? 88 + i * 46 : 108);
   });
   texture.needsUpdate = true;
 }
@@ -186,7 +201,9 @@ export class NavigationSystem extends createSystem({
     face.position.y = HEIGHT + 0.0006;
     cap.add(face);
     root.add(cap);
-    root.userData = { canvas, texture, direction, cap };
+    const tint = document.createElement('canvas');
+    tint.width = tint.height = 96;
+    root.userData = { canvas, texture, direction, cap, tint };
 
     const entity = this.world.createTransformEntity(root, { parent: machine });
     entity.addComponent(NavButton, { direction });

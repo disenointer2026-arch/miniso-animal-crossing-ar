@@ -21,18 +21,20 @@ npm run build    # versión para publicar, en dist/
 En el emulador: **Enter XR** → apuntar con la mano al botón **COMENZAR** y pellizcar →
 apuntar a la mesa → pellizcar para colocar la máquina.
 
-## Estado: versión 1 (estructura y escena)
+## Estado: versión 2 (interfaz e interacción)
 
-| Hecho en V1 | Dónde |
+| Hecho | Dónde |
 |---|---|
-| Proyecto creado con el instalador oficial (AR, JS, agarre, física, entendimiento de escena, raycast) | `iwsdk.config.json` |
-| Bienvenida (panel UIKitML) con botón de entrada / COMENZAR | `public/ui/welcome.uikitml`, `src/systems/welcome-system.js` |
-| Reconocimiento de superficie: retícula por hit-test + planos detectados; confirma un pellizco | `src/systems/placement-system.js` |
-| Máquina (banda, rodillos, arco, indicadores) anclada al espacio | `src/scene-assets/machine.scene-asset.js` |
-| Avatar predeterminado con los modelos originales (huesos, ropa, ojos, boca) | `src/avatar/avatar.js`, `public/models/avatar/` |
-| Llegada: el avatar sale del arco, la banda lo lleva al centro y queda de frente | `src/systems/conveyor-system.js` |
+| **V1** Bienvenida, reconocimiento de superficie, máquina anclada, avatar predeterminado y llegada por la banda | `src/systems/welcome-system.js`, `placement-system.js`, `conveyor-system.js`, `src/avatar/avatar.js` |
+| **V2** Panel de instrucciones; al cerrarlo empieza la categoría 1 | `public/ui/instructions.uikitml`, `src/systems/panels-system.js` |
+| **V2** Panel de categoría: paso, nombre, ayuda, grupos y opciones (colores o nombres) | `public/ui/category.uikitml`, `src/data/categories.js` |
+| **V2** Botones espaciales anterior / siguiente con icono y nombre de la categoría destino; se accionan con el dedo o con rayo + pellizco | `src/systems/navigation-system.js` |
+| **V2** Pincel, bote y tijeras: aparecen según la categoría, se agarran con un pellizco y vuelven solos a su sitio | `src/systems/tool-system.js`, `src/scene-assets/tools.scene-asset.js` |
 
-Capturas del emulador: `docs/capturas/v1/`.
+En V2 elegir una opción la deja **seleccionada** (y el bote toma ese color), pero todavía
+no cambia al personaje: eso lo hacen las herramientas en la versión 3.
+
+Capturas del emulador: `docs/capturas/v1/` y `docs/capturas/v2/`.
 
 ### Funciones de IWSDK en uso
 
@@ -41,13 +43,13 @@ Capturas del emulador: `docs/capturas/v1/`.
 | Spatial UI (UIKitML) | Panel de bienvenida e indicación que sigue la mirada |
 | Scene Understanding | Planos detectados (`XRPlane`) para reconocer la mesa; ancla (`XRAnchor`) |
 | Environment Raycast | Retícula que sigue el rayo de la mano sobre superficies reales |
-| Built-in Interactions | Rayo + pellizco de la mano sobre el botón del panel |
+| Built-in Interactions | Rayo + pellizco sobre paneles y botones; toque con el dedo (`PokeInteractable`) |
 | External Assets | Modelos `.glb` y texturas registrados en `src/assets.js` |
-| Grabbing · Physics | Activados; se usan desde la versión 2 y 3 |
+| Grabbing | Herramientas con `OneHandGrabbable` (pellizco de la mano) |
+| Physics | Activado; se evalúa en la versión 3 |
 
 ### Pendiente
 
-- V2: instrucciones, panel de categorías, botones anterior/siguiente con icono y nombre.
 - V3: pincel, tijeras, stickers, perchero y caja de accesorios.
 - V4: palanca, animación de fabricación, presentación final con giro.
 - V5: tarjeta digital y solicitud del producto (simulada).
@@ -55,7 +57,7 @@ Capturas del emulador: `docs/capturas/v1/`.
 
 ### Limitaciones conocidas
 
-- La fuente de los paneles no incluye tildes ni «¡»: por ahora los textos van sin tildes.
+- La fuente de los paneles no incluye tildes ni «¡»: los paneles van sin tildes (los botones 3D sí las muestran). Solución prevista: generar la fuente desde un TTF.
 - Probado solo en el emulador IWER. Tamaño real, gestos, luz y profundidad se validan en el visor.
 
 ## Estructura
