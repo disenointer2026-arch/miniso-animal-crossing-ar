@@ -1,0 +1,68 @@
+<!-- Bienvenida. En el navegador el boton entra a la realidad aumentada;
+     dentro del visor inicia la experiencia. -->
+<style>
+  .panel-root {
+    flex-direction: column;
+    width: 460px;
+  }
+
+  .panel-content {
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    padding: 26px;
+  }
+
+  .brand {
+    color: #e60012;
+    font-size: 34px;
+    font-weight: 700;
+    letter-spacing: 3px;
+  }
+
+  .cross {
+    color: #6ba35e;
+    font-size: 20px;
+    font-weight: 700;
+  }
+
+  .collab {
+    color: #5f4c45;
+    font-size: 28px;
+    font-weight: 700;
+  }
+
+  .collab:dark {
+    color: #fff6e6;
+  }
+
+  .body {
+    color: #5f4c45;
+    font-size: 19px;
+    line-height: 26px;
+    text-align: center;
+    margin-top: 8px;
+  }
+
+  .body:dark {
+    color: #e9dfcf;
+  }
+
+  .button {
+    justify-content: center;
+    margin-left: 26px;
+    margin-right: 26px;
+    margin-bottom: 26px;
+  }
+</style>
+<Panel class="panel-root">
+  <div class="panel-content">
+    <div class="brand">MINISO</div>
+    <div class="cross">x</div>
+    <div class="collab">Animal Crossing</div>
+    <div class="body">Crea tu personaje con tus propias manos</div>
+  </div>
+  <Button id="start-button" class="button">
+    <ButtonLabel id="start-label">Entrar en RA</ButtonLabel>
+  </Button>
+</Panel>

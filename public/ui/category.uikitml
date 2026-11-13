@@ -1,0 +1,120 @@
+<!-- Panel de personalizacion: categoria activa, grupos y opciones.
+     Los textos y colores los pone src/systems/category-panel-system.js. -->
+<style>
+  .panel-root {
+    flex-direction: column;
+    width: 520px;
+  }
+
+  .panel-content {
+    flex-direction: column;
+    gap: 8px;
+    padding: 20px;
+  }
+
+  .step {
+    color: #6ba35e;
+    font-size: 14px;
+    font-weight: 700;
+    letter-spacing: 1.4px;
+  }
+
+  .title {
+    color: #e60012;
+    font-size: 28px;
+    font-weight: 700;
+  }
+
+  .help {
+    color: #5f4c45;
+    font-size: 16px;
+    line-height: 21px;
+  }
+
+  .help:dark {
+    color: #e9dfcf;
+  }
+
+  .row {
+    flex-direction: row;
+    gap: 8px;
+  }
+
+  .tab {
+    width: 154px;
+    height: 34px;
+    border-radius: 17px;
+    border-width: 2px;
+    border-color: #8cc37a;
+    background-color: #fff6e6;
+    color: #5f4c45;
+    font-size: 15px;
+    font-weight: 700;
+    text-align: center;
+    padding-top: 6px;
+    cursor: pointer;
+  }
+
+  .chip {
+    width: 114px;
+    height: 42px;
+    border-radius: 12px;
+    border-width: 3px;
+    border-color: #fff6e6;
+    background-color: #fff6e6;
+    color: #5f4c45;
+    font-size: 13px;
+    line-height: 15px;
+    text-align: center;
+    padding-top: 10px;
+    cursor: pointer;
+  }
+
+  .chosen {
+    color: #5f4c45;
+    font-size: 16px;
+    font-weight: 700;
+    margin-top: 2px;
+  }
+
+  .chosen:dark {
+    color: #fff6e6;
+  }
+</style>
+<Panel class="panel-root">
+  <div class="panel-content">
+    <div id="step" class="step">PASO 1 DE 8</div>
+    <div id="title" class="title">Color de piel</div>
+    <div id="help" class="help">Elige un tono</div>
+    <div class="row">
+      <div id="tab-0" class="tab">-</div>
+      <div id="tab-1" class="tab">-</div>
+      <div id="tab-2" class="tab">-</div>
+    </div>
+    <div class="row">
+      <div id="opt-0" class="chip">-</div>
+      <div id="opt-1" class="chip">-</div>
+      <div id="opt-2" class="chip">-</div>
+      <div id="opt-3" class="chip">-</div>
+    </div>
+    <div class="row">
+      <div id="opt-4" class="chip">-</div>
+      <div id="opt-5" class="chip">-</div>
+      <div id="opt-6" class="chip">-</div>
+      <div id="opt-7" class="chip">-</div>
+    </div>
+    <div class="row">
+      <div id="opt-8" class="chip">-</div>
+      <div id="opt-9" class="chip">-</div>
+      <div id="opt-10" class="chip">-</div>
+      <div id="opt-11" class="chip">-</div>
+    </div>
+    <div class="row">
+      <div id="opt-12" class="chip">-</div>
+      <div id="opt-13" class="chip">-</div>
+      <div id="opt-14" class="chip">-</div>
+      <div id="opt-15" class="chip">-</div>
+    </div>
+    <div id="chosen" class="chosen">Elegido: -</div>
+  </div>
+</Panel>

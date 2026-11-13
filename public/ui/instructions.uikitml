@@ -1,0 +1,85 @@
+<!-- Instrucciones de uso. Se muestran cuando el personaje llega y se cierran
+     con el boton; al cerrarlas empieza la primera categoria. -->
+<style>
+  .panel-root {
+    flex-direction: column;
+    width: 500px;
+  }
+
+  .panel-content {
+    flex-direction: column;
+    gap: 9px;
+    padding: 24px;
+  }
+
+  .title {
+    color: #e60012;
+    font-size: 28px;
+    font-weight: 700;
+    margin-bottom: 4px;
+  }
+
+  .step {
+    flex-direction: row;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .number {
+    width: 30px;
+    height: 30px;
+    border-radius: 15px;
+    background-color: #8cc37a;
+    color: #ffffff;
+    font-size: 17px;
+    font-weight: 700;
+    text-align: center;
+    padding-top: 4px;
+  }
+
+  .text {
+    color: #5f4c45;
+    font-size: 18px;
+    line-height: 24px;
+    width: 410px;
+  }
+
+  .text:dark {
+    color: #fff6e6;
+  }
+
+  .button {
+    justify-content: center;
+    margin-left: 24px;
+    margin-right: 24px;
+    margin-bottom: 24px;
+  }
+</style>
+<Panel class="panel-root">
+  <div class="panel-content">
+    <div class="title">Como funciona</div>
+    <div class="step">
+      <div class="number">1</div>
+      <div class="text">Acerca la mano a un objeto y pellizca para agarrarlo</div>
+    </div>
+    <div class="step">
+      <div class="number">2</div>
+      <div class="text">Elige una opcion en el panel y usa la herramienta sobre el personaje</div>
+    </div>
+    <div class="step">
+      <div class="number">3</div>
+      <div class="text">Cambia de categoria con los dos botones del frente</div>
+    </div>
+    <div class="step">
+      <div class="number">4</div>
+      <div class="text">Puedes volver atras: tus cambios se conservan</div>
+    </div>
+    <div class="step">
+      <div class="number">5</div>
+      <div class="text">Cuando termines, baja la palanca para fabricar tu personaje</div>
+    </div>
+  </div>
+  <Button id="close-button" class="button">
+    <ButtonLabel>ENTENDIDO</ButtonLabel>
+  </Button>
+</Panel>
