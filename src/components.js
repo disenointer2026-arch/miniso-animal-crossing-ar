@@ -1,47 +1,39 @@
 /* Componentes ECS propios. Modulo sin sistemas ni DOM: el editor tambien lo importa. */
 import { createComponent, defineComponents, Types } from '@iwsdk/core';
 
-/** Reticula que marca donde se colocara la maquina. */
-export const PlacementReticle = createComponent('PlacementReticle', {
-  valid: { type: Types.Boolean, default: false },
+/** La fabrica en anillo ya colocada alrededor del usuario. */
+export const Factory = createComponent('Factory', {});
+
+/** Todo lo que pertenece a la fabrica (se retira con ella al salir de la sesion). */
+export const FactoryPart = createComponent('FactoryPart', {});
+
+/** El personaje que se personaliza y su recorrido por la banda.
+    Los angulos son radianes sobre el arco (ver src/core/layout.js). */
+export const AvatarFigure = createComponent('AvatarFigure', {
+  angle: { type: Types.Float32, default: 0 },
+  from: { type: Types.Float32, default: 0 },
+  to: { type: Types.Float32, default: 0 },
+  elapsed: { type: Types.Float32, default: 0 },
+  duration: { type: Types.Float32, default: 2 },
+  moving: { type: Types.Boolean, default: false },
+  /** Primera marcha: el personaje aparece en el portal */
+  entering: { type: Types.Boolean, default: true },
 });
-
-/** La maquina ya colocada sobre la superficie. */
-export const Machine = createComponent('Machine', {
-  /** Segundos transcurridos de la animacion de llegada */
-  arrivalTime: { type: Types.Float32, default: 0 },
-  arrived: { type: Types.Boolean, default: false },
-});
-
-/** El personaje que se personaliza. */
-export const AvatarFigure = createComponent('AvatarFigure', {});
-
-/** Todo lo que pertenece a la maquina (se retira con ella al salir de la sesion). */
-export const MachinePart = createComponent('MachinePart', {});
 
 export const InstructionsPanel = createComponent('InstructionsPanel', {});
 export const CategoryPanel = createComponent('CategoryPanel', {});
 
-/** Boton espacial de navegacion: -1 = categoria anterior, +1 = siguiente. */
+/** Boton espacial de navegacion de una estacion: -1 = anterior, +1 = siguiente. */
 export const NavButton = createComponent('NavButton', {
   direction: { type: Types.Int8, default: 1 },
-});
-
-/** Herramienta u objeto de una categoria (pincel, bote, tijeras...). */
-export const Tool = createComponent('Tool', {
-  kind: { type: Types.String, default: '' },
-  /** Segundos desde que se solto; al pasar el limite vuelve a su sitio */
-  idleTime: { type: Types.Float32, default: 0 },
-  atHome: { type: Types.Boolean, default: true },
+  station: { type: Types.Int8, default: 0 },
 });
 
 export default defineComponents([
-  PlacementReticle,
-  Machine,
+  Factory,
+  FactoryPart,
   AvatarFigure,
-  MachinePart,
   InstructionsPanel,
   CategoryPanel,
   NavButton,
-  Tool,
 ]);

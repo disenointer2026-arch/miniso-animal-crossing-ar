@@ -258,8 +258,11 @@ export class Avatar {
   /** Ojos: tres capas pintadas sobre la malla de la cabeza
       (blanco + contorno -> iris con el color elegido -> lineas encima). */
   _setEyes() {
-    if (!this.headMesh) return;
     const n = EYE_MAPS[this.config.eyes];
+    if (!this.headMesh || !n) {
+      this._swap('eyes', null, this.headGroup);
+      return;
+    }
     const group = new Group();
     const colors = ['#FFFFFF', this.config.eyeColor, '#FFFFFF'];
     ['base', 'iris', 'lineas'].forEach((layer, i) => {

@@ -1,13 +1,13 @@
 /* Bienvenida: en el navegador el boton entra a la realidad aumentada;
-   dentro del visor ("COMENZAR") inicia el reconocimiento de la superficie.
+   dentro del visor ("COMENZAR") inicia el reconocimiento del piso.
    Tambien reinicia el recorrido cuando se sale de la sesion. */
 import { createSystem, VisibilityState } from '@iwsdk/core';
-import { Machine, MachinePart } from '../components.js';
+import { Factory, FactoryPart } from '../components.js';
 import { phase, Phase, resetExperience } from '../state.js';
 
 export class WelcomeSystem extends createSystem({
-  machines: { required: [Machine] },
-  parts: { required: [MachinePart] },
+  factories: { required: [Factory] },
+  parts: { required: [FactoryPart] },
 }) {
   init() {
     const panel = this.world.getSceneObject('welcome-panel');
@@ -22,7 +22,7 @@ export class WelcomeSystem extends createSystem({
       const immersive =
         this.world.visibilityState.peek() !== VisibilityState.NonImmersive;
       if (!immersive) this.world.launchXR();
-      else if (phase.peek() === Phase.Welcome) phase.value = Phase.Placing;
+      else if (phase.peek() === Phase.Welcome) phase.value = Phase.Space;
     };
     button.addEventListener('click', onClick);
 
@@ -39,13 +39,13 @@ export class WelcomeSystem extends createSystem({
     );
   }
 
-  /** Al salir de la sesion, la maquina se retira: su posicion ya no es valida. */
+  /** Al salir de la sesion la fabrica se retira: su posicion ya no es valida. */
   reset() {
     for (const part of Array.from(this.queries.parts.entities)) {
       part.dispose();
     }
-    for (const machine of Array.from(this.queries.machines.entities)) {
-      machine.dispose();
+    for (const factory of Array.from(this.queries.factories.entities)) {
+      factory.dispose();
     }
     resetExperience();
   }

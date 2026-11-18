@@ -1,7 +1,7 @@
 /* Catalogo de recursos (External Assets). Se evalua dos veces (app y editor):
    debe ser determinista y sin efectos secundarios. */
 import { AssetType, defineAssets } from '@iwsdk/core';
-import { createMachine } from './scene-assets/machine.scene-asset.js';
+import { createFactory } from './scene-assets/factory.scene-asset.js';
 
 const publicAssetUrl = (filePath) =>
   `${import.meta.env.BASE_URL}${filePath.replace(/^\/+/u, '')}`;
@@ -26,8 +26,8 @@ const uikitml = (fileName, name) => ({
 });
 
 export default defineAssets({
-  // Maquina (modelo procedural nuevo)
-  machine: createMachine(),
+  // Fabrica en anillo (modelo procedural placeholder; en la app se crea ya medida)
+  factory: createFactory(),
 
   // Personaje de la pagina original (copias en public/models/avatar)
   'avatar-cuerpo': glb('avatar/cuerpo', 'Cuerpo'),

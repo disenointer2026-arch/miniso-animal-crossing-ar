@@ -64,11 +64,11 @@
     </div>
     <div class="step">
       <div class="number">2</div>
-      <div class="text">Elige una opcion en el panel y usa la herramienta sobre el personaje</div>
+      <div class="text">Elige una opcion en el panel de la estacion</div>
     </div>
     <div class="step">
       <div class="number">3</div>
-      <div class="text">Cambia de categoria con los dos botones del frente</div>
+      <div class="text">Cambia de estacion con los dos botones del borde de la plataforma</div>
     </div>
     <div class="step">
       <div class="number">4</div>
@@ -76,7 +76,7 @@
     </div>
     <div class="step">
       <div class="number">5</div>
-      <div class="text">Cuando termines, baja la palanca para fabricar tu personaje</div>
+      <div class="text">Al final del recorrido podras terminar tu personaje</div>
     </div>
   </div>
   <Button id="close-button" class="button">

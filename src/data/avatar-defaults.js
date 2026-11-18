@@ -17,6 +17,23 @@ export const DEFAULT_AVATAR = {
   companion: 'none',
 };
 
+/** Avatar base de la fabrica: cuerpo blanco (tono "Nube") sin cabello, rostro,
+    ropa ni accesorios. Es lo que sale por el portal. */
+export const BASE_AVATAR = {
+  skin: '#FBF8F0',
+  hair: 'none',
+  hairColor: '#5A3932',
+  eyes: 'none',
+  eyeColor: '#9C7657',
+  nose: 'none',
+  mouth: 'none',
+  shirt: 'none',
+  pants: 'none',
+  shoes: 'none',
+  accHead: 'none',
+  companion: 'none',
+};
+
 /** Las narices son naranjas, como en sus botones; no cambian con el tono de piel. */
 export const NOSE_ORANGE = '#EC713F';
 

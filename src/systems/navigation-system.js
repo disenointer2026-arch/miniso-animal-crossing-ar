@@ -1,7 +1,9 @@
-/* Navegacion entre categorias: dos botones espaciales sobre la consola frontal.
-   Cada boton muestra el icono y el nombre de la categoria a la que lleva
-   (mismos iconos de la pagina original). NO mueven la banda.
-   Se accionan tocandolos con el dedo (PokeInteractable) o con rayo + pellizco. */
+/* Navegacion entre estaciones: cada estacion tiene dos botones espaciales en el
+   borde interior de la plataforma (anterior / siguiente). Solo se ven los de la
+   estacion activa. Cada boton muestra el icono y el nombre de la estacion a la que
+   lleva (mismos iconos de la pagina original); al pulsarlo, la banda lleva al
+   personaje hasta alli. Se accionan con el dedo (PokeInteractable) o con rayo +
+   pellizco. */
 import {
   CanvasTexture,
   createSystem,
@@ -17,11 +19,13 @@ import {
   Shape,
   SRGBColorSpace,
 } from '@iwsdk/core';
-import { Machine, MachinePart, NavButton } from '../components.js';
+import { Factory, FactoryPart, NavButton } from '../components.js';
+import { STATION_COUNT, slotPose, stationSlot } from '../core/layout.js';
 import { CATEGORIES } from '../data/categories.js';
-import { MACHINE } from '../scene-assets/machine.scene-asset.js';
-import { categoryIndex, phase, Phase, stepCategory } from '../state.js';
+import { beltMoving, categoryIndex, layout, phase, Phase, stepCategory } from '../state.js';
 
+/** Posicion de los botones: hacia el usuario (radial < 0), separados a cada lado. */
+const NAV = { radial: -0.14, up: 0, offset: 0.095, tilt: 0.45 };
 const WIDTH = 0.16;
 const DEPTH = 0.055;
 const HEIGHT = 0.02;
@@ -151,7 +155,7 @@ function drawFace(button) {
 }
 
 export class NavigationSystem extends createSystem({
-  machines: { required: [Machine] },
+  factories: { required: [Factory] },
   buttons: { required: [NavButton] },
   pressed: { required: [NavButton, Pressed] },
 }) {
@@ -161,11 +165,14 @@ export class NavigationSystem extends createSystem({
     this.faceGeometry = new PlaneGeometry(WIDTH * 0.94, WIDTH * 0.94 * (TEX_H / TEX_W)).rotateX(-Math.PI / 2);
 
     this.cleanupFuncs.push(
-      this.queries.machines.subscribe('qualify', (machine) => {
-        this.createButton(machine, -1);
-        this.createButton(machine, 1);
+      this.queries.factories.subscribe('qualify', (factory) => {
+        for (let station = 0; station < STATION_COUNT; station++) {
+          this.createButton(factory, station, -1);
+          this.createButton(factory, station, 1);
+        }
         this.refresh();
       }),
+      beltMoving.subscribe(() => this.refresh()),
       this.queries.pressed.subscribe('qualify', (entity) => this.onPressed(entity)),
       categoryIndex.subscribe(() => this.refresh()),
       phase.subscribe(() => this.refresh()),
@@ -176,12 +183,19 @@ export class NavigationSystem extends createSystem({
     );
   }
 
-  createButton(machine, direction) {
-    const nav = MACHINE.navButtons;
+  createButton(factory, station, direction) {
+    const pose = slotPose(layout.peek(), stationSlot(station), NAV.radial, NAV.up);
     const root = new Group();
-    root.name = direction < 0 ? 'nav-prev' : 'nav-next';
-    root.position.set(direction < 0 ? nav.prevX : nav.nextX, nav.y, nav.z);
-    root.rotation.x = nav.tilt;
+    root.name = `${direction < 0 ? 'nav-prev' : 'nav-next'}-${station + 1}`;
+    // El desplazamiento va a lo largo de la tangente del arco (avance de la banda)
+    const dx = direction * NAV.offset;
+    root.position.set(
+      pose.x + Math.cos(pose.theta) * dx,
+      pose.y,
+      pose.z + Math.sin(pose.theta) * dx,
+    );
+    root.rotation.order = 'YXZ';
+    root.rotation.set(NAV.tilt, pose.rotY, 0);
 
     const cap = new Mesh(
       this.capGeometry,
@@ -205,21 +219,23 @@ export class NavigationSystem extends createSystem({
     tint.width = tint.height = 96;
     root.userData = { canvas, texture, direction, cap, tint };
 
-    const entity = this.world.createTransformEntity(root, { parent: machine });
-    entity.addComponent(NavButton, { direction });
-    entity.addComponent(MachinePart);
+    const entity = this.world.createTransformEntity(root, { parent: factory });
+    entity.addComponent(NavButton, { direction, station });
+    entity.addComponent(FactoryPart);
     entity.addComponent(RayInteractable);
     entity.addComponent(PokeInteractable);
   }
 
-  /** Muestra cada boton solo si existe la categoria a la que lleva. */
+  /** Solo se ven los botones de la estacion activa, y solo si existe la estacion a
+      la que llevan y la banda esta quieta. */
   refresh() {
-    const customizing = phase.peek() === Phase.Customizing;
+    const idle = phase.peek() === Phase.Customizing && !beltMoving.peek();
     for (const entity of this.queries.buttons.entities) {
       const button = entity.object3D;
       if (!button) continue;
+      const active = entity.getValue(NavButton, 'station') === categoryIndex.peek();
       const target = CATEGORIES[categoryIndex.peek() + button.userData.direction];
-      button.visible = customizing && !!target;
+      button.visible = idle && active && !!target;
       // Oculto = sin volumen: no puede tocarse por accidente
       button.scale.setScalar(button.visible ? 1 : 0.0001);
       if (button.visible) drawFace(button);
@@ -227,7 +243,7 @@ export class NavigationSystem extends createSystem({
   }
 
   onPressed(entity) {
-    if (phase.peek() !== Phase.Customizing || this.cooldown > 0) return;
+    if (phase.peek() !== Phase.Customizing || this.cooldown > 0 || beltMoving.peek()) return;
     const button = entity.object3D;
     if (!button?.visible) return;
     if (stepCategory(entity.getValue(NavButton, 'direction'))) {
