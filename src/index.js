@@ -12,7 +12,8 @@
    AvatarSystem       animacion de reposo y refleja avatarConfig en el modelo
    CarryableSystem    objetos agarrables: vuelven solos a su sitio al soltarlos
    SkinStationSystem  estacion 1: latas de aerosol y pintura de la piel
-   HairStationSystem  estacion 2: maquina de cabello, colocar, retirar y descartar */
+   HairStationSystem  estacion 2: maquina de cabello, colocar, retirar y descartar
+   CatalogStationSystem estaciones 3 a 5: libro de stickers, armario y caja de charms */
 import { World } from '@iwsdk/core';
 import * as state from './state.js';
 import projectOptions from 'virtual:iwsdk-project';
@@ -24,6 +25,7 @@ import { NavigationSystem } from './systems/navigation-system.js';
 import { PanelsSystem } from './systems/panels-system.js';
 import { WelcomeSystem } from './systems/welcome-system.js';
 import { CarryableSystem } from './interaction/carryable-system.js';
+import { CatalogStationSystem } from './stations/catalog/catalog-station-system.js';
 import { HairStationSystem } from './stations/hair/hair-station-system.js';
 import { SkinStationSystem } from './stations/skin/skin-station-system.js';
 
@@ -39,6 +41,7 @@ World.create(document.getElementById('scene-container'), projectOptions).then(
     world.registerSystem(CarryableSystem, { priority: 14 });
     world.registerSystem(SkinStationSystem, { priority: 16 });
     world.registerSystem(HairStationSystem, { priority: 16 });
+    world.registerSystem(CatalogStationSystem, { priority: 16 });
   },
 );
 

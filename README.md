@@ -23,7 +23,7 @@ npm run build    # versión para publicar, en dist/
 Pruebas en el visor: publicar (GitHub Actions lo hace al fusionar a `main`), abrir la URL en el
 navegador de la Quest, pulsar **Entrar en RA** y aceptar los permisos de espacio.
 
-## Estado: versión 3, fases A y B (fábrica, piel y cabello)
+## Estado: versión 3, fases A, B y C (las cinco estaciones)
 
 | Hecho | Dónde |
 |---|---|
@@ -37,18 +37,29 @@ navegador de la Quest, pulsar **Entrar en RA** y aceptar los permisos de espacio
 | La personalización se conserva al avanzar y retroceder (estado único) | `src/state.js` |
 
 **Fase B (estaciones 1 y 2).** Elegir una opción en el panel pone en marcha la estación; el avatar
-cambia con los objetos, no con el panel. Las estaciones 3 a 5 todavía solo seleccionan.
+cambia con los objetos, no con el panel.
 
 | Estación | Cómo se juega | Dónde |
 |---|---|---|
 | **1 · Piel** | Elegir un tono hace caer una lata del dispensador. Se agarra con un pellizco; **pellizcando con la otra mano** se acciona el aerosol (partículas y sonido) y, si la boquilla apunta al personaje, su color se mezcla poco a poco con el de la lata. Se puede repetir con otro tono | `src/stations/skin/` |
 | **2 · Cabello** | Elegir un estilo pone a trabajar la máquina (animación y sonido) y el cabello sale en la bandeja. Se agarra y se suelta sobre la cabeza: si queda cerca se coloca solo (la cabeza se ilumina). **Tocar con el dedo** el cabello puesto lo retira; soltarlo sobre el **bote** lo descarta. El color del cabello repinta el puesto y el de la bandeja | `src/stations/hair/` |
 
+**Fase C (estaciones 3 a 5)** comparten un mismo mecanismo (`src/stations/catalog/`) con un mueble distinto. Cada
+pestaña del panel muestra sus objetos en el mueble; se agarran con un pellizco y se sueltan sobre el personaje
+(si quedan cerca se colocan solos). **Tocar con el dedo** lo puesto lo retira. El objeto elegido en el panel late
+para encontrarlo.
+
+| Estación | Mueble y objetos | Detalles |
+|---|---|---|
+| **3 · Rostro** | Libro de stickers (ojos, boca, nariz). Dos flechas del libro, o las pestañas del panel, pasan de página | Los stickers vuelven al libro (hay de sobra). Se retira cada rasgo tocándolo. El color de ojos se elige en el panel |
+| **4 · Ropa** | Armario con las prendas de la pestaña (superior, inferior, zapatos) | La prenda puesta sale del armario y vuelve a su estante al retirarla. El overol tapa la camiseta |
+| **5 · Charms y accesorios** | Caja con los charms o los accesorios de cabeza | Los charms flotan junto al personaje; gorra y sombrero ocultan el pelo; balaca, moño, flor y audífonos se ajustan como en la web |
+
 - **Objetos agarrables** (`src/interaction/carryable-system.js`): si se sueltan lejos de todo, vuelven solos a su sitio, así que nunca se pierden.
 - **Sonido** (`src/audio/sfx.js`): efectos sintetizados con Web Audio, sin archivos ni derechos de autor. Dos buses de volumen (efectos y música). Se desbloquea al pulsar «Comenzar».
 - **Estado único:** `avatarConfig` (en `src/state.js`) es la fuente de verdad; `AvatarSystem` lo refleja en el modelo.
 
-Capturas del emulador: `docs/capturas/v3/` (fase A) y `docs/capturas/v3b/` (fase B).
+Capturas del emulador: `docs/capturas/v3/` (fase A), `v3b/` (fase B) y `v3c/` (fase C).
 
 ### Pruebas en el emulador
 
@@ -78,7 +89,6 @@ Desactivados a propósito: física (Havok) y detección de mallas, para cuidar e
 
 ### Pendiente
 
-- **C:** estaciones 3 a 5 (libro de stickers, perchero, caja de charms).
 - **D:** secuencia de la caja de regalo, pedido simulado (teclado numérico) y tarjeta Amiibo.
 - **E:** audio (efectos sintetizados con Web Audio), ajuste fino de altura y distancia, optimización, pruebas en el visor.
 
@@ -89,6 +99,10 @@ Desactivados a propósito: física (Havok) y detección de mallas, para cuidar e
 - Probado solo en el emulador IWER (sin GPU, a pocos fotogramas por segundo); falta la prueba en el Quest 3.
   En el emulador los clics de rayo sobre botones son irregulares; los gestos de agarrar, rociar,
   soltar y tocar con el dedo se verificaron con manos emuladas. Los sonidos no se pudieron escuchar (sin audio en el contenedor).
+- No probado aún: tocar las flechas del libro con el dedo (el cambio de página sí se probó desde las pestañas), los stickers de boca y nariz, ni retirar charms o accesorios tocándolos.
+- Los muebles son placeholders y el libro queda parcialmente tapado por el avatar desde el ángulo del usuario; hay que ajustar su posición con el modelo final.
+- Gorra y sombrero ocultan el pelo entero (la web lo recorta bajo el borde).
+- El juego carga ahora todos los modelos del avatar al inicio (~6 MB).
 - El rociado exige pellizcar con la mano libre: si esa mano también está cerca de otro objeto agarrable podría agarrarlo.
 - Audio: `public/audio/ambiente.mp3` viene de la web original y se usa solo con fines académicos
   (los derechos son de sus titulares). Debe reemplazarse por una pista libre de derechos antes de cualquier uso fuera del proyecto.

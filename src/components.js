@@ -61,6 +61,20 @@ export const AvatarZone = createComponent('AvatarZone', {
   slot: { type: Types.String, default: 'hair' },
 });
 
+/** Objeto de un catalogo (sticker, prenda, accesorio, charm). key = parte del avatar que
+    cambia; target = donde hay que soltarlo (head | body | feet); kind: sticker | part. */
+export const CatalogItem = createComponent('CatalogItem', {
+  key: { type: Types.String, default: '' },
+  itemId: { type: Types.String, default: '' },
+  target: { type: Types.String, default: 'body' },
+  kind: { type: Types.String, default: 'part' },
+});
+
+/** Flecha del libro de stickers: -1 pagina anterior, +1 siguiente. */
+export const PageArrow = createComponent('PageArrow', {
+  direction: { type: Types.Int8, default: 1 },
+});
+
 export default defineComponents([
   Factory,
   FactoryPart,
@@ -73,4 +87,6 @@ export default defineComponents([
   HairProp,
   HairMachine,
   AvatarZone,
+  CatalogItem,
+  PageArrow,
 ]);
