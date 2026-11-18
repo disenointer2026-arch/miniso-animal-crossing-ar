@@ -13,7 +13,9 @@
    CarryableSystem    objetos agarrables: vuelven solos a su sitio al soltarlos
    SkinStationSystem  estacion 1: latas de aerosol y pintura de la piel
    HairStationSystem  estacion 2: maquina de cabello, colocar, retirar y descartar
-   CatalogStationSystem estaciones 3 a 5: libro de stickers, armario y caja de charms */
+   CatalogStationSystem estaciones 3 a 5: libro de stickers, armario y caja de charms
+   FinaleSystem       cierre: caja de regalo, viaje al frente y figura final
+   CheckoutSystem     que desea hacer, pedido simulado, tarjeta Amiibo y cierre */
 import { World } from '@iwsdk/core';
 import * as state from './state.js';
 import projectOptions from 'virtual:iwsdk-project';
@@ -24,6 +26,8 @@ import { HintSystem } from './systems/hint-system.js';
 import { NavigationSystem } from './systems/navigation-system.js';
 import { PanelsSystem } from './systems/panels-system.js';
 import { WelcomeSystem } from './systems/welcome-system.js';
+import { CheckoutSystem } from './checkout/checkout-system.js';
+import { FinaleSystem } from './finale/finale-system.js';
 import { CarryableSystem } from './interaction/carryable-system.js';
 import { CatalogStationSystem } from './stations/catalog/catalog-station-system.js';
 import { HairStationSystem } from './stations/hair/hair-station-system.js';
@@ -42,8 +46,10 @@ World.create(document.getElementById('scene-container'), projectOptions).then(
     world.registerSystem(SkinStationSystem, { priority: 16 });
     world.registerSystem(HairStationSystem, { priority: 16 });
     world.registerSystem(CatalogStationSystem, { priority: 16 });
+    world.registerSystem(FinaleSystem, { priority: 18 });
+    world.registerSystem(CheckoutSystem, { priority: 32 });
   },
 );
 
 // Solo en desarrollo: el estado compartido queda a mano para las pruebas del emulador.
-if (import.meta.env.DEV) window.__miniso = state;
+if (import.meta.env.DEV) window.__miniso = { ...state };

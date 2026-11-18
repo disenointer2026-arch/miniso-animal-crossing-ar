@@ -37,18 +37,23 @@ export class WelcomeSystem extends createSystem({
       }),
       phase.subscribe((value) => {
         panel.visible = value === Phase.Welcome;
+        if (value === Phase.Welcome) this.disposeFactory(); // tambien al crear otro avatar
       }),
     );
   }
 
   /** Al salir de la sesion la fabrica se retira: su posicion ya no es valida. */
   reset() {
+    this.disposeFactory();
+    resetExperience();
+  }
+
+  disposeFactory() {
     for (const part of Array.from(this.queries.parts.entities)) {
       part.dispose();
     }
     for (const factory of Array.from(this.queries.factories.entities)) {
       factory.dispose();
     }
-    resetExperience();
   }
 }

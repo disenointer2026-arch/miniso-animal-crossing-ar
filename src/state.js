@@ -12,13 +12,22 @@ export const Phase = {
   Calibrating: 'calibrating', // la mano marca la altura y el alcance comodos
   Arriving: 'arriving', // el personaje sale del portal hacia la estacion 1
   Instructions: 'instructions', // panel de instrucciones
-  Customizing: 'customizing', // personalizacion por categorias
+  Customizing: 'customizing', // personalizacion por estaciones
+  Finishing: 'finishing', // el avatar entra en la caja de regalo, que viaja al frente
+  Choose: 'choose', // que desea hacer: pedido o tarjeta
+  Order: 'order', // pedido simulado (producto, datos, pago)
+  Confirm: 'confirm', // compra satisfactoria
+  Card: 'card', // tarjeta Amiibo
+  Thanks: 'thanks', // cierre
 };
 
 export const phase = signal(Phase.Welcome);
 
 /** Medidas de la fabrica tras la calibracion (ver src/core/layout.js). */
 export const layout = signal({ ...DEFAULT_LAYOUT });
+
+/** Pide a la banda que lleve al personaje a un slot: { slot }. Un objeto nuevo en cada pedido. */
+export const beltRequest = signal(null);
 
 /** La banda esta llevando al personaje de una estacion a otra. */
 export const beltMoving = signal(false);

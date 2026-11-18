@@ -1,0 +1,24 @@
+<!-- Panel generico: titulo, texto y hasta tres botones. Los textos los pone
+     src/checkout/checkout-system.js (final: que desea hacer, compra satisfactoria,
+     compartir, gracias). -->
+<style>
+  .root { flex-direction: column; width: 500px; }
+  .content { flex-direction: column; gap: 10px; padding: 24px; }
+  .kicker { color: #8cc37a; font-size: 14px; font-weight: 700; letter-spacing: 1.4px; }
+  .title { color: #e60012; font-size: 30px; font-weight: 700; }
+  .body { color: #e9dfcf; font-size: 17px; line-height: 23px; }
+  .btn { flex-direction: column; gap: 2px; padding-top: 10px; padding-bottom: 10px; padding-left: 18px; padding-right: 18px; border-radius: 16px;
+    background-color: #fff6e6; cursor: pointer; }
+  .btn-label { color: #5f4c45; font-size: 21px; font-weight: 700; }
+  .btn-sub { color: #8a7a70; font-size: 14px; }
+</style>
+<Panel class="root">
+  <div class="content">
+    <div id="kicker" class="kicker">-</div>
+    <div id="title" class="title">-</div>
+    <div id="body" class="body">-</div>
+    <div id="btn-a" class="btn"><div id="lbl-a" class="btn-label">-</div><div id="sub-a" class="btn-sub">-</div></div>
+    <div id="btn-b" class="btn"><div id="lbl-b" class="btn-label">-</div><div id="sub-b" class="btn-sub">-</div></div>
+    <div id="btn-c" class="btn"><div id="lbl-c" class="btn-label">-</div><div id="sub-c" class="btn-sub">-</div></div>
+  </div>
+</Panel>

@@ -1,0 +1,86 @@
+<!-- Pedido simulado: 1 Producto, 2 Tus datos, 3 Pago. Todo el contenido lo pone
+     src/checkout/checkout-system.js; aqui solo estan la estructura y los estilos.
+     Los campos numericos (telefono, tarjeta) se llenan con el teclado numerico. -->
+<style>
+  .root { flex-direction: column; width: 640px; }
+  .content { flex-direction: column; gap: 10px; padding: 22px; }
+  .head { flex-direction: row; justify-content: space-between; align-items: center; }
+  .title { color: #e60012; font-size: 28px; font-weight: 700; }
+  .steps { flex-direction: row; gap: 6px; }
+  .step { padding-top: 5px; padding-bottom: 5px; padding-left: 12px; padding-right: 12px; border-radius: 14px; background-color: #5f4c45; color: #e9dfcf;
+    font-size: 14px; font-weight: 700; }
+  .box { flex-direction: column; gap: 8px; }
+  .h2 { color: #fff6e6; font-size: 22px; font-weight: 700; }
+  .text { color: #e9dfcf; font-size: 15px; line-height: 20px; }
+  .small { color: #b9aea3; font-size: 13px; line-height: 17px; }
+  .price { color: #f9c623; font-size: 24px; font-weight: 700; }
+  .row { flex-direction: row; gap: 8px; align-items: center; }
+  .chip { padding-top: 9px; padding-bottom: 9px; padding-left: 14px; padding-right: 14px; border-radius: 14px; background-color: #fff6e6; color: #5f4c45;
+    font-size: 16px; font-weight: 700; text-align: center; cursor: pointer; border-width: 3px; border-color: #fff6e6; }
+  .field { flex-grow: 1; padding-top: 10px; padding-bottom: 10px; padding-left: 14px; padding-right: 14px; border-radius: 12px; background-color: #3c332f; color: #fff6e6;
+    font-size: 17px; border-width: 3px; border-color: #3c332f; cursor: pointer; }
+  .value { color: #fff6e6; font-size: 20px; font-weight: 700; min-width: 70px; text-align: center; }
+  .foot { flex-direction: row; justify-content: space-between; align-items: center; margin-top: 4px; }
+  .err { color: #ff8a80; font-size: 14px; }
+  .btn { padding-top: 12px; padding-bottom: 12px; padding-left: 22px; padding-right: 22px; border-radius: 16px; background-color: #fff6e6; color: #5f4c45;
+    font-size: 19px; font-weight: 700; cursor: pointer; }
+  .primary { background-color: #f9c623; }
+</style>
+<Panel class="root">
+  <div class="content">
+    <div class="head">
+      <div class="title">Pide tu producto</div>
+      <div class="steps">
+        <div id="st-0" class="step">1 Producto</div>
+        <div id="st-1" class="step">2 Tus datos</div>
+        <div id="st-2" class="step">3 Pago</div>
+      </div>
+    </div>
+
+    <div id="s0" class="box">
+      <div id="p-name" class="h2">-</div>
+      <div id="p-detail" class="text">-</div>
+      <div id="p-avail" class="small">-</div>
+      <div class="row"><div id="p-price" class="price">-</div>
+        <div id="q-minus" class="chip">-</div><div id="q-out" class="value">1</div><div id="q-plus" class="chip">+</div></div>
+      <div id="p-totals" class="small">-</div>
+    </div>
+
+    <div id="s1" class="box">
+      <div class="h2">Tus datos</div>
+      <div id="session" class="small">-</div>
+      <div id="login" class="chip">Iniciar sesion MINISO (simulado)</div>
+      <div id="d-name" class="text">-</div>
+      <div id="d-email" class="text">-</div>
+      <div class="row"><div id="f-phone" class="field">-</div></div>
+      <div class="row"><div id="c-prev" class="chip">-</div><div id="c-name" class="value">-</div><div id="c-next" class="chip">-</div></div>
+      <div id="d-address" class="text">-</div>
+      <div class="small">Datos de ejemplo: el teclado del visor es numerico.</div>
+    </div>
+
+    <div id="s2" class="box">
+      <div class="h2">Metodo de pago</div>
+      <div class="small">Esto es una simulacion: no se realiza ningun cobro y no debes ingresar datos reales.</div>
+      <div class="row"><div id="m-card" class="chip">Tarjeta</div><div id="m-pse" class="chip">PSE</div><div id="m-nequi" class="chip">Nequi</div></div>
+      <div id="g-card" class="box">
+        <div id="f-ccNumber" class="field">-</div>
+        <div class="row"><div id="f-ccExp" class="field">-</div><div id="f-ccCvc" class="field">-</div></div>
+      </div>
+      <div id="g-pse" class="box">
+        <div class="row"><div id="b-prev" class="chip">-</div><div id="b-name" class="value">-</div><div id="b-next" class="chip">-</div></div>
+        <div class="small">Al finalizar, simularemos la redireccion a tu banco.</div>
+      </div>
+      <div id="g-nequi" class="box">
+        <div id="f-nequi" class="field">-</div>
+        <div class="small">Simularemos una notificacion de pago en tu celular.</div>
+      </div>
+      <div id="p-totals2" class="small">-</div>
+    </div>
+
+    <div id="err" class="err"> </div>
+    <div class="foot">
+      <div id="back" class="btn">Atras</div>
+      <div id="next" class="btn primary">Continuar</div>
+    </div>
+  </div>
+</Panel>

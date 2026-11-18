@@ -20,12 +20,16 @@ import {
   SRGBColorSpace,
 } from '@iwsdk/core';
 import { Factory, FactoryPart, NavButton } from '../components.js';
-import { STATION_COUNT, slotPose, stationSlot } from '../core/layout.js';
+import { SLOT, STATION_COUNT, slotPose, stationSlot } from '../core/layout.js';
 import { CATEGORIES } from '../data/categories.js';
-import { beltMoving, categoryIndex, layout, phase, Phase, stepCategory } from '../state.js';
+import { beltMoving, beltRequest, categoryIndex, layout, phase, Phase, stepCategory } from '../state.js';
 
 /** Posicion de los botones: hacia el usuario (radial < 0), separados a cada lado. */
 const NAV = { radial: -0.14, up: 0, offset: 0.095, tilt: 0.45 };
+/** Despues de la ultima estacion, "siguiente" pasa a ser el boton de terminar. */
+const FINISH = { label: 'Terminar avatar', icon: 'boton-llavero.svg', tag: 'LISTO' };
+const targetFor = (direction) => CATEGORIES[categoryIndex.peek() + direction] ?? (direction > 0 ? FINISH : null);
+
 const WIDTH = 0.16;
 const DEPTH = 0.055;
 const HEIGHT = 0.02;
@@ -85,7 +89,7 @@ function keycapGeometry() {
 /** Dibuja la cara del boton: icono + etiqueta + nombre de la categoria destino. */
 function drawFace(button) {
   const { canvas, texture, direction } = button.userData;
-  const target = CATEGORIES[categoryIndex.peek() + direction];
+  const target = targetFor(direction);
   const ctx = canvas.getContext('2d');
   const theme = THEME[direction];
   ctx.clearRect(0, 0, TEX_W, TEX_H);
@@ -128,7 +132,8 @@ function drawFace(button) {
   ctx.fillStyle = '#5F4C45';
   ctx.textBaseline = 'middle';
   ctx.font = `800 28px ${font}`;
-  ctx.fillText(direction < 0 ? `‹ ${theme.tag}` : `${theme.tag} ›`, 176, 40);
+  const tag = target.tag ?? theme.tag;
+  ctx.fillText(direction < 0 ? `‹ ${tag}` : `${tag} ›`, 176, 40);
   const words = target.label.split(' ');
   const lines = [];
   ctx.font = `800 44px ${font}`;
@@ -234,7 +239,7 @@ export class NavigationSystem extends createSystem({
       const button = entity.object3D;
       if (!button) continue;
       const active = entity.getValue(NavButton, 'station') === categoryIndex.peek();
-      const target = CATEGORIES[categoryIndex.peek() + button.userData.direction];
+      const target = targetFor(button.userData.direction);
       button.visible = idle && active && !!target;
       // Oculto = sin volumen: no puede tocarse por accidente
       button.scale.setScalar(button.visible ? 1 : 0.0001);
@@ -246,8 +251,14 @@ export class NavigationSystem extends createSystem({
     if (phase.peek() !== Phase.Customizing || this.cooldown > 0 || beltMoving.peek()) return;
     const button = entity.object3D;
     if (!button?.visible) return;
-    if (stepCategory(entity.getValue(NavButton, 'direction'))) {
+    const direction = entity.getValue(NavButton, 'direction');
+    if (stepCategory(direction)) {
       this.cooldown = COOLDOWN_SECONDS;
+    } else if (direction > 0 && categoryIndex.peek() === CATEGORIES.length - 1) {
+      // Terminar avatar: la banda lleva al personaje a la caja de regalo
+      this.cooldown = COOLDOWN_SECONDS;
+      phase.value = Phase.Finishing;
+      beltRequest.value = { slot: SLOT.giftBox };
     }
   }
 

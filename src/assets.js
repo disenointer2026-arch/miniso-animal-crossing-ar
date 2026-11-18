@@ -88,4 +88,8 @@ export default defineAssets({
   'hint-panel': uikitml('hint.uikitml', 'Indicacion'),
   'instructions-panel': uikitml('instructions.uikitml', 'Instrucciones'),
   'category-panel': uikitml('category.uikitml', 'Categoria'),
+  'dialog-panel': uikitml('dialog.uikitml', 'Dialogo'),
+  'order-panel': uikitml('order.uikitml', 'Pedido'),
+  'keypad-panel': uikitml('keypad.uikitml', 'Teclado numerico'),
+  'card-panel': uikitml('card.uikitml', 'Editor de tarjeta'),
 });

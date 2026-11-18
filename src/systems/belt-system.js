@@ -7,7 +7,7 @@ import { Avatar } from '../avatar/avatar.js';
 import { AvatarFigure, Factory, FactoryPart } from '../components.js';
 import { SLOT, arcPoint, slotAngle, stationSlot } from '../core/layout.js';
 import { MODEL } from '../data/avatar-defaults.js';
-import { avatarConfig, beltMoving, categoryIndex, hint, layout, phase, Phase } from '../state.js';
+import { avatarConfig, beltMoving, beltRequest, categoryIndex, hint, layout, phase, Phase } from '../state.js';
 
 /** Altura del personaje sobre la banda, en metros. */
 export const AVATAR_HEIGHT = 0.25;
@@ -40,6 +40,9 @@ export class BeltSystem extends createSystem({
       }),
       this.queries.factories.subscribe('disqualify', () => {
         this.factory = null;
+      }),
+      beltRequest.subscribe((request) => {
+        if (request) this.moveTo(request.slot);
       }),
       categoryIndex.subscribe((index) => {
         if (phase.peek() === Phase.Customizing) this.moveTo(stationSlot(index));

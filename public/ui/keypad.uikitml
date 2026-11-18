@@ -1,0 +1,22 @@
+<!-- Teclado numerico virtual del pedido: el campo activo recibe los digitos. -->
+<style>
+  .root { flex-direction: column; width: 300px; }
+  .content { flex-direction: column; gap: 8px; padding: 18px; }
+  .label { color: #8cc37a; font-size: 14px; font-weight: 700; letter-spacing: 1.2px; }
+  .value { color: #fff6e6; font-size: 26px; font-weight: 700; }
+  .row { flex-direction: row; gap: 8px; }
+  .key { width: 84px; height: 56px; border-radius: 14px; background-color: #fff6e6;
+    color: #5f4c45; font-size: 26px; font-weight: 700; text-align: center; padding-top: 12px; cursor: pointer; }
+  .ok { background-color: #f9c623; font-size: 20px; padding-top: 16px; }
+  .back { background-color: #e9dfcf; font-size: 22px; padding-top: 14px; }
+</style>
+<Panel class="root">
+  <div class="content">
+    <div id="kp-label" class="label">-</div>
+    <div id="kp-value" class="value">-</div>
+    <div class="row"><div id="k1" class="key">1</div><div id="k2" class="key">2</div><div id="k3" class="key">3</div></div>
+    <div class="row"><div id="k4" class="key">4</div><div id="k5" class="key">5</div><div id="k6" class="key">6</div></div>
+    <div class="row"><div id="k7" class="key">7</div><div id="k8" class="key">8</div><div id="k9" class="key">9</div></div>
+    <div class="row"><div id="kback" class="key back">borrar</div><div id="k0" class="key">0</div><div id="kok" class="key ok">Listo</div></div>
+  </div>
+</Panel>

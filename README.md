@@ -23,7 +23,7 @@ npm run build    # versión para publicar, en dist/
 Pruebas en el visor: publicar (GitHub Actions lo hace al fusionar a `main`), abrir la URL en el
 navegador de la Quest, pulsar **Entrar en RA** y aceptar los permisos de espacio.
 
-## Estado: versión 3, fases A, B y C (las cinco estaciones)
+## Estado: versión 3, fases A a D (de la calibración a la tarjeta)
 
 | Hecho | Dónde |
 |---|---|
@@ -54,6 +54,18 @@ para encontrarlo.
 | **3 · Rostro** | Libro de stickers (ojos, boca, nariz). Dos flechas del libro, o las pestañas del panel, pasan de página | Los stickers vuelven al libro (hay de sobra). Se retira cada rasgo tocándolo. El color de ojos se elige en el panel |
 | **4 · Ropa** | Armario con las prendas de la pestaña (superior, inferior, zapatos) | La prenda puesta sale del armario y vuelve a su estante al retirarla. El overol tapa la camiseta |
 | **5 · Charms y accesorios** | Caja con los charms o los accesorios de cabeza | Los charms flotan junto al personaje; gorra y sombrero ocultan el pelo; balaca, moño, flor y audífonos se ajustan como en la web |
+
+**Fase D (final).** Tras la estación 5, el botón «siguiente» pasa a ser **«Terminar avatar»**:
+
+1. La banda lleva al personaje a la caja de regalo, que está abierta; el personaje salta dentro, la tapa se cierra y la fábrica se desvanece en destellos (`src/finale/`).
+2. La caja viaja al frente del usuario, girando, y se abre: sale la figura final, que gira sola (se puede girar con la mano).
+3. Panel **«¿Qué desea hacer?»** con tres salidas (`src/checkout/`):
+   - **Pedir mi producto:** pedido simulado en tres pasos (producto, datos, pago) con los textos y reglas de validación de la web. Los datos personales vienen de ejemplo y el teléfono y el pago se editan con un **teclado numérico virtual**. Termina en «¡Tu pedido está listo!» con número de pedido.
+   - **Crear tarjeta Amiibo:** la tarjeta se ve en 3D con el retrato real del avatar (se dibuja una copia fuera de pantalla) y los cinco fondos de la web. Nombre (de una lista) y cumpleaños se eligen con flechas. «Compartir» es simulado, como en la web.
+   - **Seguir editando:** la fábrica vuelve y el personaje regresa a la estación 5 con todo lo elegido.
+4. «Finalizar» lleva a un cierre con «Crear otro avatar», que reinicia todo.
+
+La tarjeta es un coleccionable digital conceptual inspirado en el formato de las tarjetas Amiibo; no es un producto oficial de Nintendo.
 
 - **Objetos agarrables** (`src/interaction/carryable-system.js`): si se sueltan lejos de todo, vuelven solos a su sitio, así que nunca se pierden.
 - **Sonido** (`src/audio/sfx.js`): efectos sintetizados con Web Audio, sin archivos ni derechos de autor. Dos buses de volumen (efectos y música). Se desbloquea al pulsar «Comenzar».
@@ -89,7 +101,6 @@ Desactivados a propósito: física (Havok) y detección de mallas, para cuidar e
 
 ### Pendiente
 
-- **D:** secuencia de la caja de regalo, pedido simulado (teclado numérico) y tarjeta Amiibo.
 - **E:** audio (efectos sintetizados con Web Audio), ajuste fino de altura y distancia, optimización, pruebas en el visor.
 
 ### Limitaciones conocidas
@@ -99,6 +110,8 @@ Desactivados a propósito: física (Havok) y detección de mallas, para cuidar e
 - Probado solo en el emulador IWER (sin GPU, a pocos fotogramas por segundo); falta la prueba en el Quest 3.
   En el emulador los clics de rayo sobre botones son irregulares; los gestos de agarrar, rociar,
   soltar y tocar con el dedo se verificaron con manos emuladas. Los sonidos no se pudieron escuchar (sin audio en el contenedor).
+- Pedido y tarjeta: los datos personales son de ejemplo y el nombre de la tarjeta se elige de una lista, porque el visor no tiene teclado de letras. No se descarga ni se comparte nada de verdad.
+- No probado con manos: pulsar los botones de los paneles finales (se probó la lógica de cada paso desde el estado compartido y el cierre con el botón «Terminar avatar» tocado con el dedo) ni girar la figura final con la mano.
 - No probado aún: tocar las flechas del libro con el dedo (el cambio de página sí se probó desde las pestañas), los stickers de boca y nariz, ni retirar charms o accesorios tocándolos.
 - Los muebles son placeholders y el libro queda parcialmente tapado por el avatar desde el ángulo del usuario; hay que ajustar su posición con el modelo final.
 - Gorra y sombrero ocultan el pelo entero (la web lo recorta bajo el borde).

@@ -276,5 +276,5 @@ export const MAX_OPTIONS = 16;
 
 /** La fuente de los paneles UIKitML no trae tildes ni enie: se quitan al mostrar. */
 export function plain(text) {
-  return text.normalize('NFD').replace(/[̀-ͯ]/g, '');
+  return text.normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[¡¿]/g, '');
 }

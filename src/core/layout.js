@@ -65,7 +65,12 @@ export function arcPoint(layout, theta, radial = 0, up = 0, out = { x: 0, y: 0, 
     tangent: a lo largo de la banda (+ = derecha del usuario); radial: + hacia afuera;
     up: sobre la banda. rotY hace que +Z del objeto mire al usuario. */
 export function stationPoint(layout, station, tangent = 0, radial = 0, up = 0) {
-  const pose = slotPose(layout, stationSlot(station), radial, up);
+  return slotPoint(layout, stationSlot(station), tangent, radial, up);
+}
+
+/** Igual que stationPoint pero indicando el slot (0 portal ... 6 caja de regalo). */
+export function slotPoint(layout, slot, tangent = 0, radial = 0, up = 0) {
+  const pose = slotPose(layout, slot, radial, up);
   return {
     x: pose.x + Math.cos(pose.theta) * tangent,
     y: pose.y,
