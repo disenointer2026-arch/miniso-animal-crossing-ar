@@ -41,7 +41,7 @@
   }
 
   .tab {
-    width: 154px;
+    width: 114px;
     height: 34px;
     border-radius: 17px;
     border-width: 2px;
@@ -83,13 +83,14 @@
 </style>
 <Panel class="panel-root">
   <div class="panel-content">
-    <div id="step" class="step">PASO 1 DE 8</div>
+    <div id="step" class="step">ESTACION 1 DE 5</div>
     <div id="title" class="title">Color de piel</div>
     <div id="help" class="help">Elige un tono</div>
     <div class="row">
       <div id="tab-0" class="tab">-</div>
       <div id="tab-1" class="tab">-</div>
       <div id="tab-2" class="tab">-</div>
+      <div id="tab-3" class="tab">-</div>
     </div>
     <div class="row">
       <div id="opt-0" class="chip">-</div>

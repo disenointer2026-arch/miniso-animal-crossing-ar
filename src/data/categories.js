@@ -55,7 +55,7 @@ export const EYE_COLORS = [
   { id: '#5CC2A8', name: 'Menta' },
 ];
 
-export const CATEGORIES = [
+const LEGACY = [
   {
     id: 'skin',
     label: 'Color de piel',
@@ -245,10 +245,36 @@ export const CATEGORIES = [
   },
 ];
 
+/** Las 5 estaciones de la fabrica, en el orden del recorrido. Reutilizan los grupos
+    de opciones de la pagina original; solo cambia como se agrupan. */
+const byId = Object.fromEntries(LEGACY.map((c) => [c.id, c]));
+const station = (id, label, icon, help, parts) => ({
+  id,
+  label,
+  icon,
+  help,
+  groups: parts.flatMap(([from, label]) =>
+    byId[from].groups.map((g, i) => ({ ...g, label: label ?? g.label })),
+  ),
+});
+
+export const CATEGORIES = [
+  station('skin', 'Color de piel', 'boton-tonodepiel.svg', 'Elige un tono para tu personaje', [['skin']]),
+  station('hair', 'Cabello', 'boton-cabello.svg', 'Elige un estilo y su color', [['hair', 'Estilo'], ['hairColor', 'Color']]),
+  station('face', 'Rostro', 'boton-ojos.svg', 'Elige ojos, boca y nariz', [['eyes'], ['mouth'], ['nose']]),
+  station('clothes', 'Ropa', 'boton-ropa.svg', 'Elige la ropa y los zapatos', [['clothes']]),
+  station('charms', 'Charms y accesorios', 'boton-llavero.svg', 'Elige un charm o un accesorio', [['charms']]),
+];
+
 /** Maximo de opciones por grupo: el panel reserva esta cantidad de casillas. */
+const FACE_LABELS = ['Ojos', 'Color de ojos', 'Boca', 'Nariz'];
+CATEGORIES[2].groups.forEach((g, i) => {
+  g.label = FACE_LABELS[i];
+});
+
 export const MAX_OPTIONS = 16;
 
 /** La fuente de los paneles UIKitML no trae tildes ni enie: se quitan al mostrar. */
 export function plain(text) {
-  return text.normalize('NFD').replace(/[̀-ͯ]/g, '');
+  return text.normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[¡¿]/g, '');
 }

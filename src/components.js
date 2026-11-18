@@ -1,47 +1,92 @@
 /* Componentes ECS propios. Modulo sin sistemas ni DOM: el editor tambien lo importa. */
 import { createComponent, defineComponents, Types } from '@iwsdk/core';
 
-/** Reticula que marca donde se colocara la maquina. */
-export const PlacementReticle = createComponent('PlacementReticle', {
-  valid: { type: Types.Boolean, default: false },
+/** La fabrica en anillo ya colocada alrededor del usuario. */
+export const Factory = createComponent('Factory', {});
+
+/** Todo lo que pertenece a la fabrica (se retira con ella al salir de la sesion). */
+export const FactoryPart = createComponent('FactoryPart', {});
+
+/** El personaje que se personaliza y su recorrido por la banda.
+    Los angulos son radianes sobre el arco (ver src/core/layout.js). */
+export const AvatarFigure = createComponent('AvatarFigure', {
+  angle: { type: Types.Float32, default: 0 },
+  from: { type: Types.Float32, default: 0 },
+  to: { type: Types.Float32, default: 0 },
+  elapsed: { type: Types.Float32, default: 0 },
+  duration: { type: Types.Float32, default: 2 },
+  moving: { type: Types.Boolean, default: false },
+  /** Primera marcha: el personaje aparece en el portal */
+  entering: { type: Types.Boolean, default: true },
 });
-
-/** La maquina ya colocada sobre la superficie. */
-export const Machine = createComponent('Machine', {
-  /** Segundos transcurridos de la animacion de llegada */
-  arrivalTime: { type: Types.Float32, default: 0 },
-  arrived: { type: Types.Boolean, default: false },
-});
-
-/** El personaje que se personaliza. */
-export const AvatarFigure = createComponent('AvatarFigure', {});
-
-/** Todo lo que pertenece a la maquina (se retira con ella al salir de la sesion). */
-export const MachinePart = createComponent('MachinePart', {});
 
 export const InstructionsPanel = createComponent('InstructionsPanel', {});
 export const CategoryPanel = createComponent('CategoryPanel', {});
 
-/** Boton espacial de navegacion: -1 = categoria anterior, +1 = siguiente. */
+/** Boton espacial de navegacion de una estacion: -1 = anterior, +1 = siguiente. */
 export const NavButton = createComponent('NavButton', {
+  direction: { type: Types.Int8, default: 1 },
+  station: { type: Types.Int8, default: 0 },
+});
+
+/** Objeto que se agarra con la mano y vuelve solo a su sitio si se suelta lejos.
+    home: posicion de reposo en coordenadas de la fabrica; locked: lo mueve una animacion. */
+export const Carryable = createComponent('Carryable', {
+  kind: { type: Types.String, default: '' },
+  idle: { type: Types.Float32, default: 0 },
+  locked: { type: Types.Boolean, default: false },
+  home: { type: Types.Vec3, default: [0, 0, 0] },
+  homeYaw: { type: Types.Float32, default: 0 },
+});
+
+/** Lata de aerosol de la estacion 1; color = tono de piel que pinta. */
+export const SprayCan = createComponent('SprayCan', {
+  color: { type: Types.String, default: '#ffffff' },
+});
+
+/** Cabello fabricado, suelto en la mano o en la bandeja. */
+export const HairProp = createComponent('HairProp', {
+  style: { type: Types.String, default: 'corto' },
+});
+
+/** Maquina de cabello de la estacion 2. */
+export const HairMachine = createComponent('HairMachine', {
+  producing: { type: Types.Boolean, default: false },
+  timer: { type: Types.Float32, default: 0 },
+  style: { type: Types.String, default: 'corto' },
+});
+
+/** Zona tocable sobre el personaje (p. ej. la cabeza: tocar retira el cabello). */
+export const AvatarZone = createComponent('AvatarZone', {
+  slot: { type: Types.String, default: 'hair' },
+});
+
+/** Objeto de un catalogo (sticker, prenda, accesorio, charm). key = parte del avatar que
+    cambia; target = donde hay que soltarlo (head | body | feet); kind: sticker | part. */
+export const CatalogItem = createComponent('CatalogItem', {
+  key: { type: Types.String, default: '' },
+  itemId: { type: Types.String, default: '' },
+  target: { type: Types.String, default: 'body' },
+  kind: { type: Types.String, default: 'part' },
+});
+
+/** Flecha del libro de stickers: -1 pagina anterior, +1 siguiente. */
+export const PageArrow = createComponent('PageArrow', {
   direction: { type: Types.Int8, default: 1 },
 });
 
-/** Herramienta u objeto de una categoria (pincel, bote, tijeras...). */
-export const Tool = createComponent('Tool', {
-  kind: { type: Types.String, default: '' },
-  /** Segundos desde que se solto; al pasar el limite vuelve a su sitio */
-  idleTime: { type: Types.Float32, default: 0 },
-  atHome: { type: Types.Boolean, default: true },
-});
-
 export default defineComponents([
-  PlacementReticle,
-  Machine,
+  Factory,
+  FactoryPart,
   AvatarFigure,
-  MachinePart,
   InstructionsPanel,
   CategoryPanel,
   NavButton,
-  Tool,
+  Carryable,
+  SprayCan,
+  HairProp,
+  HairMachine,
+  AvatarZone,
+  CatalogItem,
+  PageArrow,
 ]);

@@ -30,6 +30,13 @@ import {
   MOUTH,
   NOSE_ORANGE,
 } from '../data/avatar-defaults.js';
+import {
+  ACCESSORY_FIT,
+  CHARM_FIT,
+  CHARM_SHOWCASE,
+  HIDES_HAIR,
+  HIDES_SHIRT,
+} from '../data/avatar-fit.js';
 
 const publicAssetUrl = (filePath) =>
   `${import.meta.env.BASE_URL}${filePath.replace(/^\/+/u, '')}`;
@@ -59,6 +66,8 @@ function plasticTextures() {
   };
   return plasticMaps;
 }
+
+const _color = new Color();
 
 function roleColor(hex, shade = 1) {
   const c = new Color(hex);
@@ -128,6 +137,7 @@ export class Avatar {
     this.headGroup.position.set(0, MODEL.headY, 0);
     this.root.add(this.headGroup);
     this.parts = {};
+    this.roleMaterials = { skin: [], hair: [] };
     this.bones = null;
     this.rest = {};
     this.headMesh = null;
@@ -144,7 +154,122 @@ export class Avatar {
     this._setModelPart('shirt', `ropa-${this.config.shirt}`, this.root);
     this._setModelPart('pants', `ropa-${this.config.pants}`, this.root);
     this._setModelPart('shoes', `zapatos-${this.config.shoes}`, this.root);
+    this._setAccessory(this.config.accHead);
+    this._setCharm(this.config.companion);
+    this._applyHides();
+    this._collectRoles();
     return this;
+  }
+
+  /** Guarda los materiales de cada rol (piel, cabello) para repintarlos sin recorrer el arbol. */
+  _collectRoles() {
+    this.roleMaterials.skin.length = 0;
+    this.roleMaterials.hair.length = 0;
+    this.root.traverse((o) => {
+      const role = o.isMesh && o.material?.userData?.role;
+      if (role && this.roleMaterials[role]) this.roleMaterials[role].push(o.material);
+    });
+  }
+
+  /** Pinta todas las piezas de un rol con un Color. No cambia la configuracion
+      ni reserva memoria: sirve para mezclar el color mientras se rocia. */
+  setRoleColor(role, color) {
+    for (const material of this.roleMaterials[role]) {
+      material.color.copy(color);
+      const shade = material.userData.shade;
+      if (shade < 1) material.color.multiplyScalar(shade);
+    }
+  }
+
+  /** Cambia el estilo del cabello puesto ('none' lo retira). */
+  setHair(id) {
+    this.config.hair = id;
+    this._setModelPart('hair', `cabello-${id}`, this.headGroup);
+    this._refreshAccessory();
+    this._collectRoles();
+  }
+
+  /** Accesorio de cabeza: pieza .glb centrada en la cabeza, con el ajuste de la web original
+      (la balaca y el audifono cambian con el afro; la flor y el mono quedan sobre el pelo). */
+  _setAccessory(id) {
+    this.config.accHead = id;
+    this._setModelPart('accHead', `accesorio-${id}`, this.headGroup);
+    this._refreshAccessory();
+  }
+
+  _refreshAccessory() {
+    const obj = this.parts.accHead;
+    const base = ACCESSORY_FIT[this.config.accHead];
+    if (obj) {
+      const fit = { ...base, ...(base?.byHair?.[this.config.hair]) };
+      obj.rotation.fromArray(fit.rotation || [0, 0, 0]);
+      const scale = fit.scale ?? 1;
+      if (Array.isArray(scale)) obj.scale.fromArray(scale);
+      else obj.scale.setScalar(scale);
+    }
+    if (this.parts.hair) this.parts.hair.visible = !HIDES_HAIR.has(this.config.accHead);
+  }
+
+  /** Charm: queda junto al personaje, mas grande y flotando (el tulipan se queda en el suelo). */
+  _setCharm(id) {
+    this.config.companion = id;
+    this._setModelPart('companion', `charm-${id}`, this.root);
+    const obj = this.parts.companion;
+    const fit = CHARM_FIT[id];
+    if (!obj || !fit) return;
+    obj.position.fromArray(fit.position);
+    obj.rotation.fromArray(fit.rotation);
+    obj.scale.setScalar(fit.scale * CHARM_SHOWCASE.scale);
+    obj.position.x += CHARM_SHOWCASE.right;
+    const grounded = CHARM_SHOWCASE.grounded.includes(id);
+    if (!grounded) {
+      obj.position.y += CHARM_SHOWCASE.lift - fit.down;
+      obj.position.z -= fit.back;
+    }
+    obj.userData.bob = !grounded;
+    obj.userData.baseY = obj.position.y;
+  }
+
+  /** El overol tapa la camiseta para que los modelos no se atraviesen. */
+  _applyHides() {
+    if (this.parts.shirt) this.parts.shirt.visible = !HIDES_SHIRT.has(this.config.pants);
+  }
+
+  /** Pone en la configuracion lo que cambio en el estado compartido. Solo toca las piezas
+      que cambiaron. */
+  sync(next) {
+    const c = this.config;
+    if (next.skin !== c.skin) {
+      c.skin = next.skin;
+      this.setRoleColor('skin', _color.set(next.skin));
+    }
+    if (next.hairColor !== c.hairColor) {
+      c.hairColor = next.hairColor;
+      this.setRoleColor('hair', _color.set(next.hairColor));
+    }
+    if (next.hair !== c.hair) this.setHair(next.hair);
+    if (next.eyes !== c.eyes || next.eyeColor !== c.eyeColor) {
+      c.eyes = next.eyes;
+      c.eyeColor = next.eyeColor;
+      this._setEyes();
+    }
+    if (next.mouth !== c.mouth) {
+      c.mouth = next.mouth;
+      this._setMouth();
+    }
+    if (next.nose !== c.nose) {
+      c.nose = next.nose;
+      this._setModelPart('nose', `nariz-${next.nose}`, this.headGroup, NOSE_ORANGE);
+    }
+    for (const [slot, prefix] of [['shirt', 'ropa'], ['pants', 'ropa'], ['shoes', 'zapatos']]) {
+      if (next[slot] === c[slot]) continue;
+      c[slot] = next[slot];
+      this._setModelPart(slot, `${prefix}-${next[slot]}`, this.root);
+    }
+    if (next.accHead !== c.accHead) this._setAccessory(next.accHead);
+    if (next.companion !== c.companion) this._setCharm(next.companion);
+    this._applyHides();
+    this._collectRoles();
   }
 
   /** Clona un modelo del catalogo y prepara sus materiales (plastico + color por rol). */
@@ -258,8 +383,12 @@ export class Avatar {
   /** Ojos: tres capas pintadas sobre la malla de la cabeza
       (blanco + contorno -> iris con el color elegido -> lineas encima). */
   _setEyes() {
-    if (!this.headMesh) return;
     const n = EYE_MAPS[this.config.eyes];
+    if (!this.headMesh || !n) {
+      this._disposeEyes();
+      this._swap('eyes', null, this.headGroup);
+      return;
+    }
     const group = new Group();
     const colors = ['#FFFFFF', this.config.eyeColor, '#FFFFFF'];
     ['base', 'iris', 'lineas'].forEach((layer, i) => {
@@ -293,7 +422,16 @@ export class Avatar {
       mesh.renderOrder = 1 + i;
       group.add(mesh);
     });
+    this._disposeEyes();
     this._swap('eyes', group, this.headMesh.parent);
+  }
+
+  /** Las capas de ojos tienen texturas propias: se liberan al cambiarlas. */
+  _disposeEyes() {
+    this.parts.eyes?.traverse((o) => {
+      o.material?.map?.dispose();
+      o.material?.dispose();
+    });
   }
 
   /** Boca: el dibujo del diseno, curvado sobre la cara. */
@@ -338,10 +476,28 @@ export class Avatar {
 
   /** Animacion de reposo: respira el torso, los brazos se mecen y la cabeza se ladea. */
   update(t) {
+    const charm = this.parts.companion;
+    if (charm?.userData.bob) charm.position.y = charm.userData.baseY + Math.sin(t * 1.8) * 0.03;
     if (!this.bones) return;
     this._pose('torso', Math.sin(t * 2.1) * 0.012, 0);
     this._pose('brazoL', 0, Math.sin(t * 1.6) * 0.07);
     this._pose('brazoD', 0, -Math.sin(t * 1.6 + 0.5) * 0.07);
     this._pose('cabeza', Math.sin(t * 0.7) * 0.03, Math.sin(t * 0.9) * 0.05);
   }
+}
+
+/** Pieza suelta del catalogo (p. ej. un cabello) lista para llevarla en la mano:
+    mismo plastico y color por rol que en el personaje. */
+export function buildPart(key, config) {
+  return new Avatar(config)._model(key);
+}
+
+/** Repinta los materiales de un rol en una pieza suelta. */
+export function recolorRole(object, role, color) {
+  object.traverse((o) => {
+    if (!o.isMesh || o.material?.userData?.role !== role) return;
+    o.material.color.copy(color);
+    const shade = o.material.userData.shade;
+    if (shade < 1) o.material.color.multiplyScalar(shade);
+  });
 }

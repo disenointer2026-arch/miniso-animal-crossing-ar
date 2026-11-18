@@ -1,30 +1,36 @@
-/* Paneles espaciales de la maquina (UIKitML):
-   - Instrucciones: aparecen cuando llega el personaje; al cerrarlas empieza la
-     primera categoria.
-   - Categoria: muestra la categoria activa, sus grupos y opciones. Elegir una
-     opcion la deja seleccionada; la herramienta de la categoria la aplica. */
+/* Paneles espaciales de la fabrica (UIKitML), siempre detras de la estacion activa:
+   - Instrucciones: aparecen cuando llega el personaje a la estacion 1; al cerrarlas
+     empieza la personalizacion.
+   - Estacion: muestra la estacion activa, sus grupos y opciones. Elegir una opcion
+     la deja seleccionada (en la fase B la aplican los objetos de cada estacion).
+   Se ocultan mientras la banda lleva al personaje a otra estacion. */
 import { createSystem, RayInteractable } from '@iwsdk/core';
 import {
   CategoryPanel,
+  Factory,
+  FactoryPart,
   InstructionsPanel,
-  Machine,
-  MachinePart,
 } from '../components.js';
+import { slotPose, stationSlot } from '../core/layout.js';
 import { CATEGORIES, MAX_OPTIONS, plain } from '../data/categories.js';
 import {
+  beltMoving,
   categoryIndex,
   currentCategory,
   currentGroup,
   groupIndex,
+  instructionsSeen,
+  layout,
   phase,
   Phase,
   select,
   selection,
 } from '../state.js';
 
-/** Posicion de los paneles respecto a la maquina: detras y arriba del personaje. */
-const PANEL_POSITION = [0, 0.52, -0.2];
-const PANEL_TILT = -0.2;
+/** Respecto a la estacion: detras de la banda (+ hacia afuera) y arriba del personaje. */
+const PANEL_RADIAL = 0.3;
+const PANEL_UP = 0.42;
+const PANEL_TILT = -0.3;
 const PANEL_SCALE = 0.1;
 
 const CREAM = '#fff6e6';
@@ -33,55 +39,78 @@ const GREEN = '#8cc37a';
 const BROWN = '#5f4c45';
 
 export class PanelsSystem extends createSystem({
-  machines: { required: [Machine] },
+  factories: { required: [Factory] },
   instructions: { required: [InstructionsPanel] },
   categories: { required: [CategoryPanel] },
 }) {
   init() {
     this.cleanupFuncs.push(
-      this.queries.machines.subscribe('qualify', (machine) => {
-        this.buildInstructions(machine);
-        this.buildCategoryPanel(machine);
+      this.queries.factories.subscribe('qualify', (factory) => {
+        this.buildInstructions(factory);
+        this.buildCategoryPanel(factory);
       }),
       phase.subscribe(() => this.refreshVisibility()),
-      categoryIndex.subscribe(() => this.refreshCategory()),
+      beltMoving.subscribe(() => this.refreshVisibility()),
+      categoryIndex.subscribe(() => {
+        this.orientPanels();
+        this.refreshCategory();
+      }),
       groupIndex.subscribe(() => this.refreshCategory()),
       selection.subscribe(() => this.refreshCategory()),
     );
   }
 
-  async place(assetId, machine, tag) {
+  /** Coloca un panel detras de la estacion activa, mirando al usuario. */
+  orient(panel) {
+    const pose = slotPose(layout.peek(), stationSlot(categoryIndex.peek()), PANEL_RADIAL, PANEL_UP);
+    panel.position.set(pose.x, pose.y, pose.z);
+    panel.rotation.order = 'YXZ';
+    panel.rotation.set(PANEL_TILT, pose.rotY, 0);
+  }
+
+  orientPanels() {
+    for (const entity of this.queries.instructions.entities) {
+      if (entity.object3D) this.orient(entity.object3D);
+    }
+    for (const entity of this.queries.categories.entities) {
+      if (entity.object3D) this.orient(entity.object3D);
+    }
+  }
+
+  async place(assetId, factory, tag) {
     const panel = await this.world.assets.instantiate(assetId);
-    if (!machine.active) return null;
-    panel.position.fromArray(PANEL_POSITION);
-    panel.rotation.x = PANEL_TILT;
+    if (!factory.active) return null;
+    this.orient(panel);
     panel.scale.setScalar(PANEL_SCALE);
     panel.visible = false;
-    const entity = this.world.createTransformEntity(panel, { parent: machine });
+    const entity = this.world.createTransformEntity(panel, { parent: factory });
     entity.addComponent(RayInteractable);
-    entity.addComponent(MachinePart);
+    entity.addComponent(FactoryPart);
     entity.addComponent(tag);
     return panel;
   }
 
-  async buildInstructions(machine) {
-    const panel = await this.place('instructions-panel', machine, InstructionsPanel);
+  async buildInstructions(factory) {
+    const panel = await this.place('instructions-panel', factory, InstructionsPanel);
     if (!panel) return;
     panel.getElementById('close-button')?.addEventListener('click', () => {
-      if (phase.peek() === Phase.Instructions) phase.value = Phase.Customizing;
+      if (phase.peek() === Phase.Instructions) {
+        instructionsSeen.value = true;
+        phase.value = Phase.Customizing;
+      }
     });
     this.refreshVisibility();
   }
 
-  async buildCategoryPanel(machine) {
-    const panel = await this.place('category-panel', machine, CategoryPanel);
+  async buildCategoryPanel(factory) {
+    const panel = await this.place('category-panel', factory, CategoryPanel);
     if (!panel) return;
     const ui = {
       step: panel.getElementById('step'),
       title: panel.getElementById('title'),
       help: panel.getElementById('help'),
       chosen: panel.getElementById('chosen'),
-      tabs: [0, 1, 2].map((i) => panel.getElementById(`tab-${i}`)),
+      tabs: [0, 1, 2, 3].map((i) => panel.getElementById(`tab-${i}`)),
       chips: Array.from({ length: MAX_OPTIONS }, (_, i) => panel.getElementById(`opt-${i}`)),
     };
     panel.userData.ui = ui;
@@ -106,8 +135,9 @@ export class PanelsSystem extends createSystem({
     for (const entity of this.queries.instructions.entities) {
       if (entity.object3D) entity.object3D.visible = value === Phase.Instructions;
     }
+    const showStation = value === Phase.Customizing && !beltMoving.peek();
     for (const entity of this.queries.categories.entities) {
-      if (entity.object3D) entity.object3D.visible = value === Phase.Customizing;
+      if (entity.object3D) entity.object3D.visible = showStation;
     }
   }
 
@@ -121,7 +151,7 @@ export class PanelsSystem extends createSystem({
       const ui = entity.object3D?.userData.ui;
       if (!ui) continue;
       ui.step?.setProperties({
-        text: `PASO ${categoryIndex.peek() + 1} DE ${CATEGORIES.length}`,
+        text: `ESTACION ${categoryIndex.peek() + 1} DE ${CATEGORIES.length}`,
       });
       ui.title?.setProperties({ text: plain(category.label) });
       ui.help?.setProperties({ text: plain(category.help) });

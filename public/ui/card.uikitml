@@ -1,0 +1,44 @@
+<!-- Editor de la tarjeta Amiibo: nombre, cumpleanos y fondo. La tarjeta se ve a su lado
+     (src/checkout/card-view.js). Nombre y cumpleanos se eligen con flechas porque el
+     visor no tiene teclado de letras. -->
+<style>
+  .root { flex-direction: column; width: 500px; }
+  .content { flex-direction: column; gap: 10px; padding: 22px; }
+  .title { color: #e60012; font-size: 28px; font-weight: 700; }
+  .text { color: #e9dfcf; font-size: 15px; line-height: 20px; }
+  .label { color: #8cc37a; font-size: 14px; font-weight: 700; letter-spacing: 1.2px; }
+  .row { flex-direction: row; gap: 8px; align-items: center; }
+  .chip { padding-top: 8px; padding-bottom: 8px; padding-left: 14px; padding-right: 14px; border-radius: 14px; background-color: #fff6e6; color: #5f4c45;
+    font-size: 16px; font-weight: 700; text-align: center; cursor: pointer; border-width: 3px; border-color: #fff6e6; }
+  .value { color: #fff6e6; font-size: 19px; font-weight: 700; min-width: 120px; text-align: center; }
+  .small { color: #b9aea3; font-size: 13px; line-height: 17px; }
+  .ready { color: #f9c623; font-size: 20px; font-weight: 700; }
+  .btn { flex-grow: 1; padding-top: 12px; padding-bottom: 12px; padding-left: 18px; padding-right: 18px; border-radius: 16px; background-color: #fff6e6; color: #5f4c45;
+    font-size: 19px; font-weight: 700; text-align: center; cursor: pointer; }
+  .primary { background-color: #f9c623; }
+</style>
+<Panel class="root">
+  <div class="content">
+    <div class="title">Crea tu tarjeta Amiibo</div>
+    <div class="text">Se genero a partir de tu avatar. Ajusta sus datos y el fondo: la tarjeta cambia al instante.</div>
+    <div class="label">NOMBRE</div>
+    <div class="row"><div id="n-prev" class="chip">-</div><div id="n-name" class="value">-</div><div id="n-next" class="chip">-</div></div>
+    <div class="label">CUMPLEANOS</div>
+    <div class="row">
+      <div id="d-minus" class="chip">-</div><div id="d-day" class="value">-</div><div id="d-plus" class="chip">+</div>
+      <div id="mo-prev" class="chip">-</div><div id="mo-name" class="value">-</div><div id="mo-next" class="chip">-</div>
+    </div>
+    <div class="label">FONDO</div>
+    <div class="row">
+      <div id="th-0" class="chip">-</div><div id="th-1" class="chip">-</div><div id="th-2" class="chip">-</div>
+      <div id="th-3" class="chip">-</div><div id="th-4" class="chip">-</div>
+    </div>
+    <div class="ready">Tu tarjeta esta lista!</div>
+    <div class="row">
+      <div id="share" class="btn primary">Compartir</div>
+      <div id="finish" class="btn">Finalizar</div>
+    </div>
+    <div class="row"><div id="back" class="btn">Volver a mi avatar</div></div>
+    <div class="small">Tarjeta digital conceptual inspirada en el formato de las tarjetas Amiibo; no es un producto oficial de Nintendo.</div>
+  </div>
+</Panel>
