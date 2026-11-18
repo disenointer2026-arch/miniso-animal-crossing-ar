@@ -39,6 +39,12 @@ export const avatarConfig = signal({ ...BASE_AVATAR });
     aplica al personaje (version 3); hasta entonces solo queda seleccionado. */
 export const selection = signal({ ...BASE_AVATAR });
 
+/** Cambia lo que tiene puesto el personaje: es la fuente de verdad. AvatarSystem lo
+    refleja en el modelo, y la tarjeta y el pedido lo leen de aqui. */
+export function setAvatar(patch) {
+  avatarConfig.value = { ...avatarConfig.peek(), ...patch };
+}
+
 export function currentCategory() {
   return CATEGORIES[categoryIndex.peek()];
 }

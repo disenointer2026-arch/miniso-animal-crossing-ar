@@ -2,6 +2,7 @@
    dentro del visor ("COMENZAR") inicia el reconocimiento del piso.
    Tambien reinicia el recorrido cuando se sale de la sesion. */
 import { createSystem, VisibilityState } from '@iwsdk/core';
+import { sfx } from '../audio/sfx.js';
 import { Factory, FactoryPart } from '../components.js';
 import { phase, Phase, resetExperience } from '../state.js';
 
@@ -19,6 +20,7 @@ export class WelcomeSystem extends createSystem({
     }
 
     const onClick = () => {
+      sfx.unlock(); // el navegador exige un gesto antes de reproducir audio
       const immersive =
         this.world.visibilityState.peek() !== VisibilityState.NonImmersive;
       if (!immersive) this.world.launchXR();

@@ -9,8 +9,12 @@
    BeltSystem         el personaje sale del portal y viaja por la banda entre estaciones
    PanelsSystem       instrucciones y panel de la estacion activa
    NavigationSystem   botones anterior / siguiente de cada estacion
-   AvatarSystem       animacion de reposo del personaje */
+   AvatarSystem       animacion de reposo y refleja avatarConfig en el modelo
+   CarryableSystem    objetos agarrables: vuelven solos a su sitio al soltarlos
+   SkinStationSystem  estacion 1: latas de aerosol y pintura de la piel
+   HairStationSystem  estacion 2: maquina de cabello, colocar, retirar y descartar */
 import { World } from '@iwsdk/core';
+import * as state from './state.js';
 import projectOptions from 'virtual:iwsdk-project';
 import { AvatarSystem } from './systems/avatar-system.js';
 import { BeltSystem } from './systems/belt-system.js';
@@ -19,6 +23,9 @@ import { HintSystem } from './systems/hint-system.js';
 import { NavigationSystem } from './systems/navigation-system.js';
 import { PanelsSystem } from './systems/panels-system.js';
 import { WelcomeSystem } from './systems/welcome-system.js';
+import { CarryableSystem } from './interaction/carryable-system.js';
+import { HairStationSystem } from './stations/hair/hair-station-system.js';
+import { SkinStationSystem } from './stations/skin/skin-station-system.js';
 
 World.create(document.getElementById('scene-container'), projectOptions).then(
   (world) => {
@@ -29,5 +36,11 @@ World.create(document.getElementById('scene-container'), projectOptions).then(
     world.registerSystem(PanelsSystem, { priority: 30 });
     world.registerSystem(NavigationSystem, { priority: 12 });
     world.registerSystem(AvatarSystem, { priority: 20 });
+    world.registerSystem(CarryableSystem, { priority: 14 });
+    world.registerSystem(SkinStationSystem, { priority: 16 });
+    world.registerSystem(HairStationSystem, { priority: 16 });
   },
 );
+
+// Solo en desarrollo: el estado compartido queda a mano para las pruebas del emulador.
+if (import.meta.env.DEV) window.__miniso = state;

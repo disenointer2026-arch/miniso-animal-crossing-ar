@@ -60,6 +60,8 @@ function plasticTextures() {
   return plasticMaps;
 }
 
+const _color = new Color();
+
 function roleColor(hex, shade = 1) {
   const c = new Color(hex);
   if (shade < 1) c.multiplyScalar(shade);
@@ -128,6 +130,7 @@ export class Avatar {
     this.headGroup.position.set(0, MODEL.headY, 0);
     this.root.add(this.headGroup);
     this.parts = {};
+    this.roleMaterials = { skin: [], hair: [] };
     this.bones = null;
     this.rest = {};
     this.headMesh = null;
@@ -144,7 +147,49 @@ export class Avatar {
     this._setModelPart('shirt', `ropa-${this.config.shirt}`, this.root);
     this._setModelPart('pants', `ropa-${this.config.pants}`, this.root);
     this._setModelPart('shoes', `zapatos-${this.config.shoes}`, this.root);
+    this._collectRoles();
     return this;
+  }
+
+  /** Guarda los materiales de cada rol (piel, cabello) para repintarlos sin recorrer el arbol. */
+  _collectRoles() {
+    this.roleMaterials.skin.length = 0;
+    this.roleMaterials.hair.length = 0;
+    this.root.traverse((o) => {
+      const role = o.isMesh && o.material?.userData?.role;
+      if (role && this.roleMaterials[role]) this.roleMaterials[role].push(o.material);
+    });
+  }
+
+  /** Pinta todas las piezas de un rol con un Color. No cambia la configuracion
+      ni reserva memoria: sirve para mezclar el color mientras se rocia. */
+  setRoleColor(role, color) {
+    for (const material of this.roleMaterials[role]) {
+      material.color.copy(color);
+      const shade = material.userData.shade;
+      if (shade < 1) material.color.multiplyScalar(shade);
+    }
+  }
+
+  /** Cambia el estilo del cabello puesto ('none' lo retira). */
+  setHair(id) {
+    this.config.hair = id;
+    this._setModelPart('hair', `cabello-${id}`, this.headGroup);
+    this._collectRoles();
+  }
+
+  /** Pone en la configuracion lo que cambio en el estado compartido. */
+  sync(next) {
+    if (next.skin !== this.config.skin) {
+      this.config.skin = next.skin;
+      this.setRoleColor('skin', _color.set(next.skin));
+    }
+    const hairChanged = next.hair !== this.config.hair;
+    if (next.hairColor !== this.config.hairColor) {
+      this.config.hairColor = next.hairColor;
+      this.setRoleColor('hair', _color.set(next.hairColor));
+    }
+    if (hairChanged) this.setHair(next.hair);
   }
 
   /** Clona un modelo del catalogo y prepara sus materiales (plastico + color por rol). */
@@ -347,4 +392,20 @@ export class Avatar {
     this._pose('brazoD', 0, -Math.sin(t * 1.6 + 0.5) * 0.07);
     this._pose('cabeza', Math.sin(t * 0.7) * 0.03, Math.sin(t * 0.9) * 0.05);
   }
+}
+
+/** Pieza suelta del catalogo (p. ej. un cabello) lista para llevarla en la mano:
+    mismo plastico y color por rol que en el personaje. */
+export function buildPart(key, config) {
+  return new Avatar(config)._model(key);
+}
+
+/** Repinta los materiales de un rol en una pieza suelta. */
+export function recolorRole(object, role, color) {
+  object.traverse((o) => {
+    if (!o.isMesh || o.material?.userData?.role !== role) return;
+    o.material.color.copy(color);
+    const shade = o.material.userData.shade;
+    if (shade < 1) o.material.color.multiplyScalar(shade);
+  });
 }

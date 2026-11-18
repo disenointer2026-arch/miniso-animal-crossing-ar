@@ -61,6 +61,20 @@ export function arcPoint(layout, theta, radial = 0, up = 0, out = { x: 0, y: 0, 
   return out;
 }
 
+/** Punto de una estacion en coordenadas de la fabrica.
+    tangent: a lo largo de la banda (+ = derecha del usuario); radial: + hacia afuera;
+    up: sobre la banda. rotY hace que +Z del objeto mire al usuario. */
+export function stationPoint(layout, station, tangent = 0, radial = 0, up = 0) {
+  const pose = slotPose(layout, stationSlot(station), radial, up);
+  return {
+    x: pose.x + Math.cos(pose.theta) * tangent,
+    y: pose.y,
+    z: pose.z + Math.sin(pose.theta) * tangent,
+    rotY: pose.rotY,
+    theta: pose.theta,
+  };
+}
+
 /** Marco de un slot: posicion + giro en Y para mirar al centro. */
 export function slotPose(layout, slot, radial = 0, up = 0) {
   const theta = slotAngle(slot);

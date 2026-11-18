@@ -32,7 +32,13 @@ export default defineAssets({
   // Personaje de la pagina original (copias en public/models/avatar)
   'avatar-cuerpo': glb('avatar/cuerpo', 'Cuerpo'),
   'avatar-cabeza': glb('avatar/cabeza', 'Cabeza'),
-  'cabello-corto': glb('avatar/cabello/corto', 'Cabello corto'),
+  // Estilos de cabello de la estacion 2 (ids = opciones de src/data/categories.js)
+  ...Object.fromEntries(
+    ['corto', 'flequillo', 'picos', 'ondas', 'afro', 'colitas', 'largo'].map((id) => [
+      `cabello-${id}`,
+      glb(`avatar/cabello/${id}`, `Cabello ${id}`),
+    ]),
+  ),
   'nariz-triangle': glb('avatar/nariz/triangular', 'Nariz triangular'),
   'ropa-camisa': glb('avatar/ropa/camisa', 'Camiseta manzana'),
   'ropa-short': glb('avatar/ropa/short', 'Short'),
