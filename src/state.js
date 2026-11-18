@@ -29,6 +29,12 @@ export const layout = signal({ ...DEFAULT_LAYOUT });
 /** Pide a la banda que lleve al personaje a un slot: { slot }. Un objeto nuevo en cada pedido. */
 export const beltRequest = signal(null);
 
+/** Las instrucciones ya se mostraron (al recalibrar no se repiten). */
+export const instructionsSeen = signal(false);
+
+/** Ajuste fino de la altura de la fabrica sobre la calibrada, en metros. */
+export const heightOffset = signal(0);
+
 /** La banda esta llevando al personaje de una estacion a otra. */
 export const beltMoving = signal(false);
 
@@ -85,5 +91,7 @@ export function resetExperience() {
   selection.value = { ...BASE_AVATAR };
   layout.value = { ...DEFAULT_LAYOUT };
   beltMoving.value = false;
+  instructionsSeen.value = false;
+  heightOffset.value = 0;
   phase.value = Phase.Welcome;
 }

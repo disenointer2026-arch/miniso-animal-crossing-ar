@@ -15,7 +15,8 @@
    HairStationSystem  estacion 2: maquina de cabello, colocar, retirar y descartar
    CatalogStationSystem estaciones 3 a 5: libro de stickers, armario y caja de charms
    FinaleSystem       cierre: caja de regalo, viaje al frente y figura final
-   CheckoutSystem     que desea hacer, pedido simulado, tarjeta Amiibo y cierre */
+   CheckoutSystem     que desea hacer, pedido simulado, tarjeta Amiibo y cierre
+   SettingsSystem     ajustes: altura, volumenes y recalibrar */
 import { World } from '@iwsdk/core';
 import * as state from './state.js';
 import projectOptions from 'virtual:iwsdk-project';
@@ -25,6 +26,7 @@ import { CalibrationSystem } from './systems/calibration-system.js';
 import { HintSystem } from './systems/hint-system.js';
 import { NavigationSystem } from './systems/navigation-system.js';
 import { PanelsSystem } from './systems/panels-system.js';
+import { SettingsSystem } from './systems/settings-system.js';
 import { WelcomeSystem } from './systems/welcome-system.js';
 import { CheckoutSystem } from './checkout/checkout-system.js';
 import { FinaleSystem } from './finale/finale-system.js';
@@ -48,6 +50,7 @@ World.create(document.getElementById('scene-container'), projectOptions).then(
     world.registerSystem(CatalogStationSystem, { priority: 16 });
     world.registerSystem(FinaleSystem, { priority: 18 });
     world.registerSystem(CheckoutSystem, { priority: 32 });
+    world.registerSystem(SettingsSystem, { priority: 34 });
   },
 );
 

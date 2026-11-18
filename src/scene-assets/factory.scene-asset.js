@@ -42,8 +42,14 @@ const COLORS = {
 /** Un color amable por estacion: piel, cabello, rostro, ropa y charms. */
 export const STATION_COLORS = [0xf6d365, 0x8cc37a, 0xf89fad, 0x8fb4e3, 0xf5a25d];
 
-const matte = (color, extra = {}) =>
-  new MeshStandardMaterial({ color, roughness: 0.6, metalness: 0, ...extra });
+/** Materiales compartidos por color (menos materiales que compilar y cambiar en cada fotograma).
+    Con "extra" o para algo que se anima (lamparas, banda) se crea uno propio. */
+const shared = new Map();
+const matte = (color, extra) => {
+  if (extra) return new MeshStandardMaterial({ color, roughness: 0.6, metalness: 0, ...extra });
+  if (!shared.has(color)) shared.set(color, new MeshStandardMaterial({ color, roughness: 0.6, metalness: 0 }));
+  return shared.get(color);
+};
 
 function mesh(name, geometry, material, x = 0, y = 0, z = 0) {
   const m = new Mesh(geometry, material);
@@ -95,7 +101,7 @@ function addStation(root, layout, station, lights) {
 
   // Lampara junto al letrero: la enciende el sistema de la banda
   const lamp = slotGroup(layout, `Station${station + 1}/Lamp`, slot, BODY.outer - 0.012, 0);
-  const lampMesh = mesh('Bulb', new CylinderGeometry(0.014, 0.014, 0.01, 16), matte(COLORS.lampOff), 0.14, 0.005, 0);
+  const lampMesh = mesh('Bulb', new CylinderGeometry(0.014, 0.014, 0.01, 16), new MeshStandardMaterial({ color: COLORS.lampOff, roughness: 0.6 }), 0.14, 0.005, 0);
   lamp.add(lampMesh);
   root.add(lamp);
   lights.push(lampMesh);

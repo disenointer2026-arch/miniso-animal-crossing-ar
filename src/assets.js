@@ -92,4 +92,5 @@ export default defineAssets({
   'order-panel': uikitml('order.uikitml', 'Pedido'),
   'keypad-panel': uikitml('keypad.uikitml', 'Teclado numerico'),
   'card-panel': uikitml('card.uikitml', 'Editor de tarjeta'),
+  'settings-panel': uikitml('settings.uikitml', 'Ajustes'),
 });

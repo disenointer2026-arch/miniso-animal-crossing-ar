@@ -23,7 +23,7 @@ npm run build    # versión para publicar, en dist/
 Pruebas en el visor: publicar (GitHub Actions lo hace al fusionar a `main`), abrir la URL en el
 navegador de la Quest, pulsar **Entrar en RA** y aceptar los permisos de espacio.
 
-## Estado: versión 3, fases A a D (de la calibración a la tarjeta)
+## Estado: versión 3 completa (fases A a E)
 
 | Hecho | Dónde |
 |---|---|
@@ -67,6 +67,13 @@ para encontrarlo.
 
 La tarjeta es un coleccionable digital conceptual inspirado en el formato de las tarjetas Amiibo; no es un producto oficial de Nintendo.
 
+**Fase E (ajustes y cierre del prototipo).**
+
+- **Música de fondo** en bucle (`public/audio/ambiente.mp3`, de la web original, solo uso académico) y efectos sintetizados, con **volúmenes independientes**.
+- **Panel de ajustes** que sigue la mirada abajo a la izquierda mientras se personaliza: altura de la fábrica (±2 cm por pulsación, hasta ±15 cm), volumen de música y de efectos, y **Recalibrar con la mano** (se vuelve a medir; la fábrica se rehace y el personaje conserva todo lo elegido y regresa a su estación). Está en `src/systems/settings-system.js`.
+- Materiales de la fábrica compartidos por color.
+- **Guía de pruebas** con lista de verificación y plan de evidencias en `docs/PRUEBAS.md`.
+
 - **Objetos agarrables** (`src/interaction/carryable-system.js`): si se sueltan lejos de todo, vuelven solos a su sitio, así que nunca se pierden.
 - **Sonido** (`src/audio/sfx.js`): efectos sintetizados con Web Audio, sin archivos ni derechos de autor. Dos buses de volumen (efectos y música). Se desbloquea al pulsar «Comenzar».
 - **Estado único:** `avatarConfig` (en `src/state.js`) es la fuente de verdad; `AvatarSystem` lo refleja en el modelo.
@@ -101,12 +108,14 @@ Desactivados a propósito: física (Havok) y detección de mallas, para cuidar e
 
 ### Pendiente
 
-- **E:** audio (efectos sintetizados con Web Audio), ajuste fino de altura y distancia, optimización, pruebas en el visor.
+- **Prueba en el Quest 3** con la lista de `docs/PRUEBAS.md`, y las evidencias en primera y tercera persona.
+- Reemplazar los modelos placeholder de la fábrica y los muebles por los finales, y la música por una pista libre de derechos.
+- Medir los fotogramas por segundo en el visor y optimizar si hace falta (ver el apartado de rendimiento de la guía).
 
 ### Limitaciones conocidas
 
 - La fuente de los paneles no incluye tildes ni «¡»: los paneles van sin tildes (los botones 3D sí las muestran).
-- La calibración se hace una vez por sesión; no hay aún un ajuste fino posterior.
+- El ajuste fino cambia la altura; la distancia se corrige recalibrando con la mano.
 - Probado solo en el emulador IWER (sin GPU, a pocos fotogramas por segundo); falta la prueba en el Quest 3.
   En el emulador los clics de rayo sobre botones son irregulares; los gestos de agarrar, rociar,
   soltar y tocar con el dedo se verificaron con manos emuladas. Los sonidos no se pudieron escuchar (sin audio en el contenedor).

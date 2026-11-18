@@ -22,7 +22,7 @@ import { LIMITS, BODY, SLOT, clamp, slotAngle } from '../core/layout.js';
 import { Factory } from '../components.js';
 import { createFactory } from '../scene-assets/factory.scene-asset.js';
 import { arcStrip } from '../scene-assets/lib/arc-geometry.js';
-import { hint, layout as layoutState, phase, Phase } from '../state.js';
+import { heightOffset, hint, layout as layoutState, phase, Phase } from '../state.js';
 
 const SPACE_TIMEOUT = 6; // segundos sin reconocer piso antes de permitir seguir
 const PINCH_GUARD = 0.7; // el pellizco que pulso "Comenzar" no cuenta
@@ -212,6 +212,7 @@ export class CalibrationSystem extends createSystem({
     factory.position.set(values.x, values.floorY, values.z);
     factory.rotation.y = values.yaw;
     layoutState.value = values;
+    heightOffset.value = 0;
     const entity = this.world.createTransformEntity(factory);
     entity.addComponent(Factory);
     entity.addComponent(XRAnchor);

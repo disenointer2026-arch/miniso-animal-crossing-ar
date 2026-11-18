@@ -7,7 +7,17 @@ import { Avatar } from '../avatar/avatar.js';
 import { AvatarFigure, Factory, FactoryPart } from '../components.js';
 import { SLOT, arcPoint, slotAngle, stationSlot } from '../core/layout.js';
 import { MODEL } from '../data/avatar-defaults.js';
-import { avatarConfig, beltMoving, beltRequest, categoryIndex, hint, layout, phase, Phase } from '../state.js';
+import {
+  avatarConfig,
+  beltMoving,
+  beltRequest,
+  categoryIndex,
+  hint,
+  instructionsSeen,
+  layout,
+  phase,
+  Phase,
+} from '../state.js';
 
 /** Altura del personaje sobre la banda, en metros. */
 export const AVATAR_HEIGHT = 0.25;
@@ -62,7 +72,7 @@ export class BeltSystem extends createSystem({
     entity.addComponent(AvatarFigure, {
       angle: start,
       from: start,
-      to: slotAngle(stationSlot(0)),
+      to: slotAngle(stationSlot(categoryIndex.peek())), // al recalibrar vuelve a la estacion donde estaba
       duration: ENTRANCE_SECONDS,
       moving: true,
       entering: true,
@@ -157,7 +167,7 @@ export class BeltSystem extends createSystem({
     beltMoving.value = false;
     if (phase.peek() === Phase.Arriving) {
       hint.value = '';
-      phase.value = Phase.Instructions;
+      phase.value = instructionsSeen.peek() ? Phase.Customizing : Phase.Instructions;
     }
   }
 }

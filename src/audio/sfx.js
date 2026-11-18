@@ -7,6 +7,8 @@ let ctx = null;
 let noise = null;
 const bus = { sfx: null, music: null };
 let spray = null;
+let music = null;
+const volume = { sfx: 0.7, music: 0.3 };
 
 function ensure() {
   if (!ctx) {
@@ -15,8 +17,8 @@ function ensure() {
     ctx = new Context();
     bus.sfx = ctx.createGain();
     bus.music = ctx.createGain();
-    bus.sfx.gain.value = 0.7;
-    bus.music.gain.value = 0.4;
+    bus.sfx.gain.value = volume.sfx;
+    bus.music.gain.value = volume.music;
     bus.sfx.connect(ctx.destination);
     bus.music.connect(ctx.destination);
     // Un segundo de ruido blanco, reutilizado por el aerosol y la maquina
@@ -74,8 +76,23 @@ function burst(freq, seconds, gain, q = 1) {
 export const sfx = {
   unlock: ensure,
   setVolume(which, value) {
-    ensure();
-    if (bus[which]) bus[which].gain.value = Math.min(Math.max(value, 0), 1);
+    volume[which] = Math.min(Math.max(value, 0), 1);
+    if (bus[which]) bus[which].gain.value = volume[which];
+  },
+  getVolume: (which) => volume[which],
+  /** Musica de fondo en bucle (pista de la web original, solo uso academico). Empieza con un
+      gesto del usuario y se pausa cuando la pagina deja de verse. */
+  playMusic() {
+    const c = ensure();
+    if (!c || music) return;
+    music = new Audio(`${import.meta.env.BASE_URL}audio/ambiente.mp3`);
+    music.loop = true;
+    c.createMediaElementSource(music).connect(bus.music);
+    music.play().catch(() => {});
+    document.addEventListener('visibilitychange', () => {
+      if (document.hidden) music.pause();
+      else music.play().catch(() => {});
+    });
   },
   /** Boton pulsado / opcion elegida */
   select: () => notes([660, 880], { step: 0.05, dur: 0.09 }),

@@ -19,6 +19,7 @@ import {
   currentCategory,
   currentGroup,
   groupIndex,
+  instructionsSeen,
   layout,
   phase,
   Phase,
@@ -93,7 +94,10 @@ export class PanelsSystem extends createSystem({
     const panel = await this.place('instructions-panel', factory, InstructionsPanel);
     if (!panel) return;
     panel.getElementById('close-button')?.addEventListener('click', () => {
-      if (phase.peek() === Phase.Instructions) phase.value = Phase.Customizing;
+      if (phase.peek() === Phase.Instructions) {
+        instructionsSeen.value = true;
+        phase.value = Phase.Customizing;
+      }
     });
     this.refreshVisibility();
   }

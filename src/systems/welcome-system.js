@@ -21,6 +21,7 @@ export class WelcomeSystem extends createSystem({
 
     const onClick = () => {
       sfx.unlock(); // el navegador exige un gesto antes de reproducir audio
+      sfx.playMusic();
       const immersive =
         this.world.visibilityState.peek() !== VisibilityState.NonImmersive;
       if (!immersive) this.world.launchXR();
