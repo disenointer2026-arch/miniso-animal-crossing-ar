@@ -19,15 +19,15 @@ import {
 } from '@iwsdk/core';
 import { sfx } from '../../audio/sfx.js';
 import { AvatarFigure, Carryable, Factory, FactoryPart, SprayCan } from '../../components.js';
-import { stationPoint } from '../../core/layout.js';
-import { placeAtStation } from '../../scene-assets/lib/frame.js';
+import { modelFrame } from '../../core/layout.js';
+import { ANCHORS } from '../../factory/anchors.js';
+import { placeAtAnchor } from '../../scene-assets/lib/frame.js';
 import { avatarConfig, beltMoving, categoryIndex, layout, phase, Phase, selection, setAvatar } from '../../state.js';
 import { AVATAR_HEIGHT } from '../../systems/belt-system.js';
-import { CAN, CAN_NOZZLE, createDispenser, createSprayCan } from './skin-props.scene-asset.js';
+import { CAN, CAN_NOZZLE, createSprayCan, createTray } from './skin-props.scene-asset.js';
 
 const STATION = 0;
-const DISPENSER = { tangent: -0.14, radial: 0.21 };
-const HOME = { tangent: -0.14, radial: 0.145, up: 0.006 + CAN.height / 2 };
+const HOME_UP = 0.008 + CAN.height / 2; // la lata descansa sobre la bandeja
 const DROP_HEIGHT = 0.2;
 const FALL_SECONDS = 0.5;
 const SPRAY_RANGE = 0.3; // metros de la boquilla al personaje
@@ -105,9 +105,9 @@ export class SkinStationSystem extends createSystem({
 
   build(factory) {
     this.factory = factory;
-    const dispenser = createDispenser();
-    placeAtStation(dispenser, layout.peek(), STATION, DISPENSER.tangent, DISPENSER.radial);
-    const entity = this.world.createTransformEntity(dispenser, { parent: factory });
+    const tray = createTray();
+    placeAtAnchor(tray, layout.peek(), ANCHORS.skinTray);
+    const entity = this.world.createTransformEntity(tray, { parent: factory });
     entity.addComponent(FactoryPart);
   }
 
@@ -119,7 +119,7 @@ export class SkinStationSystem extends createSystem({
       entity.dispose();
     }
     const l = layout.peek();
-    const home = stationPoint(l, STATION, HOME.tangent, HOME.radial, HOME.up);
+    const home = modelFrame(l, ANCHORS.skinTray, 0, 0, HOME_UP);
     const can = createSprayCan(hex);
     can.position.set(home.x, home.y + DROP_HEIGHT, home.z);
     can.rotation.y = home.rotY;

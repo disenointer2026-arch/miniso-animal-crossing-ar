@@ -1,11 +1,11 @@
-/* Ayuda para colocar objetos de una estacion con las mismas coordenadas que
-   src/core/layout.js: tangent (a lo largo de la banda), radial (+ hacia afuera) y
-   up (sobre la banda). El objeto queda mirando al usuario (+Z). */
-import { stationPoint } from '../../core/layout.js';
+/* Ayuda para colocar objetos con las mismas coordenadas que src/core/layout.js:
+   tangent (a la derecha mirando hacia afuera), radial (+ hacia afuera) y up (arriba), respecto a
+   un punto del modelo [x, y, z]. El objeto queda mirando al usuario (+Z). */
+import { modelFrame } from '../../core/layout.js';
 
-/** Coloca `object` en el punto de la estacion y devuelve ese punto. */
-export function placeAtStation(object, layout, station, tangent, radial, up = 0) {
-  const p = stationPoint(layout, station, tangent, radial, up);
+/** Coloca `object` junto al punto del modelo y devuelve el marco. */
+export function placeAtAnchor(object, layout, anchor, tangent = 0, radial = 0, up = 0) {
+  const p = modelFrame(layout, anchor, tangent, radial, up);
   object.position.set(p.x, p.y, p.z);
   object.rotation.y = p.rotY;
   return p;

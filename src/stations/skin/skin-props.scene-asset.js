@@ -1,5 +1,5 @@
-/* Objetos de la estacion 1 (color de piel): dispensador y lata de aerosol.
-   Modelos PLACEHOLDER procedurales. Unidades en metros, +Z mira al usuario. */
+/* Objetos de la estacion 1 (color de piel) que no vienen en el modelo de la fabrica: la lata de
+   aerosol y su bandeja (los dispensadores son los del modelo). Unidades en metros, +Z mira al usuario. */
 import {
   BoxGeometry,
   CylinderGeometry,
@@ -47,17 +47,12 @@ export function createSprayCan(hex) {
   return can;
 }
 
-/** Dispensador: tolva verde, cuerpo crema y una rampa amarilla por la que caen las latas.
-    Origen: centro de la base. La rampa mira a +Z. */
-export function createDispenser() {
+/** Bandeja donde caen las latas, junto a los dispensadores del modelo: un plato crema con borde
+    amarillo. Origen: centro de la base. */
+export function createTray() {
   const group = new Group();
-  group.name = 'SkinDispenser';
-  group.add(part('Body', new BoxGeometry(0.11, 0.2, 0.07), cream, 0, 0.1, 0));
-  group.add(part('Hopper', new BoxGeometry(0.12, 0.03, 0.08), leaf, 0, 0.215, 0));
-  group.add(part('Ramp', new BoxGeometry(0.07, 0.012, 0.05), yellow, 0, 0.012, 0.055));
-  group.add(part('Slot', new BoxGeometry(0.08, 0.05, 0.006), dark, 0, 0.1, 0.036));
-  for (let i = 0; i < 3; i++) {
-    group.add(part(`Can${i}`, new CylinderGeometry(0.012, 0.012, 0.04, 12), red, (i - 1) * 0.03, 0.16, 0.037));
-  }
+  group.name = 'SkinTray';
+  group.add(part('Plate', new CylinderGeometry(0.055, 0.055, 0.008, 28), cream, 0, 0.004, 0));
+  group.add(part('Rim', new CylinderGeometry(0.058, 0.058, 0.004, 28), yellow, 0, 0.002, 0));
   return group;
 }

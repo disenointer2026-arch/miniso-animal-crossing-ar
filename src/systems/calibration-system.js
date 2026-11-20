@@ -8,7 +8,9 @@
                      alcance desde la cabeza; no se supone ninguna estatura.
    Al confirmar se crea la fabrica (anclada con XRAnchor) centrada en el usuario. */
 import {
+  BufferGeometry,
   DoubleSide,
+  Float32BufferAttribute,
   Group,
   Mesh,
   MeshBasicMaterial,
@@ -18,17 +20,39 @@ import {
   XRPlane,
   createSystem,
 } from '@iwsdk/core';
-import { LIMITS, BODY, SLOT, clamp, slotAngle } from '../core/layout.js';
+import { DEFAULT_LAYOUT, LIMITS, MODEL, clamp, modelPoint, modelScale } from '../core/layout.js';
 import { Factory } from '../components.js';
-import { createFactory } from '../scene-assets/factory.scene-asset.js';
-import { arcStrip } from '../scene-assets/lib/arc-geometry.js';
+import { createFactory } from '../factory/factory-model.js';
 import { heightOffset, hint, layout as layoutState, phase, Phase } from '../state.js';
 
 const SPACE_TIMEOUT = 6; // segundos sin reconocer piso antes de permitir seguir
 const PINCH_GUARD = 0.7; // el pellizco que pulso "Comenzar" no cuenta
 const REACH_MARGIN = 0.08; // la banda queda un poco mas alla de la mano en reposo
 const OBSTACLE_RADIUS = 1.0;
-const PREVIEW_RADIUS = 0.55;
+const PREVIEW_WIDTH = 0.09; // ancho de la cinta que muestra el recorrido de la banda
+
+/** Cinta plana (cara hacia arriba) a lo largo del recorrido de la banda, en metros locales. */
+function pathRibbon(width) {
+  const points = MODEL.path.map(([x, y]) => modelPoint(DEFAULT_LAYOUT, x, y, MODEL.beltTop));
+  const position = [];
+  const index = [];
+  points.forEach((p, i) => {
+    const a = points[Math.max(i - 1, 0)];
+    const b = points[Math.min(i + 1, points.length - 1)];
+    const length = Math.hypot(b.x - a.x, b.z - a.z) || 1;
+    const nx = (-(b.z - a.z) / length) * (width / 2); // normal en el plano
+    const nz = ((b.x - a.x) / length) * (width / 2);
+    position.push(p.x - nx, 0, p.z - nz, p.x + nx, 0, p.z + nz);
+    if (i > 0) {
+      const k = (i - 1) * 2;
+      index.push(k, k + 1, k + 2, k + 1, k + 3, k + 2);
+    }
+  });
+  const geometry = new BufferGeometry();
+  geometry.setAttribute('position', new Float32BufferAttribute(position, 3));
+  geometry.setIndex(index);
+  return geometry;
+}
 
 const HINTS = {
   searching: 'Mira a tu alrededor para que el visor reconozca el piso',
@@ -75,26 +99,13 @@ export class CalibrationSystem extends createSystem({
     if (this.preview) return;
     const group = new Group();
     group.name = 'calibration-preview';
-    const make = (r0, r1, color, opacity) =>
+    const make = (width, color, opacity) =>
       new Mesh(
-        arcStrip(
-          r0,
-          r1,
-          slotAngle(SLOT.portal) - 0.3,
-          slotAngle(SLOT.giftBox) + 0.3,
-          0,
-        ),
-        new MeshBasicMaterial({
-          color,
-          transparent: true,
-          opacity,
-          side: DoubleSide,
-          depthWrite: false,
-        }),
+        pathRibbon(width),
+        new MeshBasicMaterial({ color, transparent: true, opacity, side: DoubleSide, depthWrite: false }),
       );
-    const p = PREVIEW_RADIUS;
-    group.add(make(p - BODY.inner, p + BODY.outer, 0xfff6e6, 0.35));
-    group.add(make(p - BODY.beltHalf, p + BODY.beltHalf, 0x8cc37a, 0.7));
+    group.add(make(PREVIEW_WIDTH * 2.2, 0xfff6e6, 0.35));
+    group.add(make(PREVIEW_WIDTH, 0x8cc37a, 0.75));
     this.preview = this.world.createTransformEntity(group);
     this.setHint(HINTS.calibrate);
   }
@@ -172,9 +183,10 @@ export class CalibrationSystem extends createSystem({
     const { height, beltRadius } = this;
     const preview = this.preview?.object3D;
     if (preview) {
-      const s = beltRadius / PREVIEW_RADIUS;
+      // El tamano sigue al alcance de la mano, igual que la fabrica final
+      const s = modelScale({ beltRadius }) / modelScale(DEFAULT_LAYOUT);
       preview.position.set(this.head.x, this.floorY + height, this.head.z);
-      preview.rotation.y = this.yaw;
+      preview.rotation.y = this.yaw + MODEL.yaw;
       preview.scale.set(s, 1, s);
     }
     if (pinch) this.confirm(height, beltRadius);
@@ -210,7 +222,7 @@ export class CalibrationSystem extends createSystem({
     };
     const factory = createFactory(values);
     factory.position.set(values.x, values.floorY, values.z);
-    factory.rotation.y = values.yaw;
+    factory.rotation.y = values.yaw + MODEL.yaw;
     layoutState.value = values;
     heightOffset.value = 0;
     const entity = this.world.createTransformEntity(factory);

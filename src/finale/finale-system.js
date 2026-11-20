@@ -21,7 +21,7 @@ import {
 } from '@iwsdk/core';
 import { sfx } from '../audio/sfx.js';
 import { AvatarFigure, Factory, FactoryPart } from '../components.js';
-import { SLOT, arcPoint, slotAngle, slotPoint, stationSlot } from '../core/layout.js';
+import { MODEL as FACTORY_MODEL, SLOT, modelPoint, pathPoint, slotPose, slotS, stationSlot } from '../core/layout.js';
 import { beltMoving, beltRequest, layout, phase, Phase } from '../state.js';
 import { captureFrame, frameYaw, framePoint } from './frame.js';
 import { GIFT, createGiftBox } from './gift-box.scene-asset.js';
@@ -30,7 +30,6 @@ import { GIFT, createGiftBox } from './gift-box.scene-asset.js';
 export const showcase = signal({ right: -0.28, forward: 0.65, scale: 1, visible: true });
 
 const T = { enter: 1.3, close: 0.7, fly: 2.0, reveal: 1.6 };
-const BOX_AT = 0.17; // metros de la caja mas alla del centro de la base de regalo
 const BOX_SCALE = 1.4;
 const AVATAR_SCALE = 1.3;
 const SHOWCASE_DROP = -0.45; // altura de la caja respecto a la cabeza
@@ -141,15 +140,18 @@ export class FinaleSystem extends createSystem({
   begin() {
     const factory = this.factory;
     if (!factory || !this.avatarEntity?.object3D) return;
-    const p = slotPoint(layout.peek(), SLOT.giftBox, BOX_AT, 0, 0.012);
+    // La caja espera al final de la banda (centro de la base de regalo del modelo), mirando al usuario
+    const [gx, gy] = FACTORY_MODEL.giftBox;
+    const p = modelPoint(layout.peek(), gx, gy, FACTORY_MODEL.beltTop);
+    const rotY = Math.atan2(-p.x, -p.z);
     const gift = createGiftBox();
-    gift.position.set(p.x, p.y, p.z);
-    gift.rotation.y = p.rotY;
+    gift.position.set(p.x, p.y + 0.012, p.z);
+    gift.rotation.y = rotY;
     gift.userData.parts.lid.rotation.x = GIFT.openAngle;
     this.box = this.world.createTransformEntity(gift, { parent: factory });
     this.box.addComponent(FactoryPart);
-    this.boxStart.set(p.x, p.y, p.z);
-    this.boxYaw = p.rotY;
+    this.boxStart.set(p.x, p.y + 0.012, p.z);
+    this.boxYaw = rotY;
     this.go('travel');
   }
 
@@ -196,22 +198,20 @@ export class FinaleSystem extends createSystem({
     this.t += delta;
     const base = figure.userData.baseScale;
     const lid = gift.userData.parts.lid;
-    const theta = slotAngle(SLOT.giftBox);
 
     if (this.stage === 'travel') {
       if (!beltMoving.peek() && this.t > 0.3) this.go('enter');
     } else if (this.stage === 'enter') {
       const k = Math.min(this.t / T.enter, 1);
       const e = easeInOut(k);
-      arcPoint(layout.peek(), theta, 0, 0.003, this.point);
-      const along = BOX_AT * e;
+      pathPoint(layout.peek(), slotS(SLOT.giftBox), 0.003, this.point);
       figure.position.set(
-        this.point.x + Math.cos(theta) * along,
+        this.point.x + (this.boxStart.x - this.point.x) * e,
         this.point.y + 0.017 * e + 0.16 * Math.sin(Math.PI * k),
-        this.point.z + Math.sin(theta) * along,
+        this.point.z + (this.boxStart.z - this.point.z) * e,
       );
       figure.scale.setScalar(base * (1 - 0.55 * e));
-      figure.rotation.y = -theta + Math.PI / 2;
+      figure.rotation.y = Math.atan2(this.boxStart.x - this.point.x, this.boxStart.z - this.point.z);
       if (k >= 1) this.go('close');
     } else if (this.stage === 'close') {
       const k = Math.min(this.t / T.close, 1);
@@ -280,10 +280,10 @@ export class FinaleSystem extends createSystem({
     this.hidden.length = 0;
     this.stage = 'none';
     if (!figure) return;
-    arcPoint(layout.peek(), slotAngle(SLOT.giftBox), 0, 0.003, this.point);
-    figure.position.copy(this.point);
+    pathPoint(layout.peek(), slotS(SLOT.giftBox), 0.003, this.point);
+    figure.position.set(this.point.x, this.point.y, this.point.z);
     figure.scale.setScalar(figure.userData.baseScale);
-    figure.rotation.y = -slotAngle(SLOT.giftBox);
+    figure.rotation.y = slotPose(layout.peek(), SLOT.giftBox).rotY;
     figure.visible = true;
     beltRequest.value = { slot: stationSlot(4) };
   }

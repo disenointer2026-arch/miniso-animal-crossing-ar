@@ -1,5 +1,5 @@
-/* Muebles y objetos de las estaciones 3 a 5. Modelos PLACEHOLDER procedurales.
-   Unidades en metros, +Z mira al usuario. Cada mueble tiene su origen en el centro de su base. */
+/* Objetos de las estaciones 3 a 5 que no vienen en el modelo de la fabrica: el sticker y el libro de
+   stickers con sus flechas (el armario y el estante son del modelo). Unidades en metros, +Z mira al usuario. */
 import {
   AssetManager,
   BoxGeometry,
@@ -64,35 +64,5 @@ export function createPageArrow(direction) {
   const arrow = part('Arrow', new ConeGeometry(0.014, 0.03, 4), matte(0xfff6e6), 0, 0.03, 0);
   arrow.rotation.z = -direction * Math.PI / 2;
   group.add(arrow);
-  return group;
-}
-
-/** Armario abierto: fondo, laterales y dos baldas donde se exhibe la ropa. */
-export function createWardrobe() {
-  const group = new Group();
-  group.name = 'Wardrobe';
-  const wood = matte(0xf0d9b5);
-  group.add(part('Back', new BoxGeometry(0.42, 0.37, 0.01), matte(0x8fb4e3), 0, 0.185, -0.045));
-  for (const side of [-1, 1]) {
-    group.add(part('Side', new BoxGeometry(0.012, 0.37, 0.09), wood, side * 0.213, 0.185, 0));
-  }
-  group.add(part('Top', new BoxGeometry(0.438, 0.012, 0.09), wood, 0, 0.376, 0));
-  for (const y of [0.0, 0.12, 0.24]) {
-    group.add(part('Shelf', new BoxGeometry(0.42, 0.012, 0.09), wood, 0, y + 0.006, 0));
-  }
-  return group;
-}
-
-/** Caja de charms y accesorios: bandeja baja con borde. */
-export function createCharmBox() {
-  const group = new Group();
-  group.name = 'CharmBox';
-  const body = matte(0xf6d365);
-  group.add(part('Floor', new BoxGeometry(0.42, 0.012, 0.17), body, 0, 0.006, 0));
-  group.add(part('Back', new BoxGeometry(0.42, 0.04, 0.012), matte(0xf5a25d), 0, 0.02, -0.079));
-  group.add(part('Front', new BoxGeometry(0.42, 0.03, 0.012), matte(0xf5a25d), 0, 0.015, 0.079));
-  for (const side of [-1, 1]) {
-    group.add(part('Side', new BoxGeometry(0.012, 0.04, 0.17), matte(0xf5a25d), side * 0.213, 0.02, 0));
-  }
   return group;
 }

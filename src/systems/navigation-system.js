@@ -25,7 +25,7 @@ import { CATEGORIES } from '../data/categories.js';
 import { beltMoving, beltRequest, categoryIndex, layout, phase, Phase, stepCategory } from '../state.js';
 
 /** Posicion de los botones: hacia el usuario (radial < 0), separados a cada lado. */
-const NAV = { radial: -0.14, up: 0, offset: 0.095, tilt: 0.45 };
+const NAV = { radial: -0.09, up: 0.01, offset: 0.095, tilt: 0.45 };
 /** Despues de la ultima estacion, "siguiente" pasa a ser el boton de terminar. */
 const FINISH = { label: 'Terminar avatar', icon: 'boton-llavero.svg', tag: 'LISTO' };
 const targetFor = (direction) => CATEGORIES[categoryIndex.peek() + direction] ?? (direction > 0 ? FINISH : null);
@@ -195,9 +195,9 @@ export class NavigationSystem extends createSystem({
     // El desplazamiento va a lo largo de la tangente del arco (avance de la banda)
     const dx = direction * NAV.offset;
     root.position.set(
-      pose.x + Math.cos(pose.theta) * dx,
+      pose.x + pose.tx * dx,
       pose.y,
-      pose.z + Math.sin(pose.theta) * dx,
+      pose.z + pose.tz * dx,
     );
     root.rotation.order = 'YXZ';
     root.rotation.set(NAV.tilt, pose.rotY, 0);

@@ -33,16 +33,15 @@ import {
 } from '../../components.js';
 import { registerDropHandler } from '../../interaction/carryable-system.js';
 import { MODEL } from '../../data/avatar-defaults.js';
-import { stationPoint } from '../../core/layout.js';
-import { placeAtStation } from '../../scene-assets/lib/frame.js';
+import { modelFrame } from '../../core/layout.js';
+import { ANCHORS } from '../../factory/anchors.js';
+import { placeAtAnchor } from '../../scene-assets/lib/frame.js';
 import { avatarConfig, beltMoving, categoryIndex, layout, phase, Phase, selection, setAvatar } from '../../state.js';
 import { AVATAR_HEIGHT } from '../../systems/belt-system.js';
-import { createBin, createHairMachine } from './hair-props.scene-asset.js';
+import { createBin } from './hair-props.scene-asset.js';
 
 const STATION = 1;
-const MACHINE = { tangent: -0.15, radial: 0.2 };
-const BIN_AT = { tangent: 0.15, radial: 0.17 };
-const TRAY = { tangent: -0.15, radial: 0.135, up: 0.05 };
+const TRAY_UP = 0.05; // el cabello flota un poco sobre la bandeja
 const PRODUCE_SECONDS = 2.4;
 const GROW_SECONDS = 0.5;
 const HEAD_SNAP = 0.14; // metros del origen del cabello al centro de la cabeza
@@ -99,14 +98,17 @@ export class HairStationSystem extends createSystem({
     this.factory = factory;
     const l = layout.peek();
 
-    const machine = createHairMachine();
-    placeAtStation(machine, l, STATION, MACHINE.tangent, MACHINE.radial);
+    // La maquina es la del modelo: la cupula se sacude y las tijeras giran mientras fabrica
+    const nodes = factory.object3D?.userData.parts?.nodes ?? {};
+    const machine = new Group();
+    machine.name = 'HairMachineRig';
+    machine.userData.parts = { body: nodes.maquina, spinner: nodes.tijeras };
     const machineEntity = this.world.createTransformEntity(machine, { parent: factory });
     machineEntity.addComponent(FactoryPart);
     machineEntity.addComponent(HairMachine);
 
     const bin = createBin();
-    placeAtStation(bin, l, STATION, BIN_AT.tangent, BIN_AT.radial);
+    placeAtAnchor(bin, l, ANCHORS.hairBin);
     const binEntity = this.world.createTransformEntity(bin, { parent: factory });
     binEntity.addComponent(FactoryPart);
     this.bin = bin.userData.opening;
@@ -172,7 +174,7 @@ export class HairStationSystem extends createSystem({
   spawnProp(style, fromHead = false) {
     if (!this.factory) return;
     const l = layout.peek();
-    const home = stationPoint(l, STATION, TRAY.tangent, TRAY.radial, TRAY.up);
+    const home = modelFrame(l, ANCHORS.hairTray, 0, 0, TRAY_UP);
     const root = new Group();
     root.name = 'HairProp';
     root.add(buildPart(`cabello-${style}`, { ...avatarConfig.peek(), hair: style }));
@@ -233,18 +235,18 @@ export class HairStationSystem extends createSystem({
     for (const machine of this.queries.machines.entities) {
       const parts = machine.object3D?.userData.parts;
       if (!parts) continue;
+      const { body, spinner } = parts;
+      if (body && parts.baseZ === undefined) parts.baseZ = body.rotation.z;
       if (!machine.getValue(HairMachine, 'producing')) {
-        parts.body.rotation.z = 0;
+        if (body) body.rotation.z = parts.baseZ;
         continue;
       }
       const timer = machine.getValue(HairMachine, 'timer') + delta;
       machine.setValue(HairMachine, 'timer', timer);
-      parts.body.rotation.z = Math.sin(time * 38) * 0.025;
-      const on = Math.floor(time * 6) % 2 === 0;
-      parts.lamp.material.color.setHex(on ? 0xf6d365 : 0xd9d2c3);
+      if (body) body.rotation.z = parts.baseZ + Math.sin(time * 38) * 0.012;
+      if (spinner) spinner.rotation.y += delta * 9;
       if (timer >= PRODUCE_SECONDS) {
         machine.setValue(HairMachine, 'producing', false);
-        parts.lamp.material.color.setHex(0x8cc37a);
         this.spawnProp(machine.getValue(HairMachine, 'style'));
         sfx.ding();
       }

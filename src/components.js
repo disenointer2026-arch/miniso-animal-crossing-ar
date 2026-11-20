@@ -1,7 +1,7 @@
 /* Componentes ECS propios. Modulo sin sistemas ni DOM: el editor tambien lo importa. */
 import { createComponent, defineComponents, Types } from '@iwsdk/core';
 
-/** La fabrica en anillo ya colocada alrededor del usuario. */
+/** La fabrica (modelo FABRICA.blend) ya colocada alrededor del usuario. */
 export const Factory = createComponent('Factory', {});
 
 /** Todo lo que pertenece a la fabrica (se retira con ella al salir de la sesion). */
