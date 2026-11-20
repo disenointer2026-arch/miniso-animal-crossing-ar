@@ -53,9 +53,11 @@ Marcar con el resultado en el visor (el emulador ya cubrió la columna «Emulado
 | No quitar lo puesto | Con un objeto en la mano (o recién soltado) tocar otra parte del personaje no la retira | ✔ (con una caja en la mano, tocar las gafas puestas no las quita; sin objeto en la mano, sí) | ☐ |
 | Navegación adelante/atrás | Botones de cada estación; **lo elegido se conserva** | ✔ | ☐ |
 | Terminar avatar | Caja de regalo, viaje al frente y figura final | ✔ (lanzado desde el estado) | ☐ |
-| «¡Tu avatar está listo!» | Panel crema con tres tarjetas, sin campo de nombre ni resumen | ✔ (pulsar las tarjetas con el dedo, sin probar) | ☐ |
-| Pedido simulado | Tres pasos; nombre, apellido, correo, teléfono y dirección con el **teclado de letras**; confirmación con número | ✔ (paso «Tus datos» y teclado con tildes; pago y confirmación sin repetir) | ☐ |
-| Tarjeta Amiibo | Retrato, **nombre con el teclado**, cumpleaños y fondo; sin esquinas negras; compartir (simulado) | ✔ (nombre con teclado y sin esquinas negras; compartir sin repetir) | ☐ |
+| «¡Tu avatar está listo!» | Panel crema: título, «Esta es tu obra maestra…», *Pedir mi producto* y *Crear tarjeta Amiibo*, y «← Seguir editando» (también la X) | ☐ | ☐ |
+| Pedido simulado | Tres pasos; nombre, apellido, correo, teléfono y dirección con el **teclado de letras**; confirmación con número | ✔ (paso «Tus datos» y teclado con tildes; pago sin repetir) | ☐ |
+| **Compra satisfactoria** | Hoja, **N.º guía de pedido**, «Rastrea desde… www.miniso.com», confeti; *Crear tarjeta Amiibo*; **«Salir de la experiencia»** cierra la sesión de RA | ☐ | ☐ |
+| Tarjeta Amiibo | Retrato, **nombre con el teclado**, cumpleaños y fondo; sin esquinas negras | ✔ | ☐ |
+| **Comparte tu tarjeta** | Modal de la web con la **tarjeta detrás**; **Descargar imagen**, **Compartir desde el dispositivo** y **Copiar enlace** funcionan; las redes sociales solo muestran «Simulación…»; X cierra | ☐ | ☐ |
 | Sonido | Efectos en cada acción y música de fondo | no se oye | ☐ |
 | Rendimiento | Sin tirones; objetivo 72 fps | no medible | ☐ |
 

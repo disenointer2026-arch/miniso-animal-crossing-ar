@@ -22,7 +22,7 @@ const WIDE = { width: 0.7, height: 0.095 };
 const PX = 1150;
 
 /** Parte un texto (con saltos de linea) en lineas que caben en maxWidth. */
-function wrap(ctx, value, maxWidth) {
+export function wrap(ctx, value, maxWidth) {
   const lines = [];
   for (const paragraph of String(value).split('\n')) {
     let line = '';
