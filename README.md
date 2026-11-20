@@ -125,8 +125,9 @@ Desactivados a propósito: física (Havok) y detección de mallas, para cuidar e
   Si hay dudas en el visor, ajustar `PRESS_RADIUS` en `skin-station-system.js`.
 - **Posiciones del modelo:** los botones del armario, las baldas, las cajas y la vitrina están colocados según el modelo actual; cuando se reemplace
   el modelo (viene una versión nueva) hay que reajustar `MODEL`, `ANCHORS` y `FURNITURE`. La **caja de regalo** del final se rehará y se aplicará después.
-- **Accesorios y charms «al revés»:** no se pudo reproducir en el emulador (se ven derechos). **Los accesorios todavía no se confirmó que se agarren y se coloquen** (en la prueba con manos, gafas de sol no quedaron puestas): revisarlo primero en el visor. Si salen al revés, corregir con `DISPLAY_FIX`
-  en `catalog-station-system.js` (rotación por pieza).
+- **Accesorios y charms «al revés»:** no se pudo reproducir en el emulador: se ven derechos, se agarran y se colocan (gafas de sol y charms probados con manos).
+  Si en el visor siguen saliendo al revés, corregir con `DISPLAY_FIX` en `catalog-station-system.js` (rotación por pieza).
+- **Sin probar todavía:** las flechas del libro y los colores de ojos, el bote del cabello, el pedido hasta la confirmación y «compartir», y el índice + la puntería del spray a la vez.
 - Los paneles UIKitML (pedido, teclado, tarjeta) cargan Nunito desde `public/fonts/` (licencia OFL); los demás usan la Nunito integrada, sin tildes.
 - El ajuste fino cambia la altura; la distancia se corrige recalibrando con la mano.
 - Pedido y tarjeta: todo es simulado; no se descarga ni se comparte nada de verdad.
