@@ -19,9 +19,8 @@
   .btn { flex-grow: 1; padding-top: 12px; padding-bottom: 12px; padding-left: 18px; padding-right: 18px; border-radius: 40px; background-color: #FFFBF2; color: #E60012;
     font-size: 20px; font-weight: 700; text-align: center; cursor: pointer; border-width: 4px; border-color: #FF0000; }
   .primary { background-color: #FF0000; color: #ffffff; }
-  .root:dark { background-color: #FAF6D4; border-color: #FDD885; }
 </style>
-<Panel class="root">
+<div class="root">
   <div class="content">
     <div class="title">Crea tu tarjeta Amiibo</div>
     <div class="text">Se genero a partir de tu avatar. Ajusta sus datos y el fondo: la tarjeta cambia al instante.</div>
@@ -45,4 +44,4 @@
     <div class="row"><div id="back" class="btn">Volver a mi avatar</div></div>
     <div class="small">Tarjeta digital conceptual inspirada en el formato de las tarjetas Amiibo; no es un producto oficial de Nintendo.</div>
   </div>
-</Panel>
+</div>

@@ -11,9 +11,8 @@
   .value { color: #3A2E28; font-size: 17px; font-weight: 700; width: 58px; text-align: center; }
   .recal { padding-top: 9px; padding-bottom: 9px; padding-left: 12px; padding-right: 12px; border-radius: 40px; background-color: #F5BA00; color: #3A2E28;
     font-size: 16px; font-weight: 700; text-align: center; cursor: pointer; }
-  .root:dark { background-color: #FAF6D4; border-color: #FDD885; }
 </style>
-<Panel class="root">
+<div class="root">
   <div class="content">
     <div id="toggle" class="toggle">Ajustes</div>
     <div id="body" class="body">
@@ -23,4 +22,4 @@
       <div id="recal" class="recal">Recalibrar con la mano</div>
     </div>
   </div>
-</Panel>
+</div>

@@ -15,9 +15,8 @@
   .shift { background-color: #FDD885; }
   .back { background-color: #C1E2DD; }
   .ok { background-color: #FF0000; border-color: #FF0000; color: #ffffff; }
-  .root:dark { background-color: #FAF6D4; border-color: #FDD885; }
 </style>
-<Panel class="root">
+<div class="root">
   <div class="content">
     <div id="kp-label" class="label">-</div>
     <div id="kp-value" class="value">-</div>
@@ -28,4 +27,4 @@
     <div class="row"><div id="kb-40" class="key">á</div><div id="kb-41" class="key">é</div><div id="kb-42" class="key">í</div><div id="kb-43" class="key">ó</div><div id="kb-44" class="key">ú</div><div id="kb-45" class="key">ü</div><div id="kb-46" class="key">_</div><div id="kb-47" class="key">,</div><div id="kb-48" class="key">'</div><div id="kb-49" class="key">/</div></div>
     <div class="row"><div id="kb-shift" class="key wide shift">Mayus</div><div id="kb-space" class="key space">espacio</div><div id="kb-back" class="key wide back">borrar</div><div id="kb-ok" class="key wide ok">Listo</div></div>
   </div>
-</Panel>
+</div>
