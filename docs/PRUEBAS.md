@@ -34,10 +34,11 @@ Marcar con el resultado en el visor (el emulador ya cubrió la columna «Emulado
 |---|---|---|---|
 | Reconocimiento del piso | Mirar alrededor: aparece «Piso reconocido» | ✔ | ☐ |
 | Aviso de mueble cercano | Con una mesa a menos de 1 m aparece el aviso | ✔ | ☐ |
-| Calibración con la mano | Mano a la altura cómoda (codo a 90°) y pellizco; el anillo la sigue | ✔ | ☐ |
+| Calibración con la mano | Mano a la altura cómoda (codo a 90°) y pellizco; una cinta verde muestra el recorrido de la banda y la sigue | ✔ | ☐ |
 | Altura de la plataforma | La banda queda a la altura de la cintura, sin levantar ni encoger los brazos | — | ☐ |
 | Distancia | Todo al alcance sin extender del todo los brazos | — | ☐ |
-| Fábrica y banda | El avatar sale del portal y para en la estación 1 | ✔ | ☐ |
+| Fábrica y banda | El avatar sale del edificio MINISO y para en la estación 1 | ✔ | ☐ |
+| Alcance de las estaciones | Desde el centro, estaciones y objetos al alcance (la fábrica rodea casi 300°; hay que girar el cuerpo) | — | ☐ |
 | Estación 1 · piel | Elegir tono, agarrar la lata, pellizcar con la otra mano y apuntar | ✔ | ☐ |
 | Estación 2 · cabello | Fabricar, agarrar, colocar en la cabeza, retirar tocando, descartar en el bote | ✔ | ☐ |
 | Estación 3 · rostro | Stickers de ojos, boca y nariz; pasar página; retirar tocando | ✔ (ojos) | ☐ |

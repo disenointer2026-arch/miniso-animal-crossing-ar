@@ -5,7 +5,7 @@
    WelcomeSystem      bienvenida y entrada a la sesion
    HintSystem         indicacion breve que sigue la mirada
    CalibrationSystem  reconoce el piso, mide altura y alcance con la mano y crea
-                      la fabrica en anillo alrededor del usuario
+                      la fabrica alrededor del usuario
    BeltSystem         el personaje sale del portal y viaja por la banda entre estaciones
    PanelsSystem       instrucciones y panel de la estacion activa
    NavigationSystem   botones anterior / siguiente de cada estacion

@@ -33,10 +33,11 @@ import {
   FactoryPart,
   PageArrow,
 } from '../../components.js';
-import { stationPoint } from '../../core/layout.js';
+import { modelFrame } from '../../core/layout.js';
 import { MODEL } from '../../data/avatar-defaults.js';
 import { registerDropHandler } from '../../interaction/carryable-system.js';
-import { placeAtStation } from '../../scene-assets/lib/frame.js';
+import { ANCHORS } from '../../factory/anchors.js';
+import { placeAtAnchor } from '../../scene-assets/lib/frame.js';
 import {
   avatarConfig,
   beltMoving,
@@ -49,20 +50,12 @@ import {
   setAvatar,
 } from '../../state.js';
 import { AVATAR_HEIGHT } from '../../systems/belt-system.js';
-import { CATALOGS, FACE, slotOf, stickerTexture } from './catalog-config.js';
-import {
-  createCharmBox,
-  createPageArrow,
-  createSticker,
-  createStickerBook,
-  createWardrobe,
-} from './catalog-props.scene-asset.js';
+import { CATALOGS, CHARMS, CLOTHES, FACE, slotOf, stickerTexture } from './catalog-config.js';
+import { createPageArrow, createSticker, createStickerBook } from './catalog-props.scene-asset.js';
 
-const FURNITURE = {
-  book: { make: createStickerBook, radial: 0.185 },
-  wardrobe: { make: createWardrobe, radial: 0.2 },
-  box: { make: createCharmBox, radial: 0.18 },
-};
+/** Punto del modelo donde se exhiben los objetos de cada estacion. El armario y el estante son
+    del modelo; solo el libro de stickers es un objeto aparte (mas grande que los del modelo). */
+const SHELF_ANCHOR = { [FACE]: ANCHORS.faceBook, [CLOTHES]: ANCHORS.clothesTop, [CHARMS]: ANCHORS.charmsShelf };
 const PROP_SCALE = AVATAR_HEIGHT / MODEL.height;
 const SNAP = { head: 0.14, body: 0.16, feet: 0.14 }; // metros del objeto al lugar donde va
 const GROW_SECONDS = 0.35;
@@ -137,10 +130,11 @@ export class CatalogStationSystem extends createSystem({
     const l = layout.peek();
     for (const [station, catalog] of Object.entries(CATALOGS)) {
       const index = Number(station);
-      const furniture = FURNITURE[catalog.furniture];
-      const model = furniture.make();
-      placeAtStation(model, l, index, 0, furniture.radial);
-      this.world.createTransformEntity(model, { parent: factory }).addComponent(FactoryPart);
+      if (index === FACE) {
+        const book = createStickerBook();
+        placeAtAnchor(book, l, ANCHORS.faceBook);
+        this.world.createTransformEntity(book, { parent: factory }).addComponent(FactoryPart);
+      }
 
       // Zonas tocables sobre el personaje para retirar lo puesto
       for (const def of catalog.zones) {
@@ -157,7 +151,7 @@ export class CatalogStationSystem extends createSystem({
     // Flechas del libro de stickers
     for (const direction of [-1, 1]) {
       const arrow = createPageArrow(direction);
-      placeAtStation(arrow, l, FACE, direction * ARROW_TANGENT, FURNITURE.book.radial);
+      placeAtAnchor(arrow, l, ANCHORS.faceBook, direction * ARROW_TANGENT);
       const entity = this.world.createTransformEntity(arrow, { parent: factory });
       entity.addComponent(FactoryPart);
       entity.addComponent(PageArrow, { direction });
@@ -201,7 +195,7 @@ export class CatalogStationSystem extends createSystem({
   spawn(station, group, index, id) {
     const catalog = CATALOGS[station];
     const [tangent, radial, up] = slotOf(catalog.furniture, index, group.ids.length);
-    const home = stationPoint(layout.peek(), station, tangent, radial, up);
+    const home = modelFrame(layout.peek(), SHELF_ANCHOR[station], tangent, radial, up);
     const root = new Group();
     root.name = `Item/${group.apply}/${id}`;
     let base = 1;

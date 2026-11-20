@@ -1,6 +1,6 @@
 # MINISO × Animal Crossing — fábrica de personajes en realidad mixta (Meta Quest 3)
 
-Prototipo académico (Diseño Interactivo): una fábrica en anillo que rodea al usuario, con una
+Prototipo académico (Diseño Interactivo): una fábrica que rodea al usuario (el modelo `FABRICA.blend` del equipo), con una
 banda transportadora y cinco estaciones donde se personaliza un avatar con las manos. Proyecto
 independiente de la [página web original](https://disenointer2026-arch.github.io/Interactivo/);
 reutiliza sus modelos, textos y texturas (copias en `public/`, nunca los originales).
@@ -29,7 +29,7 @@ navegador de la Quest, pulsar **Entrar en RA** y aceptar los permisos de espacio
 |---|---|
 | Reconocimiento del **piso** (Scene Understanding) y aviso si hay un mueble cerca | `src/systems/calibration-system.js` |
 | **Calibración con la mano**: altura sobre el piso y alcance desde la cabeza (codo a ~90°); no se supone ninguna estatura | `calibration-system.js`, `src/core/layout.js` |
-| Fábrica en anillo (placeholder procedural) centrada en el usuario y anclada | `src/scene-assets/factory.scene-asset.js` |
+| **Modelo de la fábrica** (`FABRICA.blend` → `public/models/fabrica/fabrica.glb`) con el usuario en el centro de su recorrido, anclado | `src/factory/factory-model.js`, `src/core/layout.js` |
 | Banda circular: el avatar sale del portal y viaja entre estaciones | `src/systems/belt-system.js` |
 | Avatar base blanco, sin cabello, rostro, ropa ni accesorios | `src/data/avatar-defaults.js` (`BASE_AVATAR`) |
 | 5 estaciones (piel, cabello, rostro, ropa, charms) con las opciones de la web original | `src/data/categories.js` |
@@ -88,11 +88,28 @@ Capturas del emulador: `docs/capturas/v3/` (fase A), `v3b/` (fase B) y `v3c/` (f
 ### Cómo se mide el espacio
 
 1. **Piso:** el origen vertical es el piso (`local-floor`); si el visor entrega un plano `floor`, se usa su altura.
-2. **Mano:** la altura de la banda es la de la mano al pellizcar (limitada a 0,70–1,25 m) y su
-   radio, la distancia horizontal cabeza–mano + 8 cm (limitado a 0,50–0,68 m).
-3. **Orientación:** el anillo se gira hacia donde mira el usuario al confirmar.
+2. **Mano:** la altura de la banda es la de la mano al pellizcar (limitada a 0,70–1,25 m). El alcance
+   (distancia horizontal cabeza–mano + 8 cm, entre 0,50 y 0,68 m) cambia el tamaño de la fábrica entre un 90 % y un 115 %.
+3. **Orientación:** la fábrica se gira hacia donde mira el usuario al confirmar (con la estación 1 al frente-izquierda).
 
 El visor no detecta la cintura: por eso se calibra con la mano. Parámetros en `src/core/layout.js`.
+
+### El modelo de la fábrica
+
+`docs/fuentes/FABRICA.blend` es el modelo del equipo: una banda en «S» que sale del edificio MINISO y pasa por las
+estaciones de color, cabello, ojos-boca, ropa y charms. Se convierte con `tools/blender/export_fabrica.py` a
+`public/models/fabrica/fabrica.glb` (38 mil triángulos). Cómo se aplicó:
+
+- **Escala y colocación:** 1 unidad del modelo = 2,5 cm. El usuario queda en el punto del recorrido que equilibra la distancia a las cinco
+  estaciones (40–60 cm) y la banda a la altura calibrada. Los números están en `src/core/layout.js` (`MODEL`).
+- **Avatar de 18 cm:** la máquina de cabello del modelo cuelga sobre la banda, así que el personaje tiene que caber debajo.
+- **Colores:** el `.blend` no traía materiales; el script de exportación asigna un color por pieza.
+- **Banda:** el avatar sigue la línea central de la banda (`MODEL.path`) y se detiene en las paradas de `MODEL.stops`.
+- **Objetos funcionales:** latas, cabellos, stickers, prendas y charms se colocan en los puntos de `src/factory/anchors.js` (bandeja junto a los
+  dispensadores, bandeja y bote del cabello, parte superior del armario, estante de charms). Los dos libros pequeños y las dos cajas de arriba del
+  estante del modelo no se dibujan: los sustituyen el libro de stickers (más grande) y los charms.
+- **Animación:** al fabricar cabello, la cúpula se sacude y las tijeras del modelo giran.
+- **Para cambiar el modelo:** editar el `.blend`, volver a exportar y, si se mueve algo, ajustar `MODEL` y `ANCHORS` mirándolo en el emulador.
 
 ### Funciones de IWSDK en uso
 
@@ -109,7 +126,7 @@ Desactivados a propósito: física (Havok) y detección de mallas, para cuidar e
 ### Pendiente
 
 - **Prueba en el Quest 3** con la lista de `docs/PRUEBAS.md`, y las evidencias en primera y tercera persona.
-- Reemplazar los modelos placeholder de la fábrica y los muebles por los finales, y la música por una pista libre de derechos.
+- Reemplazar la música por una pista libre de derechos.
 - Medir los fotogramas por segundo en el visor y optimizar si hace falta (ver el apartado de rendimiento de la guía).
 
 ### Limitaciones conocidas
@@ -122,7 +139,6 @@ Desactivados a propósito: física (Havok) y detección de mallas, para cuidar e
 - Pedido y tarjeta: los datos personales son de ejemplo y el nombre de la tarjeta se elige de una lista, porque el visor no tiene teclado de letras. No se descarga ni se comparte nada de verdad.
 - No probado con manos: pulsar los botones de los paneles finales (se probó la lógica de cada paso desde el estado compartido y el cierre con el botón «Terminar avatar» tocado con el dedo) ni girar la figura final con la mano.
 - No probado aún: tocar las flechas del libro con el dedo (el cambio de página sí se probó desde las pestañas), los stickers de boca y nariz, ni retirar charms o accesorios tocándolos.
-- Los muebles son placeholders y el libro queda parcialmente tapado por el avatar desde el ángulo del usuario; hay que ajustar su posición con el modelo final.
 - Gorra y sombrero ocultan el pelo entero (la web lo recorta bajo el borde).
 - El juego carga ahora todos los modelos del avatar al inicio (~6 MB).
 - El rociado exige pellizcar con la mano libre: si esa mano también está cerca de otro objeto agarrable podría agarrarlo.

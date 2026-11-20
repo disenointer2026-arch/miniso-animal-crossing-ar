@@ -28,7 +28,7 @@ import {
 } from '../state.js';
 
 /** Respecto a la estacion: detras de la banda (+ hacia afuera) y arriba del personaje. */
-const PANEL_RADIAL = 0.3;
+const PANEL_RADIAL = 0.26;
 const PANEL_UP = 0.42;
 const PANEL_TILT = -0.3;
 const PANEL_SCALE = 0.1;

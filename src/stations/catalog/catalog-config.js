@@ -63,12 +63,12 @@ export const CATALOGS = {
 
 /** Cuadricula de objetos en el mueble: columnas, separacion y filas (tangente / radial / altura). */
 export const SHELF = {
-  book: { cols: 4, gap: 0.058, rows: [0.21, 0.155], up: 0.026, radialSingle: 0.185 },
-  wardrobe: { cols: 3, gap: 0.115, rows: [0.2, 0.2], up: [0.061, 0.181] },
-  box: { cols: 5, gap: 0.075, rows: [0.21, 0.15], up: 0.045 },
+  book: { cols: 4, gap: 0.058, rows: [0.03, -0.03], up: 0.026, radialSingle: 0 },
+  wardrobe: { cols: 3, gap: 0.115, rows: [0, 0], up: [0.065, 0.19] },
+  box: { cols: 5, gap: 0.075, rows: [0.035, -0.035], up: 0.045 },
 };
 
-/** Posicion de un objeto: [tangente, radial, altura] segun el mueble, el indice y la cantidad. */
+/** Posicion de un objeto respecto al punto del mueble (ver ANCHORS): [tangente, radial, altura]. */
 export function slotOf(furniture, index, count) {
   const shelf = SHELF[furniture];
   const cols = furniture === 'book' && count <= 3 ? count : shelf.cols;
