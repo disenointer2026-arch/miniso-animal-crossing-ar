@@ -1,43 +1,43 @@
-/* Final de la experiencia, despues de la caja de regalo:
-   Choose   "Que desea hacer?": pedir el producto, crear la tarjeta Amiibo o seguir editando
-   Order    pedido simulado (order-ui.js) con teclado numerico virtual
+/* Final de la experiencia, despues de la caja de regalo. Todo aparece al frente del usuario, de frente:
+   Choose   "¡Tu avatar esta listo!": pedir el producto, crear la tarjeta Amiibo o seguir editando
+   Order    pedido simulado (order-ui.js) con teclado completo de letras y numeros
    Confirm  compra satisfactoria
-   Card     editor de la tarjeta (nombre, cumpleanos, fondo) con la tarjeta en 3D; compartir (simulado)
+   Card     editor de la tarjeta (nombre con el teclado, cumpleanos, fondo) con la tarjeta en 3D; compartir (simulado)
    Thanks   cierre y posibilidad de crear otro avatar
    Los paneles se colocan respecto al marco del usuario (src/finale/frame.js) y la caja con la
    figura se aparta a un lado con la senal "showcase". */
 import { createSystem, RayInteractable } from '@iwsdk/core';
 import { sfx } from '../audio/sfx.js';
 import { FactoryPart } from '../components.js';
-import { plain } from '../data/categories.js';
-import { CARD, NAMES, PRODUCT, SOCIALS, cop } from '../data/shop.js';
+import { CARD, PRODUCT, SOCIALS, cop, formatField } from '../data/shop.js';
 import { framePoint, frameYaw } from '../finale/frame.js';
 import { showcase } from '../finale/finale-system.js';
 import { avatarConfig, phase, Phase, resetExperience } from '../state.js';
 import { createCardView } from './card-view.js';
+import { createDialog } from './dialog-ui.js';
+import { KeyboardUI } from './keyboard-ui.js';
 import { cardProfile, focusField, lastOrder, orderDraft, patchProfile } from './checkout-state.js';
 import { OrderUI } from './order-ui.js';
 import { renderPortrait } from './portrait.js';
 
-/** Escala de cada panel: el dialogo y el teclado son los que mas se leen. */
-const PANEL_SCALE = { 'dialog-panel': 0.12, 'order-panel': 0.105, 'keypad-panel': 0.12, 'card-panel': 0.11 };
-const CREAM = '#fff6e6';
-const RED = '#e60012';
+/** Escala de cada panel UIKitML. */
+const PANEL_SCALE = { 'order-panel': 0.105, 'keyboard-panel': 0.1, 'card-panel': 0.11 };
+const EDGE = '#FDD885';
+const RED = '#FF0000';
 
-/** Donde se muestran la caja y la figura segun la fase. */
+/** Donde se muestran la caja y la figura segun la fase: a un lado, sin tapar los paneles del centro. */
 const SHOWCASE = {
-  [Phase.Choose]: { right: -0.28, forward: 0.65, scale: 1, visible: true },
-  [Phase.Order]: { right: -0.58, forward: 0.78, scale: 0.7, visible: true },
-  [Phase.Confirm]: { right: -0.28, forward: 0.65, scale: 1, visible: true },
-  [Phase.Card]: { right: -0.28, forward: 0.65, scale: 1, visible: false },
-  [Phase.Thanks]: { right: -0.28, forward: 0.65, scale: 1, visible: true },
+  [Phase.Choose]: { right: -0.62, forward: 0.7, scale: 1, visible: true },
+  [Phase.Order]: { right: -0.72, forward: 0.8, scale: 0.7, visible: true },
+  [Phase.Confirm]: { right: -0.62, forward: 0.7, scale: 1, visible: true },
+  [Phase.Card]: { right: -0.62, forward: 0.7, scale: 1, visible: false },
+  [Phase.Thanks]: { right: -0.62, forward: 0.7, scale: 1, visible: true },
 };
 
 export class CheckoutSystem extends createSystem({}) {
   init() {
     this.panels = null;
     this.loading = false;
-    this.handlers = [null, null, null];
     this.shareOpen = false;
     this.socialIndex = 0;
     this.shareNote = '';
@@ -53,6 +53,7 @@ export class CheckoutSystem extends createSystem({}) {
         if (value === Phase.Finishing) this.ensurePanels();
         if (value === Phase.Card) this.makePortrait();
         if (value !== Phase.Card) this.shareOpen = false;
+        if (value !== Phase.Order && value !== Phase.Card) focusField.value = null;
         this.refresh();
       }),
       orderDraft.subscribe(refresh),
@@ -86,17 +87,16 @@ export class CheckoutSystem extends createSystem({}) {
       entity.addComponent(FactoryPart);
       return panel;
     };
-    const [dialog, order, keypad, card] = await Promise.all([
-      make('dialog-panel'),
-      make('order-panel'),
-      make('keypad-panel'),
-      make('card-panel'),
-    ]);
+    const [order, keyboard, card] = await Promise.all([make('order-panel'), make('keyboard-panel'), make('card-panel')]);
     if (phase.peek() === Phase.Welcome) return; // se salio de la sesion mientras cargaba
-    this.panels = { dialog, order, keypad, card };
-    this.order = new OrderUI(order, keypad);
+    this.panels = { dialog: createDialog(this.world), order, keyboard, card };
+    this.order = new OrderUI(order);
+    this.keyboard = new KeyboardUI(keyboard, {
+      get: (key) => (key === 'cardName' ? cardProfile.peek().name : this.order.getField(key)),
+      set: (key, value) => (key === 'cardName' ? patchProfile({ name: value }) : this.order.setField(key, value)),
+      format: (key, value) => (key === 'cardName' ? value : formatField(key, value === '' ? '' : value).replace(/^-$/, '')),
+    });
     this.buildCard();
-    this.bindDialog();
     this.bindCardEditor();
     this.loading = false;
     this.refresh();
@@ -119,54 +119,26 @@ export class CheckoutSystem extends createSystem({}) {
     }
   }
 
-  // ---------- Dialogo generico ----------
-  bindDialog() {
-    const dialog = this.panels.dialog;
-    this.dialogParts = ['a', 'b', 'c'].map((k, i) => {
-      const button = dialog.getElementById(`btn-${k}`);
-      button?.addEventListener('click', () => {
-        sfx.select();
-        this.handlers[i]?.();
-      });
-      return { button, label: dialog.getElementById(`lbl-${k}`), sub: dialog.getElementById(`sub-${k}`) };
-    });
-  }
-
-  setDialog({ kicker, title, body, buttons }) {
-    const dialog = this.panels.dialog;
-    dialog.getElementById('kicker')?.setProperties({ text: plain(kicker) });
-    dialog.getElementById('title')?.setProperties({ text: plain(title) });
-    dialog.getElementById('body')?.setProperties({ text: plain(body) });
-    this.dialogParts.forEach((part, i) => {
-      const spec = buttons[i];
-      part.button?.setProperties({ display: spec ? 'flex' : 'none' });
-      this.handlers[i] = spec?.run ?? null;
-      if (!spec) return;
-      part.label?.setProperties({ text: plain(spec.label) });
-      part.sub?.setProperties({ text: plain(spec.sub ?? ''), display: spec.sub ? 'flex' : 'none' });
-    });
-  }
-
+  // ---------- Dialogo ----------
   dialogFor(value) {
     const order = lastOrder.peek();
     if (value === Phase.Choose) {
       return {
-        kicker: '¡TU AVATAR ESTA LISTO!',
-        title: '¿Que desea hacer?',
-        body: 'Tu creacion esta terminada. Puedes pedir tu figura, crear tu tarjeta o seguir editando.',
+        title: '¡Tu avatar está listo!',
+        body: 'Sé cuánto trabajo requiere crear tu propio estilo. ¡Lo estás haciendo increíble!',
         buttons: [
-          { label: 'Pedir mi producto', sub: 'Figura con cadena y base de acrilico', run: () => (phase.value = Phase.Order) },
+          { label: 'Pedir mi producto', sub: 'Figura con cadena y base de acrílico', run: () => (phase.value = Phase.Order) },
           { label: 'Crear tarjeta Amiibo', sub: 'Coleccionable digital para compartir', run: () => (phase.value = Phase.Card) },
-          { label: 'Seguir editando', run: () => (phase.value = Phase.Customizing) },
+          { label: 'Seguir editando', back: true, run: () => (phase.value = Phase.Customizing) },
         ],
       };
     }
     if (value === Phase.Confirm && order) {
       return {
         kicker: 'COMPRA SATISFACTORIA',
-        title: '¡Tu pedido esta listo!',
+        title: '¡Tu pedido está listo!',
         body:
-          `Te enviamos (de mentira) la confirmacion a ${order.email}.\n` +
+          `Te enviamos (de mentira) la confirmación a ${order.email}.\n` +
           `Pedido ${order.number}\n` +
           `${PRODUCT.name} x ${order.qty} de ${order.avatarName}\n` +
           `Entrega a domicilio en ${order.city}. Tiempo estimado: ${PRODUCT.days}.\n` +
@@ -182,18 +154,18 @@ export class CheckoutSystem extends createSystem({}) {
       return {
         kicker: 'LISTA PARA COMPARTIR',
         title: 'Comparte tu tarjeta',
-        body: this.shareNote || 'Descargala como imagen o elige una red. Es una simulacion: no se publicara nada.',
+        body: this.shareNote || 'Descárgala como imagen o elige una red. Es una simulación: no se publicará nada.',
         buttons: [
-          { label: 'Descargar imagen', run: () => this.share('Simulacion: imagen descargada. No se guardo nada.') },
+          { label: 'Descargar imagen', run: () => this.share('Simulación: imagen descargada. No se guardó nada.') },
           {
-            label: `Redes sociales (simulado)`,
+            label: 'Redes sociales (simulado)',
             sub: `Siguiente: ${social}`,
             run: () => {
-              this.share(`Simulacion: tu tarjeta quedo lista para ${social}. No se publico nada.`);
+              this.share(`Simulación: tu tarjeta quedó lista para ${social}. No se publicó nada.`);
               this.socialIndex += 1;
             },
           },
-          { label: 'Cerrar', run: () => ((this.shareOpen = false), this.refresh()) },
+          { label: 'Cerrar', back: true, run: () => ((this.shareOpen = false), this.refresh()) },
         ],
       };
     }
@@ -201,7 +173,7 @@ export class CheckoutSystem extends createSystem({}) {
       kicker: '¡GRACIAS!',
       title: 'Tu avatar ya existe',
       body:
-        'Gracias por crear tu avatar MINISO x Animal Crossing. Prototipo academico de Diseno Interactivo: colaboracion ficticia sin relacion comercial con MINISO ni con Nintendo.',
+        'Gracias por crear tu avatar MINISO x Animal Crossing. Prototipo académico de Diseño Interactivo: colaboración ficticia sin relación comercial con MINISO ni con Nintendo.',
       buttons: [{ label: 'Crear otro avatar', run: () => resetExperience() }],
     };
   }
@@ -221,8 +193,10 @@ export class CheckoutSystem extends createSystem({}) {
       });
     const profile = () => cardProfile.peek();
     const mod = (n, m) => ((n % m) + m) % m;
-    on('n-prev', () => patchProfile({ name: NAMES[mod(NAMES.indexOf(profile().name) - 1, NAMES.length)] }));
-    on('n-next', () => patchProfile({ name: NAMES[mod(NAMES.indexOf(profile().name) + 1, NAMES.length)] }));
+    // El nombre se escribe con el teclado: tocar el campo lo abre
+    on('f-cardName', () => {
+      focusField.value = 'cardName';
+    });
     const maxDay = () => (profile().month < 0 ? 31 : CARD.monthDays[profile().month]);
     on('d-minus', () => patchProfile({ day: mod(profile().day - 1, maxDay() + 1) }));
     on('d-plus', () => patchProfile({ day: mod(profile().day + 1, maxDay() + 1) }));
@@ -247,18 +221,16 @@ export class CheckoutSystem extends createSystem({}) {
     const card = this.panels.card;
     const p = cardProfile.peek();
     const set = (id, props) => card.getElementById(id)?.setProperties(props);
-    set('n-name', { text: plain(p.name) });
+    set('f-cardName', { text: p.name || 'Toca para escribir', borderColor: focusField.peek() === 'cardName' ? RED : EDGE });
     set('d-day', { text: p.day > 0 ? String(p.day) : '--' });
-    set('mo-name', { text: p.month >= 0 ? plain(CARD.months[p.month]) : '--' });
+    set('mo-name', { text: p.month >= 0 ? CARD.months[p.month] : '--' });
     CARD.themes.forEach((theme, i) =>
-      set(`th-${i}`, { text: plain(theme.name), borderColor: theme.id === p.theme ? RED : CREAM }),
+      set(`th-${i}`, { text: theme.name, borderColor: theme.id === p.theme ? RED : EDGE }),
     );
     for (const id of ['d-minus', 'mo-prev']) set(id, { text: '<' });
     set('d-minus', { text: '-' });
     set('d-plus', { text: '+' });
     set('mo-next', { text: '>' });
-    set('n-prev', { text: '<' });
-    set('n-next', { text: '>' });
     if (!this.cardMesh) return;
     const birthday =
       p.day > 0 && p.month >= 0 ? `${String(p.day).padStart(2, '0')}/${String(p.month + 1).padStart(2, '0')}` : '';
@@ -280,31 +252,34 @@ export class CheckoutSystem extends createSystem({}) {
   refresh() {
     if (!this.panels) return;
     const value = phase.peek();
-    const { dialog, order, keypad, card } = this.panels;
+    const { dialog, order, keyboard, card } = this.panels;
     const dialogPhase =
       value === Phase.Choose || value === Phase.Confirm || value === Phase.Thanks || (value === Phase.Card && this.shareOpen);
-    dialog.visible = dialogPhase;
+    dialog.setVisible(dialogPhase);
     order.visible = value === Phase.Order;
-    keypad.visible = value === Phase.Order && focusField.peek() !== null;
+    keyboard.visible = (value === Phase.Order || value === Phase.Card) && focusField.peek() !== null;
     card.visible = value === Phase.Card && !this.shareOpen;
     if (this.cardMesh) this.cardMesh.visible = value === Phase.Card;
 
     if (dialogPhase) {
-      this.setDialog(this.dialogFor(value));
-      this.place(dialog, 0.3, 0.85);
+      dialog.set(this.dialogFor(value));
+      this.place(dialog.group, 0, 0.85, -0.05);
     }
     if (value === Phase.Order) {
       this.order.refresh();
-      this.place(order, 0.08, 0.88);
-      this.place(keypad, 0.56, 0.8, -0.2);
+      this.place(order, 0, 0.9, 0.12);
     }
     if (value === Phase.Card) {
-      this.place(card, 0.3, 0.85);
+      this.place(card, 0.24, 0.85, -0.02);
       if (this.cardMesh) {
-        this.place(this.cardMesh, -0.28, 0.8, 0);
+        this.place(this.cardMesh, -0.4, 0.82, 0);
         this.cardMesh.scale.setScalar(1);
       }
       this.refreshCardEditor();
+    }
+    if (keyboard.visible) {
+      this.keyboard.refresh();
+      this.place(keyboard, 0, 0.72, -0.5);
     }
     const spec = SHOWCASE[value];
     if (spec) showcase.value = spec;

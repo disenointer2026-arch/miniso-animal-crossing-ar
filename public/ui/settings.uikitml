@@ -1,18 +1,16 @@
-<!-- Ajustes: siguen la mirada abajo a la izquierda. Altura de la fabrica, volumenes
-     independientes de musica y efectos, y recalibrar con la mano. -->
+<!-- Ajustes: arriba y de frente al usuario. Altura de la fabrica, volumenes de musica y efectos, y recalibrar con la mano. -->
 <style>
-  .root { flex-direction: column; width: 300px; }
+  .root { flex-direction: column; width: 320px; font-family: nunito; background-color: #FAF6D4; border-radius: 28px; border-width: 4px; border-color: #FDD885; }
   .content { flex-direction: column; gap: 8px; padding: 14px; }
-  .toggle { padding-top: 8px; padding-bottom: 8px; padding-left: 14px; padding-right: 14px; border-radius: 14px;
-    background-color: #fff6e6; color: #5f4c45; font-size: 17px; font-weight: 700; text-align: center; cursor: pointer; }
+  .toggle { padding-top: 8px; padding-bottom: 8px; padding-left: 14px; padding-right: 14px; background-color: #FF0000; border-radius: 40px; color: #ffffff; font-weight: 700; text-align: center; cursor: pointer; font-size: 18px; }
   .body { flex-direction: column; gap: 8px; }
   .row { flex-direction: row; gap: 8px; align-items: center; justify-content: space-between; }
-  .label { color: #e9dfcf; font-size: 15px; font-weight: 700; width: 90px; }
-  .chip { width: 44px; height: 36px; border-radius: 12px; background-color: #fff6e6; color: #5f4c45;
-    font-size: 20px; font-weight: 700; text-align: center; padding-top: 5px; cursor: pointer; }
-  .value { color: #fff6e6; font-size: 16px; font-weight: 700; width: 56px; text-align: center; }
-  .recal { padding-top: 9px; padding-bottom: 9px; padding-left: 12px; padding-right: 12px; border-radius: 14px;
-    background-color: #f9c623; color: #5f4c45; font-size: 15px; font-weight: 700; text-align: center; cursor: pointer; }
+  .label { color: #5E4D47; font-size: 16px; font-weight: 700; width: 92px; }
+  .chip { width: 46px; height: 38px; border-radius: 19px; background-color: #FFFBF2; border-width: 3px; border-color: #FDD885; color: #3A2E28;
+    font-size: 22px; font-weight: 700; text-align: center; padding-top: 4px; cursor: pointer; }
+  .value { color: #3A2E28; font-size: 17px; font-weight: 700; width: 58px; text-align: center; }
+  .recal { padding-top: 9px; padding-bottom: 9px; padding-left: 12px; padding-right: 12px; border-radius: 40px; background-color: #F5BA00; color: #3A2E28;
+    font-size: 16px; font-weight: 700; text-align: center; cursor: pointer; }
 </style>
 <Panel class="root">
   <div class="content">

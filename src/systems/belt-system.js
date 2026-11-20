@@ -33,7 +33,7 @@ import {
 
 /** Altura del personaje sobre la banda, en metros. La maquina de cabello cuelga sobre la banda:
     el personaje tiene que caber debajo. */
-export const AVATAR_HEIGHT = 0.18;
+export const AVATAR_HEIGHT = 0.2;
 
 const BELT_SPEED = 0.4; // metros por segundo
 const MIN_SECONDS = 1.8;

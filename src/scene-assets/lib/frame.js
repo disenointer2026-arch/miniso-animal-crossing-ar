@@ -4,8 +4,8 @@
 import { modelFrame } from '../../core/layout.js';
 
 /** Coloca `object` junto al punto del modelo y devuelve el marco. */
-export function placeAtAnchor(object, layout, anchor, tangent = 0, radial = 0, up = 0) {
-  const p = modelFrame(layout, anchor, tangent, radial, up);
+export function placeAtAnchor(object, layout, anchor, tangent = 0, radial = 0, up = 0, slot = null) {
+  const p = modelFrame(layout, anchor, tangent, radial, up, slot);
   object.position.set(p.x, p.y, p.z);
   object.rotation.y = p.rotY;
   return p;
