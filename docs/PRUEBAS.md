@@ -17,14 +17,17 @@ Pulsa **Enter XR** y mueve las manos desde el panel del emulador. En modo desarr
 
 Limitaciones: sin GPU el emulador corre a pocos fotogramas por segundo; los clics de rayo sobre botones son
 irregulares (hay que apuntar, esperar el `hover` y pellizcar dos veces). El agarre, el rociado, soltar y tocar con el
-dedo sí se pueden probar con manos emuladas.
+dedo sí se pueden probar con manos emuladas. En modo desarrollo `window.__miniso.standPos` da el punto del mundo
+del círculo de la estación activa y `window.__miniso.spray` el estado de la válvula (distancia de cada índice).
+Con **controles** (sin manos) el gatillo de la mano que sostiene la lata hace de dedo sobre la válvula.
 
 ## 2. Meta Quest 3
 
 1. Publicar (GitHub Actions publica al fusionar a `main`): https://disenointer2026-arch.github.io/miniso-animal-crossing-ar/
 2. Abrir esa URL en el navegador del Quest, con **seguimiento de manos activado** y sin controles en las manos.
 3. Pulsar **Entrar en RA** y aceptar los permisos de espacio.
-4. Despejar unos 2 × 2 m alrededor. Recargar la página tras cada publicación para no ver la versión anterior.
+4. Despejar unos **2,5 × 2,5 m** alrededor: la fábrica es más grande y **hay que caminar** hasta el círculo del piso de cada
+   estación. Recargar la página tras cada publicación para no ver la versión anterior.
 
 ## 3. Lista de verificación
 
@@ -36,19 +39,23 @@ Marcar con el resultado en el visor (el emulador ya cubrió la columna «Emulado
 | Aviso de mueble cercano | Con una mesa a menos de 1 m aparece el aviso | ✔ | ☐ |
 | Calibración con la mano | Mano a la altura cómoda (codo a 90°) y pellizco; una cinta verde muestra el recorrido de la banda y la sigue | ✔ | ☐ |
 | Altura de la plataforma | La banda queda a la altura de la cintura, sin levantar ni encoger los brazos | — | ☐ |
-| Distancia | Todo al alcance sin extender del todo los brazos | — | ☐ |
-| Fábrica y banda | El avatar sale del edificio MINISO y para en la estación 1 | ✔ | ☐ |
-| Alcance de las estaciones | Desde el centro, estaciones y objetos al alcance (la fábrica rodea casi 300°; hay que girar el cuerpo) | — | ☐ |
-| Estación 1 · piel | Elegir tono, agarrar la lata, pellizcar con la otra mano y apuntar | ✔ | ☐ |
-| Estación 2 · cabello | Fabricar, agarrar, colocar en la cabeza, retirar tocando, descartar en el bote | ✔ | ☐ |
-| Estación 3 · rostro | Stickers de ojos, boca y nariz; pasar página; retirar tocando | ✔ (ojos) | ☐ |
-| Estación 4 · ropa | Vestir y desvestir; zapatos y parte inferior | ✔ (vestido) | ☐ |
-| Estación 5 · charms | Charm y accesorio de cabeza | ✔ | ☐ |
+| Escala de la fábrica | El personaje y los botones no atraviesan la fábrica; todo se alcanza desde el círculo | ✔ | ☐ |
+| **Círculo del piso** | En cada estación aparece un círculo con huellas y una flecha; al pararse en él se pone verde con un chulo y el aviso desaparece | ✔ | ☐ |
+| Pantallas de frente | Todas las pantallas flotantes (Ajustes, instrucciones, paneles de la estación, cierre) quedan de frente, sin ladearse | ✔ | ☐ |
+| Ajustes | Panel arriba y al frente; altura ±2 cm, volúmenes, recalibrar (conserva el avatar) | ✔ | ☐ |
+| Fábrica y banda | El avatar sale del edificio MINISO y para en la estación 1, mirando al usuario | ✔ | ☐ |
+| Estación 1 · piel | Elegir un tono en la pantalla del modelo; agarrar la lata; **pulsar la válvula con la punta del índice** apuntando al personaje | ✔ (válvula y pintura) | ☐ |
+| Estación 2 · cabello | Paneles crema sobre la máquina (estilo con mini avatar y color); fabricar, agarrar, colocar en la cabeza, retirar tocando, descartar en el bote | ✔ | ☐ |
+| Estación 3 · rostro | **Agarrar el libro con una mano** (se abre); sacar un sticker con la otra y llevarlo a la cara; flechas del libro; colores de ojos | ✔ (abrir y sacar) | ☐ |
+| Estación 4 · ropa | Prendas en las baldas; tres botones (camisetas, pantalones, zapatos); vestir y desvestir; la cadera blanca se conserva | ✔ | ☐ |
+| Estación 5 · charms | **Agarrar una de las seis cajas** (se abre) y sacar el charm con la otra mano; accesorios en la vitrina, derechos | ✔ | ☐ |
+| Zona de colocación | Los objetos se colocan solos aunque se suelten a ~25 cm del lugar | ✔ | ☐ |
+| No quitar lo puesto | Con un objeto en la mano (o recién soltado) tocar otra parte del personaje no la retira | ✔ (lógica) | ☐ |
 | Navegación adelante/atrás | Botones de cada estación; **lo elegido se conserva** | ✔ | ☐ |
 | Terminar avatar | Caja de regalo, viaje al frente y figura final | ✔ | ☐ |
-| Pedido simulado | Tres pasos con el teclado numérico; confirmación con número | ✔ (lógica) | ☐ |
-| Tarjeta Amiibo | Retrato, nombre, cumpleaños y fondo; compartir (simulado) | ✔ | ☐ |
-| Ajustes | Altura ±2 cm, volúmenes, recalibrar (conserva el avatar) | ✔ | ☐ |
+| «¡Tu avatar está listo!» | Panel crema con tres tarjetas, sin campo de nombre ni resumen | ✔ | ☐ |
+| Pedido simulado | Tres pasos; nombre, apellido, correo, teléfono y dirección con el **teclado de letras**; confirmación con número | ✔ (lógica) | ☐ |
+| Tarjeta Amiibo | Retrato, **nombre con el teclado**, cumpleaños y fondo; sin esquinas negras; compartir (simulado) | ✔ | ☐ |
 | Sonido | Efectos en cada acción y música de fondo | no se oye | ☐ |
 | Rendimiento | Sin tirones; objetivo 72 fps | no medible | ☐ |
 
