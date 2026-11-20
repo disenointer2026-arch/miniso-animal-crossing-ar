@@ -44,18 +44,18 @@ Marcar con el resultado en el visor (el emulador ya cubrió la columna «Emulado
 | Pantallas de frente | Todas las pantallas flotantes (Ajustes, instrucciones, paneles de la estación, cierre) quedan de frente, sin ladearse | ✔ | ☐ |
 | Ajustes | Panel arriba y al frente; altura ±2 cm, volúmenes, recalibrar (conserva el avatar) | ✔ | ☐ |
 | Fábrica y banda | El avatar sale del edificio MINISO y para en la estación 1, mirando al usuario | ✔ | ☐ |
-| Estación 1 · piel | Elegir un tono en la pantalla del modelo; agarrar la lata; **pulsar la válvula con la punta del índice** apuntando al personaje | ✔ (válvula y pintura) | ☐ |
-| Estación 2 · cabello | Paneles crema sobre la máquina (estilo con mini avatar y color); fabricar, agarrar, colocar en la cabeza, retirar tocando, descartar en el bote | ✔ | ☐ |
-| Estación 3 · rostro | **Agarrar el libro con una mano** (se abre); sacar un sticker con la otra y llevarlo a la cara; flechas del libro; colores de ojos | ✔ (abrir y sacar) | ☐ |
-| Estación 4 · ropa | Prendas en las baldas; tres botones (camisetas, pantalones, zapatos); vestir y desvestir; la cadera blanca se conserva | ✔ | ☐ |
-| Estación 5 · charms | **Agarrar una de las seis cajas** (se abre) y sacar el charm con la otra mano; accesorios en la vitrina, derechos | ✔ | ☐ |
-| Zona de colocación | Los objetos se colocan solos aunque se suelten a ~25 cm del lugar | ✔ | ☐ |
-| No quitar lo puesto | Con un objeto en la mano (o recién soltado) tocar otra parte del personaje no la retira | ✔ (lógica) | ☐ |
+| Estación 1 · piel | Elegir un tono en la pantalla del modelo; agarrar la lata; **pulsar la válvula con la punta del índice** apuntando al personaje | ✔ (la válvula se detecta con el índice emulado y el personaje se pinta con el gatillo; no se ensayó el índice + puntería juntos) | ☐ |
+| Estación 2 · cabello | Paneles crema sobre la máquina (estilo con mini avatar y color); fabricar, agarrar, colocar en la cabeza, retirar tocando, descartar en el bote | ✔ (paneles y colocar; retirar y bote sin repetir esta ronda) | ☐ |
+| Estación 3 · rostro | **Agarrar el libro con una mano** (se abre); sacar un sticker con la otra y llevarlo a la cara; flechas del libro; colores de ojos | ✔ (abrir, sacar y colocar un sticker; flechas y colores de ojos sin probar) | ☐ |
+| Estación 4 · ropa | Prendas en las baldas; tres botones (camisetas, pantalones, zapatos); vestir y desvestir; la cadera blanca se conserva | ✔ (vestir una prenda; botones solo vistos, sin pulsar) | ☐ |
+| Estación 5 · charms | **Agarrar una de las seis cajas** (se abre) y sacar el charm con la otra mano; accesorios en la vitrina, derechos | ✔ (caja y charm con manos; **accesorios: falta confirmar que se agarran y su orientación**) | ☐ |
+| Zona de colocación | Los objetos se colocan solos aunque se suelten a ~25 cm del lugar | ✔ (cabello, sticker, prenda y charm) | ☐ |
+| No quitar lo puesto | Con un objeto en la mano (o recién soltado) tocar otra parte del personaje no la retira | sin probar en el emulador (solo lógica) | ☐ |
 | Navegación adelante/atrás | Botones de cada estación; **lo elegido se conserva** | ✔ | ☐ |
-| Terminar avatar | Caja de regalo, viaje al frente y figura final | ✔ | ☐ |
-| «¡Tu avatar está listo!» | Panel crema con tres tarjetas, sin campo de nombre ni resumen | ✔ | ☐ |
-| Pedido simulado | Tres pasos; nombre, apellido, correo, teléfono y dirección con el **teclado de letras**; confirmación con número | ✔ (lógica) | ☐ |
-| Tarjeta Amiibo | Retrato, **nombre con el teclado**, cumpleaños y fondo; sin esquinas negras; compartir (simulado) | ✔ | ☐ |
+| Terminar avatar | Caja de regalo, viaje al frente y figura final | ✔ (lanzado desde el estado) | ☐ |
+| «¡Tu avatar está listo!» | Panel crema con tres tarjetas, sin campo de nombre ni resumen | ✔ (pulsar las tarjetas con el dedo, sin probar) | ☐ |
+| Pedido simulado | Tres pasos; nombre, apellido, correo, teléfono y dirección con el **teclado de letras**; confirmación con número | ✔ (paso «Tus datos» y teclado con tildes; pago y confirmación sin repetir) | ☐ |
+| Tarjeta Amiibo | Retrato, **nombre con el teclado**, cumpleaños y fondo; sin esquinas negras; compartir (simulado) | ✔ (nombre con teclado y sin esquinas negras; compartir sin repetir) | ☐ |
 | Sonido | Efectos en cada acción y música de fondo | no se oye | ☐ |
 | Rendimiento | Sin tirones; objetivo 72 fps | no medible | ☐ |
 

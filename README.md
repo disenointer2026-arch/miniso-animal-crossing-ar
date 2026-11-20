@@ -46,7 +46,7 @@ La versión 5 aplica las correcciones del equipo tras probar en el visor y la **
 | **2 · Cabello** | Dos paneles crema sobre la máquina: **estilos** (tarjetas con mini avatar) y **colores**. Elegir un estilo pone a trabajar la máquina y el cabello sale en la bandeja; se agarra y se suelta sobre la cabeza. Tocar lo puesto lo retira; el bote lo descarta | `src/stations/hair/` |
 | **3 · Rostro** | **El libro de stickers se agarra con una mano y se abre**: cuatro páginas (ojos, color de ojos, boca, nariz) con flechas. Con la otra mano se saca un sticker y se lleva a la cara. Soltar el libro lo cierra y vuelve a su sitio | `src/stations/catalog/` |
 | **4 · Ropa** | Las prendas del grupo activo están en las **baldas del armario**. **Tres botones** en los bloques de al lado cambian entre camisetas, pantalones y zapatos. Se conserva la cadera blanca del avatar base | `catalog-station-system.js` |
-| **5 · Charms y accesorios** | **Seis cajas cerradas** (tres sobre la mesa y tres abajo) con el icono de su charm: bolsa de dinero, guitarra, moneda / tulipán, nota musical, regalo. **Se agarran con una mano y se abren**; con la otra se saca el charm. Al soltarla se cierra y vuelve a su sitio. Los accesorios van en una vitrina al fondo de la mesa | `catalog-station-system.js`, `catalog-objects.js` |
+| **5 · Charms y accesorios** | **Seis cajas cerradas** (tres sobre la mesa y tres abajo) con el icono de su charm: bolsa de dinero, guitarra, moneda / tulipán, nota musical, regalo. **Se agarran con una mano y se abren**; con la otra se saca el charm. Al soltarla se cierra y vuelve a su sitio. Los accesorios flotan en dos filas sobre las cajas, al fondo de la mesa | `catalog-station-system.js`, `catalog-objects.js` |
 
 **Cierre.** Tras la estación 5, «Terminar avatar» lleva al personaje a la caja de regalo (la caja de regalo se rehará y se aplicará en una sesión
 posterior). Todo aparece al frente del usuario:
@@ -62,7 +62,7 @@ La tarjeta es un coleccionable digital conceptual inspirado en el formato de las
 vigentes; la V5 cambia cómo se manejan las estaciones. Música de fondo en bucle (`public/audio/ambiente.mp3`, de la web original, solo uso
 académico) y efectos sintetizados (`src/audio/sfx.js`) con volúmenes independientes. `avatarConfig` (en `src/state.js`) es la fuente de verdad.
 
-Capturas del emulador: `docs/capturas/` (`v3` a `v4` de versiones anteriores y `v5/` de esta).
+Capturas del emulador de esta versión: `docs/capturas/v5/` (las anteriores, en `v3` y `v4`).
 
 ### Pruebas en el emulador
 
@@ -125,7 +125,7 @@ Desactivados a propósito: física (Havok) y detección de mallas, para cuidar e
   Si hay dudas en el visor, ajustar `PRESS_RADIUS` en `skin-station-system.js`.
 - **Posiciones del modelo:** los botones del armario, las baldas, las cajas y la vitrina están colocados según el modelo actual; cuando se reemplace
   el modelo (viene una versión nueva) hay que reajustar `MODEL`, `ANCHORS` y `FURNITURE`. La **caja de regalo** del final se rehará y se aplicará después.
-- **Accesorios y charms «al revés»:** no se pudo reproducir en el emulador (se ven derechos). Si siguen saliendo al revés en el visor, corregir con `DISPLAY_FIX`
+- **Accesorios y charms «al revés»:** no se pudo reproducir en el emulador (se ven derechos). **Los accesorios todavía no se confirmó que se agarren y se coloquen** (en la prueba con manos, gafas de sol no quedaron puestas): revisarlo primero en el visor. Si salen al revés, corregir con `DISPLAY_FIX`
   en `catalog-station-system.js` (rotación por pieza).
 - Los paneles UIKitML (pedido, teclado, tarjeta) cargan Nunito desde `public/fonts/` (licencia OFL); los demás usan la Nunito integrada, sin tildes.
 - El ajuste fino cambia la altura; la distancia se corrige recalibrando con la mano.

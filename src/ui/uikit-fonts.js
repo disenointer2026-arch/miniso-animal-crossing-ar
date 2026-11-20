@@ -5,7 +5,7 @@ import { TTFLoader } from '@pmndrs/uikit';
 
 const CHARSET =
   " \tABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!?.,;:'\"()-[]{}@#$%&*+=/\\<>_" +
-  'áéíóúüñÁÉÍÓÚÜÑ¡¿·°';
+  'áéíóúüñÁÉÍÓÚÜÑ¡¿·°|';
 
 const original = TTFLoader.prototype.loadAsync;
 TTFLoader.prototype.loadAsync = function loadAsync(input, onProgress) {

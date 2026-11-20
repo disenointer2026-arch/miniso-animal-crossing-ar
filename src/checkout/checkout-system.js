@@ -279,7 +279,7 @@ export class CheckoutSystem extends createSystem({}) {
     }
     if (keyboard.visible) {
       this.keyboard.refresh();
-      this.place(keyboard, 0, 0.72, -0.5);
+      this.place(keyboard, 0, 0.72, -0.58);
     }
     const spec = SHOWCASE[value];
     if (spec) showcase.value = spec;

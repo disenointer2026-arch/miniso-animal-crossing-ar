@@ -15,8 +15,12 @@ export class KeyboardUI {
     this.panel = panel;
     this.adapter = adapter;
     this.shift = false;
+    this.fresh = true; // al abrir un campo, lo primero que se teclea reemplaza el valor de ejemplo
     this.cache = new Map();
     this.bind();
+    focusField.subscribe(() => {
+      this.fresh = true;
+    });
   }
 
   el(id) {
@@ -59,7 +63,8 @@ export class KeyboardUI {
     const meta = FIELD_META[key];
     if (!key || !meta) return;
     if (meta.digits && !/\d/.test(char)) return;
-    const value = this.adapter.get(key);
+    const value = this.fresh ? '' : this.adapter.get(key);
+    this.fresh = false;
     const next = char.length === 1 && this.upper(key, value) ? char.toLocaleUpperCase('es') : char;
     this.shift = false;
     this.adapter.set(key, (value + next).slice(0, meta.max));
@@ -69,7 +74,8 @@ export class KeyboardUI {
   backspace() {
     const key = focusField.peek();
     if (!key) return;
-    this.adapter.set(key, this.adapter.get(key).slice(0, -1));
+    this.adapter.set(key, this.fresh ? '' : this.adapter.get(key).slice(0, -1));
+    this.fresh = false;
     this.refresh();
   }
 
