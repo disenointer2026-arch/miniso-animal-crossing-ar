@@ -3,27 +3,52 @@
    (fondo transparente). No toca la escena que ve el usuario. */
 import {
   AmbientLight,
+  Box3,
   Color,
   DirectionalLight,
   PerspectiveCamera,
   Scene,
   SRGBColorSpace,
+  Vector3,
   WebGLRenderTarget,
 } from '@iwsdk/core';
 import { Avatar } from '../avatar/avatar.js';
 
-export function renderPortrait(renderer, config, size = 640) {
+/** view: encuadre de la camara. Por defecto el cuerpo entero; { y: 1.5, z: 2.3 } encuadra la cabeza. */
+export function renderPortrait(renderer, config, size = 640, view = { y: 0.95, z: 5.4 }) {
+  const scene = litScene();
+  const avatar = new Avatar(config).build();
+  scene.add(avatar.root);
+  const camera = new PerspectiveCamera(24, 1, 0.1, 30);
+  camera.position.set(0, view.y, view.z);
+  camera.lookAt(0, view.y, 0);
+  return renderToDataURL(renderer, scene, camera, size);
+}
+
+/** Icono de una pieza suelta (p. ej. un charm): la encuadra entera, de frente y un poco desde arriba. */
+export function renderObjectIcon(renderer, object, size = 256) {
+  const scene = litScene();
+  scene.add(object);
+  const box = new Box3().setFromObject(object);
+  const center = box.getCenter(new Vector3());
+  const radius = Math.max(box.getSize(new Vector3()).length() / 2, 0.001);
+  const camera = new PerspectiveCamera(30, 1, radius * 0.1, radius * 20);
+  const distance = (radius / Math.sin((30 * Math.PI) / 360)) * 1.05;
+  camera.position.set(center.x, center.y + distance * 0.18, center.z + distance);
+  camera.lookAt(center);
+  return renderToDataURL(renderer, scene, camera, size);
+}
+
+function litScene() {
   const scene = new Scene();
   scene.add(new AmbientLight(0xffffff, 1.7));
   const sun = new DirectionalLight(0xffffff, 2.4);
   sun.position.set(1.5, 3, 4);
   scene.add(sun);
-  const avatar = new Avatar(config).build();
-  scene.add(avatar.root);
-  const camera = new PerspectiveCamera(24, 1, 0.1, 30);
-  camera.position.set(0, 0.95, 5.4);
-  camera.lookAt(0, 0.95, 0);
+  return scene;
+}
 
+function renderToDataURL(renderer, scene, camera, size) {
   const target = new WebGLRenderTarget(size, size, { samples: 4 });
   target.texture.colorSpace = SRGBColorSpace;
   const previousTarget = renderer.getRenderTarget();

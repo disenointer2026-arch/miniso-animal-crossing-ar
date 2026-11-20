@@ -1,10 +1,11 @@
 /* La tarjeta Amiibo como objeto 3D: una carta de pie, de 5:7, con el dibujo en la cara
    frontal. El lienzo se redibuja cuando cambia el nombre, el cumpleanos o el fondo. */
 import {
-  BoxGeometry,
   CanvasTexture,
+  DoubleSide,
   Mesh,
   MeshBasicMaterial,
+  PlaneGeometry,
   SRGBColorSpace,
 } from '@iwsdk/core';
 import { CARD_H, CARD_W, drawCard } from './card-renderer.js';
@@ -19,11 +20,15 @@ export function createCardView() {
   const texture = new CanvasTexture(blank);
   texture.colorSpace = SRGBColorSpace;
   texture.anisotropy = 4;
-  const edge = new MeshBasicMaterial({ color: 0xfff6e6 });
-  const front = new MeshBasicMaterial({ map: texture, toneMapped: false });
-  const mesh = new Mesh(new BoxGeometry(CARD_SIZE.width, CARD_SIZE.height, 0.004), [
-    edge, edge, edge, edge, front, edge,
-  ]);
+  // Plano con transparencia: las esquinas redondeadas de la tarjeta quedan vacias (antes se veian negras)
+  const front = new MeshBasicMaterial({
+    map: texture,
+    toneMapped: false,
+    transparent: true,
+    alphaTest: 0.06,
+    side: DoubleSide,
+  });
+  const mesh = new Mesh(new PlaneGeometry(CARD_SIZE.width, CARD_SIZE.height), front);
   mesh.name = 'CardView';
   mesh.userData.texture = texture;
   let token = 0;

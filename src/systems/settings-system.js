@@ -1,4 +1,4 @@
-/* Ajustes (panel UIKitML que sigue la mirada abajo a la izquierda, solo mientras se personaliza):
+/* Ajustes (panel UIKitML que sigue la mirada, arriba y de frente al usuario, solo mientras se personaliza):
    - Altura: sube o baja toda la fabrica unos centimetros sobre la calibrada.
    - Musica y efectos: volumenes independientes.
    - Recalibrar con la mano: vuelve a medir altura y alcance; la fabrica se rehace y el
@@ -37,7 +37,7 @@ export class SettingsSystem extends createSystem({
       this.entity.addComponent(RayInteractable);
       this.entity.addComponent(Follower, {
         target: this.player.head,
-        offsetPosition: [-0.26, -0.28, -0.6],
+        offsetPosition: [0, 0.26, -0.7],
         behavior: FollowBehavior.FaceTarget,
         maxAngle: 35,
         tolerance: 0.15,

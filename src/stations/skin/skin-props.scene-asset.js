@@ -9,9 +9,11 @@ import {
 } from '@iwsdk/core';
 
 /** Medidas de la lata (origen en su centro). */
-export const CAN = { radius: 0.028, height: 0.11 };
+export const CAN = { radius: 0.034, height: 0.13 };
 /** Punta del aerosol, en coordenadas de la lata. */
-export const CAN_NOZZLE = [0, CAN.height / 2 + 0.025, 0.024];
+export const CAN_NOZZLE = [0, CAN.height / 2 + 0.03, 0.03];
+/** Valvula (boton de arriba): se activa pulsandola con la punta del dedo indice. */
+export const CAN_VALVE = [0, CAN.height / 2 + 0.034, 0];
 
 const metal = new MeshStandardMaterial({ color: 0xf4f1ea, roughness: 0.35, metalness: 0.2 });
 const dark = new MeshStandardMaterial({ color: 0x4a4540, roughness: 0.6 });
@@ -23,8 +25,8 @@ const yellow = new MeshStandardMaterial({ color: 0xf6d365, roughness: 0.6 });
 const bodyGeometry = new CylinderGeometry(CAN.radius, CAN.radius, CAN.height, 24);
 const bandGeometry = new CylinderGeometry(CAN.radius + 0.0008, CAN.radius + 0.0008, 0.045, 24);
 const capGeometry = new CylinderGeometry(CAN.radius * 0.85, CAN.radius, 0.016, 24);
-const nozzleBase = new CylinderGeometry(0.009, 0.009, 0.014, 12);
-const nozzleTip = new BoxGeometry(0.008, 0.008, 0.022);
+const nozzleBase = new CylinderGeometry(0.013, 0.015, 0.018, 20);
+const nozzleTip = new BoxGeometry(0.009, 0.009, 0.026);
 
 function part(name, geometry, material, x = 0, y = 0, z = 0) {
   const mesh = new Mesh(geometry, material);
@@ -42,8 +44,15 @@ export function createSprayCan(hex) {
     part('Band', bandGeometry, new MeshStandardMaterial({ color: hex, roughness: 0.5 }), 0, -0.004, 0),
   );
   can.add(part('Cap', capGeometry, dark, 0, CAN.height / 2 + 0.008, 0));
-  can.add(part('NozzleBase', nozzleBase, red, 0, CAN.height / 2 + 0.022, 0));
-  can.add(part('NozzleTip', nozzleTip, red, 0, CAN.height / 2 + 0.025, 0.014));
+  // La valvula (boton rojo con la boquilla) se hunde al pulsarla; el sistema la mueve por userData
+  const valve = new Group();
+  valve.name = 'Valve';
+  valve.position.set(0, CAN.height / 2 + 0.016, 0);
+  valve.add(part('ValveButton', nozzleBase, red, 0, 0.011, 0));
+  valve.add(part('NozzleTip', nozzleTip, red, 0, 0.014, 0.018));
+  can.add(valve);
+  can.userData.valve = valve;
+  can.userData.valveRest = valve.position.y;
   return can;
 }
 

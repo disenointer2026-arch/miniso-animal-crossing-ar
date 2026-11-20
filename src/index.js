@@ -16,7 +16,10 @@
    CatalogStationSystem estaciones 3 a 5: libro de stickers, armario y caja de charms
    FinaleSystem       cierre: caja de regalo, viaje al frente y figura final
    CheckoutSystem     que desea hacer, pedido simulado, tarjeta Amiibo y cierre
-   SettingsSystem     ajustes: altura, volumenes y recalibrar */
+   SettingsSystem     ajustes: altura, volumenes y recalibrar
+   UiSystem           elementos pulsables de la interfaz espacial (lienzos crema)
+   StandSystem        circulo en el piso que guia al usuario hasta la estacion activa */
+import './ui/uikit-fonts.js';
 import { World } from '@iwsdk/core';
 import * as state from './state.js';
 import projectOptions from 'virtual:iwsdk-project';
@@ -27,6 +30,7 @@ import { HintSystem } from './systems/hint-system.js';
 import { NavigationSystem } from './systems/navigation-system.js';
 import { PanelsSystem } from './systems/panels-system.js';
 import { SettingsSystem } from './systems/settings-system.js';
+import { StandSystem } from './systems/stand-system.js';
 import { WelcomeSystem } from './systems/welcome-system.js';
 import { CheckoutSystem } from './checkout/checkout-system.js';
 import { FinaleSystem } from './finale/finale-system.js';
@@ -34,6 +38,7 @@ import { CarryableSystem } from './interaction/carryable-system.js';
 import { CatalogStationSystem } from './stations/catalog/catalog-station-system.js';
 import { HairStationSystem } from './stations/hair/hair-station-system.js';
 import { SkinStationSystem } from './stations/skin/skin-station-system.js';
+import { UiSystem } from './ui/ui-system.js';
 
 World.create(document.getElementById('scene-container'), projectOptions).then(
   (world) => {
@@ -51,6 +56,8 @@ World.create(document.getElementById('scene-container'), projectOptions).then(
     world.registerSystem(FinaleSystem, { priority: 18 });
     world.registerSystem(CheckoutSystem, { priority: 32 });
     world.registerSystem(SettingsSystem, { priority: 34 });
+    world.registerSystem(UiSystem, { priority: 13 });
+    world.registerSystem(StandSystem, { priority: 36 });
   },
 );
 

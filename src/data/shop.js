@@ -60,6 +60,10 @@ export function hashString(s) {
 
 /** Reglas de validacion de los campos numericos (las mismas de la web). */
 export const RULES = {
+  name: (v) => v.trim().length >= 2,
+  lastName: (v) => v.trim().length >= 2,
+  email: (v) => /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(v),
+  address: (v) => v.trim().length >= 6,
   phone: (v) => v.length >= 7,
   ccNumber: (v) => v.length >= 15,
   ccExp: (v) => /^(0[1-9]|1[0-2])\d{2}$/.test(v),
@@ -67,7 +71,27 @@ export const RULES = {
   nequi: (v) => v.length === 10,
 };
 export const MAX_DIGITS = { phone: 10, ccNumber: 16, ccExp: 4, ccCvc: 4, nequi: 10 };
+
+/** Campos que se llenan con el teclado: digits = solo numeros; cap = 'words' pone en mayuscula cada palabra;
+    max = largo maximo. */
+export const FIELD_META = {
+  name: { max: 20, cap: 'words' },
+  lastName: { max: 24, cap: 'words' },
+  email: { max: 40, cap: 'none' },
+  address: { max: 44, cap: 'words' },
+  cardName: { max: 12, cap: 'words' },
+  phone: { max: 10, digits: true },
+  ccNumber: { max: 16, digits: true },
+  ccExp: { max: 4, digits: true },
+  ccCvc: { max: 4, digits: true },
+  nequi: { max: 10, digits: true },
+};
 export const FIELD_LABELS = {
+  name: 'Nombre',
+  lastName: 'Apellido',
+  email: 'Correo',
+  address: 'Direccion',
+  cardName: 'Nombre de tu avatar',
   phone: 'Telefono',
   ccNumber: 'Numero de tarjeta',
   ccExp: 'Vence (MM/AA)',

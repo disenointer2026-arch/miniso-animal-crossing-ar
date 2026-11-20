@@ -18,7 +18,7 @@ export class HintSystem extends createSystem({}) {
       const entity = this.world.createTransformEntity(panel, { persistent: true });
       entity.addComponent(Follower, {
         target: this.player.head,
-        offsetPosition: [0, -0.16, -0.75],
+        offsetPosition: [0, -0.2, -0.75],
         behavior: FollowBehavior.FaceTarget,
         maxAngle: 22,
         tolerance: 0.12,

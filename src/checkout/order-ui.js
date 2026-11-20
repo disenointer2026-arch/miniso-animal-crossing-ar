@@ -1,9 +1,8 @@
 /* Pedido simulado en el visor: producto, datos y pago (mismo flujo y textos que la web).
-   - Los datos personales vienen de ejemplo; el telefono y los datos de pago se editan con
-     el teclado numerico virtual (el campo tocado recibe los digitos).
+   - Los datos personales vienen de ejemplo y se pueden cambiar: el campo tocado (nombre, apellido,
+     correo, telefono, direccion, datos de pago) recibe lo que se escribe en el teclado completo.
    - Nada se envia a ningun servidor. Al finalizar queda guardado en lastOrder. */
 import { sfx } from '../audio/sfx.js';
-import { plain } from '../data/categories.js';
 import {
   BANKS,
   CITIES,
@@ -20,35 +19,34 @@ import {
 import { Phase, phase } from '../state.js';
 import { cardProfile, focusField, lastOrder, orderDraft, patchDraft } from './checkout-state.js';
 
-const CREAM = '#fff6e6';
-const GREEN = '#8cc37a';
-const PILL = '#5f4c45';
-const FOCUS = '#f9c623';
-const FIELD = '#3c332f';
-const FIELD_KEYS = ['phone', 'ccNumber', 'ccExp', 'ccCvc', 'nequi'];
+const EDGE = '#FDD885'; // contorno de los elementos (amarillo suave de la guia)
+const GREEN = '#5DBC41';
+const PILL = '#FFFBF2';
+const FOCUS = '#FF0000';
+const FIELD_KEYS = ['name', 'lastName', 'email', 'phone', 'address', 'ccNumber', 'ccExp', 'ccCvc', 'nequi'];
+const CUSTOMER_KEYS = ['name', 'lastName', 'email', 'phone', 'address'];
 
 const cycle = (list, value, step) => list[(list.indexOf(value) + step + list.length) % list.length];
 
 export class OrderUI {
-  constructor(orderPanel, keypadPanel) {
+  constructor(orderPanel) {
     this.order = orderPanel;
-    this.keypad = keypadPanel;
     this.cache = new Map();
     this.bind();
   }
 
   el(panel, id) {
-    const key = `${panel === this.order ? 'o' : 'k'}:${id}`;
-    if (!this.cache.has(key)) this.cache.set(key, panel.getElementById(id));
-    return this.cache.get(key);
+    if (!this.cache.has(id)) this.cache.set(id, panel.getElementById(id));
+    return this.cache.get(id);
   }
 
-  text(id, value, panel = this.order) {
-    this.el(panel, id)?.setProperties({ text: plain(String(value)) });
+  /** Texto del panel de pedido. Con tildes: los campos de texto usan Nunito completa. */
+  text(id, value) {
+    this.el(this.order, id)?.setProperties({ text: String(value) });
   }
 
-  on(id, handler, panel = this.order) {
-    this.el(panel, id)?.addEventListener('click', () => {
+  on(id, handler) {
+    this.el(this.order, id)?.addEventListener('click', () => {
       sfx.select();
       handler();
     });
@@ -62,14 +60,14 @@ export class OrderUI {
 
   getField(key) {
     const d = orderDraft.peek();
-    if (key === 'phone') return d.customer.phone;
+    if (CUSTOMER_KEYS.includes(key)) return d.customer[key];
     if (key === 'nequi') return d.nequi;
     return d.card[key];
   }
 
   setField(key, value) {
     const d = orderDraft.peek();
-    if (key === 'phone') patchDraft({ customer: { ...d.customer, phone: value } });
+    if (CUSTOMER_KEYS.includes(key)) patchDraft({ customer: { ...d.customer, [key]: value } });
     else if (key === 'nequi') patchDraft({ nequi: value });
     else patchDraft({ card: { ...d.card, [key]: value } });
   }
@@ -91,22 +89,6 @@ export class OrderUI {
     }
     this.on('back', () => this.back());
     this.on('next', () => this.next());
-
-    // Teclado numerico: cada tecla agrega un digito al campo activo
-    for (let n = 0; n <= 9; n++) {
-      this.on(`k${n}`, () => this.type(String(n)), this.keypad);
-    }
-    this.on('kback', () => this.type(null), this.keypad);
-    this.on('kok', () => {
-      focusField.value = null;
-    }, this.keypad);
-  }
-
-  type(digit) {
-    const key = focusField.peek();
-    if (!key) return;
-    const value = this.getField(key);
-    this.setField(key, digit === null ? value.slice(0, -1) : (value + digit).slice(0, MAX_DIGITS[key]));
   }
 
   error(message) {
@@ -126,7 +108,11 @@ export class OrderUI {
     if (d.step === 0) {
       patchDraft({ step: 1 });
     } else if (d.step === 1) {
+      if (!RULES.name(d.customer.name)) return this.error('Escribe tu nombre.');
+      if (!RULES.lastName(d.customer.lastName)) return this.error('Escribe tu apellido.');
+      if (!RULES.email(d.customer.email)) return this.error('Escribe un correo valido (con @).');
       if (!RULES.phone(d.customer.phone)) return this.error('El telefono debe tener al menos 7 digitos.');
+      if (!RULES.address(d.customer.address)) return this.error('Escribe tu direccion.');
       focusField.value = null;
       patchDraft({ step: 2 });
     } else {
@@ -169,7 +155,7 @@ export class OrderUI {
     for (let i = 0; i < 3; i++) {
       this.el(this.order, `st-${i}`)?.setProperties({
         backgroundColor: i === d.step ? GREEN : PILL,
-        color: i === d.step ? '#ffffff' : '#e9dfcf',
+        color: i === d.step ? '#ffffff' : '#6B5C52',
       });
       this.el(this.order, `s${i}`)?.setProperties({ display: i === d.step ? 'flex' : 'none' });
     }
@@ -187,14 +173,11 @@ export class OrderUI {
 
     this.text('session', d.session ? `Sesion simulada iniciada como ${d.customer.email}` : 'Puedes continuar sin iniciar sesion.');
     this.text('login', d.session ? 'Cerrar sesion MINISO (simulado)' : 'Iniciar sesion MINISO (simulado)');
-    this.text('d-name', `${d.customer.name} ${d.customer.lastName}`);
-    this.text('d-email', d.customer.email);
-    this.text('d-address', `${d.customer.address}`);
     this.text('c-name', d.customer.city);
     this.text('b-name', d.bank);
     for (const method of PAYMENTS) {
       this.el(this.order, `m-${method.id}`)?.setProperties({
-        borderColor: d.payment === method.id ? FOCUS : CREAM,
+        borderColor: d.payment === method.id ? FOCUS : EDGE,
       });
       this.el(this.order, `g-${method.id}`)?.setProperties({ display: d.payment === method.id ? 'flex' : 'none' });
     }
@@ -202,13 +185,9 @@ export class OrderUI {
     const focus = focusField.peek();
     for (const key of FIELD_KEYS) {
       this.text(`f-${key}`, `${FIELD_LABELS[key]}: ${formatField(key, this.getField(key))}`);
-      this.el(this.order, `f-${key}`)?.setProperties({ borderColor: focus === key ? FOCUS : FIELD });
+      this.el(this.order, `f-${key}`)?.setProperties({ borderColor: focus === key ? FOCUS : EDGE });
     }
     this.text('back', d.step === 0 ? 'Volver' : 'Atras');
     this.text('next', d.step === 0 ? 'Continuar' : d.step === 1 ? 'Continuar al pago' : `Finalizar pago - ${cop(t.total)}`);
-    if (focus) {
-      this.text('kp-label', FIELD_LABELS[focus], this.keypad);
-      this.text('kp-value', formatField(focus, this.getField(focus)), this.keypad);
-    }
   }
 }

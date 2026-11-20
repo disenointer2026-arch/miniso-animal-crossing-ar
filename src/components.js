@@ -21,7 +21,6 @@ export const AvatarFigure = createComponent('AvatarFigure', {
 });
 
 export const InstructionsPanel = createComponent('InstructionsPanel', {});
-export const CategoryPanel = createComponent('CategoryPanel', {});
 
 /** Boton espacial de navegacion de una estacion: -1 = anterior, +1 = siguiente. */
 export const NavButton = createComponent('NavButton', {
@@ -70,9 +69,20 @@ export const CatalogItem = createComponent('CatalogItem', {
   kind: { type: Types.String, default: 'part' },
 });
 
-/** Flecha del libro de stickers: -1 pagina anterior, +1 siguiente. */
-export const PageArrow = createComponent('PageArrow', {
-  direction: { type: Types.Int8, default: 1 },
+/** Elemento pulsable de la interfaz espacial dibujada en lienzos (src/ui/world-ui.js). */
+export const UiItem = createComponent('UiItem', {});
+
+/** Caja de charms: se agarra con una mano, se abre al agarrarla y de ella se saca el charm. */
+export const ChestBox = createComponent('ChestBox', {
+  charm: { type: Types.String, default: '' },
+});
+
+/** Libro de stickers de la estacion de rostro: se agarra para elegir. */
+export const StickerBook = createComponent('StickerBook', {});
+
+/** Boton fisico de pestana del armario (camisetas, pantalones, zapatos). */
+export const ClosetButton = createComponent('ClosetButton', {
+  group: { type: Types.Int8, default: 0 },
 });
 
 export default defineComponents([
@@ -80,7 +90,6 @@ export default defineComponents([
   FactoryPart,
   AvatarFigure,
   InstructionsPanel,
-  CategoryPanel,
   NavButton,
   Carryable,
   SprayCan,
@@ -88,5 +97,8 @@ export default defineComponents([
   HairMachine,
   AvatarZone,
   CatalogItem,
-  PageArrow,
+  UiItem,
+  ChestBox,
+  StickerBook,
+  ClosetButton,
 ]);

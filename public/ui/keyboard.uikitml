@@ -1,0 +1,30 @@
+<!-- Teclado virtual completo (letras, numeros y signos) para el nombre de la tarjeta y los datos del pedido:
+     el campo activo recibe lo que se teclea. Las teclas las rotula src/checkout/order-ui.js (ids kb-0 ... kb-49). -->
+<style>
+  @font-face { font-family: Nunito; font-weight: 400; src: url(../fonts/Nunito_400Regular.ttf); }
+  @font-face { font-family: Nunito; font-weight: 700; src: url(../fonts/Nunito_700Bold.ttf); }
+  .root { flex-direction: column; width: 640px; font-family: Nunito; background-color: #FAF6D4; border-radius: 28px; border-width: 4px; border-color: #FDD885; }
+  .content { flex-direction: column; gap: 7px; padding: 18px; }
+  .label { color: #2F5D46; font-size: 15px; font-weight: 700; letter-spacing: 1.2px; }
+  .value { color: #3A2E28; font-size: 26px; font-weight: 700; }
+  .row { flex-direction: row; gap: 7px; }
+  .key { width: 54px; height: 50px; border-radius: 14px; background-color: #FFFBF2; border-width: 3px; border-color: #FDD885;
+    color: #3A2E28; font-size: 24px; font-weight: 700; text-align: center; padding-top: 7px; cursor: pointer; }
+  .wide { width: 120px; font-size: 18px; padding-top: 12px; }
+  .space { width: 220px; font-size: 18px; padding-top: 12px; }
+  .shift { background-color: #FDD885; }
+  .back { background-color: #C1E2DD; }
+  .ok { background-color: #FF0000; border-color: #FF0000; color: #ffffff; }
+</style>
+<div class="root">
+  <div class="content">
+    <div id="kp-label" class="label">-</div>
+    <div id="kp-value" class="value">-</div>
+    <div class="row"><div id="kb-0" class="key">1</div><div id="kb-1" class="key">2</div><div id="kb-2" class="key">3</div><div id="kb-3" class="key">4</div><div id="kb-4" class="key">5</div><div id="kb-5" class="key">6</div><div id="kb-6" class="key">7</div><div id="kb-7" class="key">8</div><div id="kb-8" class="key">9</div><div id="kb-9" class="key">0</div></div>
+    <div class="row"><div id="kb-10" class="key">q</div><div id="kb-11" class="key">w</div><div id="kb-12" class="key">e</div><div id="kb-13" class="key">r</div><div id="kb-14" class="key">t</div><div id="kb-15" class="key">y</div><div id="kb-16" class="key">u</div><div id="kb-17" class="key">i</div><div id="kb-18" class="key">o</div><div id="kb-19" class="key">p</div></div>
+    <div class="row"><div id="kb-20" class="key">a</div><div id="kb-21" class="key">s</div><div id="kb-22" class="key">d</div><div id="kb-23" class="key">f</div><div id="kb-24" class="key">g</div><div id="kb-25" class="key">h</div><div id="kb-26" class="key">j</div><div id="kb-27" class="key">k</div><div id="kb-28" class="key">l</div><div id="kb-29" class="key">ñ</div></div>
+    <div class="row"><div id="kb-30" class="key">z</div><div id="kb-31" class="key">x</div><div id="kb-32" class="key">c</div><div id="kb-33" class="key">v</div><div id="kb-34" class="key">b</div><div id="kb-35" class="key">n</div><div id="kb-36" class="key">m</div><div id="kb-37" class="key">.</div><div id="kb-38" class="key">@</div><div id="kb-39" class="key">-</div></div>
+    <div class="row"><div id="kb-40" class="key">á</div><div id="kb-41" class="key">é</div><div id="kb-42" class="key">í</div><div id="kb-43" class="key">ó</div><div id="kb-44" class="key">ú</div><div id="kb-45" class="key">ü</div><div id="kb-46" class="key">_</div><div id="kb-47" class="key">,</div><div id="kb-48" class="key">'</div><div id="kb-49" class="key">/</div></div>
+    <div class="row"><div id="kb-shift" class="key wide shift">Mayus</div><div id="kb-space" class="key space">espacio</div><div id="kb-back" class="key wide back">borrar</div><div id="kb-ok" class="key wide ok">Listo</div></div>
+  </div>
+</div>

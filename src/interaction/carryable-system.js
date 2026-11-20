@@ -11,6 +11,15 @@ const RETURN_RATE = 7; // velocidad del regreso (1/s)
 
 const dropHandlers = new Map();
 
+/** Cuantos objetos se sostienen ahora y cuando se solto el ultimo (segundos). */
+let heldCount = 0;
+let lastRelease = -10;
+const RELEASE_GRACE = 0.9; // despues de soltar, todavia no se puede retirar nada puesto
+
+/** Verdadero mientras se sostiene un objeto (o acaba de soltarse): en ese momento no se debe quitar
+    nada de lo ya puesto, para que al colocar una pieza el dedo no retire otra por accidente. */
+export const interactionBusy = () => heldCount > 0 || performance.now() / 1000 - lastRelease < RELEASE_GRACE;
+
 /** Registra que hacer al soltar un objeto de este tipo. Devuelve como quitarlo. */
 export function registerDropHandler(kind, handler) {
   dropHandlers.set(kind, handler);
@@ -25,11 +34,16 @@ export class CarryableSystem extends createSystem({
     this.target = new Vector3();
     this.rotation = new Quaternion();
     this.axis = new Vector3(0, 1, 0);
+    heldCount = 0;
+    lastRelease = -10;
     this.cleanupFuncs.push(
       this.queries.held.subscribe('qualify', (entity) => {
+        heldCount++;
         entity.setValue(Carryable, 'idle', 0);
       }),
       this.queries.held.subscribe('disqualify', (entity) => {
+        heldCount = Math.max(0, heldCount - 1);
+        lastRelease = performance.now() / 1000;
         if (!entity.active) return;
         entity.setValue(Carryable, 'idle', 0);
         dropHandlers.get(entity.getValue(Carryable, 'kind'))?.(entity);

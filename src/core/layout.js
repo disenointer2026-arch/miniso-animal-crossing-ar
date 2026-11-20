@@ -6,15 +6,16 @@
    origen es el usuario, -Z al frente, +X a su derecha, Y arriba (y = 0 es el piso).
 
    Siete posiciones sobre la banda (slots): 0 salida del edificio MINISO | 1..5 las cinco
-   estaciones | 6 caja de regalo (final). Un "marco" de estacion mira al usuario: su +Z apunta
-   al usuario, +X es su derecha mirando hacia afuera y "radial" positivo va hacia afuera. */
+   estaciones | 6 caja de regalo (final). Cada slot tiene un PUNTO DE PIE (MODEL.stands): el
+   usuario camina hasta el, de frente a la estacion. Un "marco" de estacion mira a ese punto: su +Z
+   apunta al usuario, +X es su derecha mirando hacia afuera y "radial" positivo va hacia afuera. */
 
 const DEG = Math.PI / 180;
 
 export const MODEL = {
-  scale: 0.025, // metros por unidad del modelo
+  scale: 0.034, // metros por unidad del modelo (fabrica grande: el usuario camina entre estaciones)
   beltTop: 6.9, // altura (z) de la superficie de la banda
-  user: [23, -2], // donde esta de pie el usuario: equilibra la distancia a las cinco estaciones
+  user: [23, -2], // donde esta de pie el usuario al calibrar: el centro del recorrido
   yaw: -13 * DEG, // giro de la fabrica respecto a la mirada: la estacion 1 queda al frente-izquierda
   /** Linea central de la banda, de la salida del edificio al final. */
   path: [
@@ -26,6 +27,9 @@ export const MODEL = {
   stops: [[-9, 34], [6, 8.8], [20, 27], [46, 15], [28, -21.6], [2, -21.6], [-8, -21.6]],
   /** Centro de la caja de regalo, un poco mas alla del final de la banda. */
   giftBox: [-15.5, -21.6],
+  /** Donde se para el usuario en cada slot: del lado de adentro de la banda, de frente a la
+      estacion y a ~0.45 m de la banda (alcance comodo de la mano). El slot 0 usa el de la estacion 1. */
+  stands: [[6, -1.5], [6, -1.5], [38, 27], [36, 8], [27, -13], [3, -13], [-8, -13]],
 };
 
 export const SLOT = { portal: 0, firstStation: 1, giftBox: 6 };
@@ -36,6 +40,9 @@ export const LIMITS = {
   height: [0.7, 1.25],
   beltRadius: [0.5, 0.68],
 };
+
+/** Radio (m) alrededor del punto de pie en el que se considera que el usuario ya esta en su sitio. */
+export const STAND_RADIUS = 0.4;
 
 /** Valores de partida. beltRadius (el alcance medido con la mano) ajusta el tamano de la fabrica. */
 export const DEFAULT_LAYOUT = {
@@ -52,8 +59,8 @@ export const clamp = (value, [min, max]) => Math.min(Math.max(value, min), max);
 /** Estacion (0..4) -> slot. */
 export const stationSlot = (station) => SLOT.firstStation + station;
 
-/** Metros por unidad del modelo, ajustado por el alcance calibrado (entre -10 % y +15 %). */
-export const modelScale = (layout) => MODEL.scale * clamp(layout.beltRadius / 0.55, [0.9, 1.15]);
+/** Metros por unidad del modelo, ajustado por el alcance calibrado (entre -8 % y +8 %). */
+export const modelScale = (layout) => MODEL.scale * clamp(layout.beltRadius / 0.55, [0.92, 1.08]);
 
 /** Punto del modelo (mx, my, mz) en coordenadas locales de la fabrica. */
 export function modelPoint(layout, mx, my, mz = MODEL.beltTop, out = { x: 0, y: 0, z: 0 }) {
@@ -124,15 +131,27 @@ export function lerpAngle(a, b, t) {
 }
 
 // ---------- Marcos (estaciones y muebles) ----------
-/** Marco en un punto del plano local (x, z): gira para mirar al usuario (origen) y devuelve el
-    punto desplazado tangent (derecha), radial (hacia afuera) y up (arriba). */
-function frameAt(x, y, z, tangent, radial, up) {
-  const distance = Math.hypot(x, z) || 1;
-  const rotY = Math.atan2(-x, -z); // +Z del objeto mira al usuario
+/** Punto de pie de un slot en coordenadas locales de la fabrica (sobre el piso: y = 0). */
+export function standPoint(layout, slot, out = { x: 0, y: 0, z: 0 }) {
+  const [mx, my] = MODEL.stands[slot];
+  modelPoint(layout, mx, my, MODEL.beltTop, out);
+  out.y = 0;
+  return out;
+}
+
+const FACE = { x: 0, y: 0, z: 0 };
+
+/** Marco en un punto del plano local (x, z): gira para mirar al punto (fx, fz) (donde esta el
+    usuario) y devuelve el punto desplazado tangent (derecha), radial (hacia afuera) y up (arriba). */
+function frameAt(x, y, z, tangent, radial, up, fx = 0, fz = 0) {
+  const dx = x - fx;
+  const dz = z - fz;
+  const distance = Math.hypot(dx, dz) || 1;
+  const rotY = Math.atan2(-dx, -dz); // +Z del objeto mira al usuario
   const tx = Math.cos(rotY);
   const tz = -Math.sin(rotY);
-  const ox = x / distance; // hacia afuera
-  const oz = z / distance;
+  const ox = dx / distance; // hacia afuera
+  const oz = dz / distance;
   return {
     x: x + tx * tangent + ox * radial,
     y: y + up,
@@ -143,21 +162,23 @@ function frameAt(x, y, z, tangent, radial, up) {
   };
 }
 
-/** Marco de un punto cualquiera del modelo [mx, my, mz]. */
-export function modelFrame(layout, point, tangent = 0, radial = 0, up = 0) {
+/** Marco de un punto cualquiera del modelo [mx, my, mz]. Mira al punto de pie del `slot` dado;
+    sin slot, mira al origen (el lugar donde el usuario calibro). */
+export function modelFrame(layout, point, tangent = 0, radial = 0, up = 0, slot = null) {
   const p = modelPoint(layout, point[0], point[1], point[2] ?? MODEL.beltTop);
-  return frameAt(p.x, p.y, p.z, tangent, radial, up);
+  const face = slot === null ? FACE : standPoint(layout, slot);
+  return frameAt(p.x, p.y, p.z, tangent, radial, up, face.x, face.z);
 }
 
 /** Marco de un slot (donde para el avatar); up se mide sobre la banda. */
 export function slotPose(layout, slot, radial = 0, up = 0) {
   const [mx, my] = MODEL.stops[slot];
-  return modelFrame(layout, [mx, my, MODEL.beltTop], 0, radial, up);
+  return modelFrame(layout, [mx, my, MODEL.beltTop], 0, radial, up, slot);
 }
 
 export function slotPoint(layout, slot, tangent = 0, radial = 0, up = 0) {
   const [mx, my] = MODEL.stops[slot];
-  return modelFrame(layout, [mx, my, MODEL.beltTop], tangent, radial, up);
+  return modelFrame(layout, [mx, my, MODEL.beltTop], tangent, radial, up, slot);
 }
 
 export function stationPoint(layout, station, tangent = 0, radial = 0, up = 0) {

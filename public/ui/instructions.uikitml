@@ -1,78 +1,32 @@
-<!-- Instrucciones de uso. Se muestran cuando el personaje llega y se cierran
-     con el boton; al cerrarlas empieza la primera categoria. -->
+<!-- Instrucciones de uso: aparecen cuando el personaje llega y se cierran con el boton. -->
 <style>
-  .panel-root {
-    flex-direction: column;
-    width: 500px;
-  }
-
-  .panel-content {
-    flex-direction: column;
-    gap: 9px;
-    padding: 24px;
-  }
-
-  .title {
-    color: #e60012;
-    font-size: 28px;
-    font-weight: 700;
-    margin-bottom: 4px;
-  }
-
-  .step {
-    flex-direction: row;
-    align-items: center;
-    gap: 12px;
-  }
-
-  .number {
-    width: 30px;
-    height: 30px;
-    border-radius: 15px;
-    background-color: #8cc37a;
-    color: #ffffff;
-    font-size: 17px;
-    font-weight: 700;
-    text-align: center;
-    padding-top: 4px;
-  }
-
-  .text {
-    color: #5f4c45;
-    font-size: 18px;
-    line-height: 24px;
-    width: 410px;
-  }
-
-  .text:dark {
-    color: #fff6e6;
-  }
-
-  .button {
-    justify-content: center;
-    margin-left: 24px;
-    margin-right: 24px;
-    margin-bottom: 24px;
-  }
+  .panel-root { flex-direction: column; width: 520px; font-family: nunito; background-color: #FAF6D4; border-radius: 28px; border-width: 4px; border-color: #FDD885; }
+  .panel-content { flex-direction: column; gap: 10px; padding: 26px; }
+  .title { color: #E60012; font-size: 32px; font-weight: 700; margin-bottom: 4px; }
+  .step { flex-direction: row; align-items: center; gap: 12px; }
+  .number { width: 32px; height: 32px; border-radius: 16px; background-color: #5DBC41; color: #ffffff;
+    font-size: 18px; font-weight: 700; text-align: center; padding-top: 4px; }
+  .text { color: #3A2E28; font-size: 19px; line-height: 1.25; width: 430px; }
+  .button { justify-content: center; margin-left: 26px; margin-right: 26px; margin-bottom: 26px; background-color: #FF0000; border-radius: 40px; color: #ffffff; font-weight: 700; text-align: center; cursor: pointer; }
 </style>
-<Panel class="panel-root">
+<div class="panel-root">
   <div class="panel-content">
     <div class="title">Como funciona</div>
     <div class="step">
       <div class="number">1</div>
-      <div class="text">Acerca la mano a un objeto y pellizca para agarrarlo</div>
+      <div class="text">Camina hasta el circulo del piso: asi quedas de frente a cada estacion</div>
     </div>
     <div class="step">
       <div class="number">2</div>
-      <div class="text">Elige una opcion en el panel de la estacion</div>
+      <div class="text">Acerca la mano a un objeto y pellizca para agarrarlo</div>
     </div>
     <div class="step">
       <div class="number">3</div>
-      <div class="text">Cambia de estacion con los dos botones del borde de la plataforma</div>
+      <div class="text">Sueltalo sobre tu personaje: se coloca solo</div>
     </div>
     <div class="step">
       <div class="number">4</div>
-      <div class="text">Puedes volver atras: tus cambios se conservan</div>
+      <div class="text">Cambia de estacion con los botones del borde de la banda</div>
     </div>
     <div class="step">
       <div class="number">5</div>
@@ -82,4 +36,4 @@
   <Button id="close-button" class="button">
     <ButtonLabel>ENTENDIDO</ButtonLabel>
   </Button>
-</Panel>
+</div>
