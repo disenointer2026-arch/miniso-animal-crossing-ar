@@ -41,6 +41,7 @@ function makeSheet(world, { name, width, height, draw }) {
 /** Boton tipo tarjeta (contorno rojo, titulo a la izquierda, icono a la derecha). */
 function drawCardButton(ctx, w, h, state) {
   ctx.clearRect(0, 0, w, h);
+  if (!state.label) return; // primer dibujo al crearse el boton, antes de recibir su texto
   const pad = 8;
   ctx.save();
   ctx.shadowColor = 'rgba(94, 77, 71, 0.25)';
@@ -56,10 +57,22 @@ function drawCardButton(ctx, w, h, state) {
   ctx.stroke();
   const iconSize = h * 0.5;
   const iconX = w - pad - h * 0.45;
-  fitText(ctx, state.label, pad + w * 0.06, h * 0.5, w - h * 0.95 - pad * 2, {
-    size: h * 0.26,
-    color: C.ink,
-    align: 'left',
+  // Titulo en una o dos lineas (como en el boceto), a la izquierda del icono
+  const maxWidth = w - h * 0.95 - pad * 2;
+  let size = h * 0.3;
+  ctx.font = font(800, size);
+  let lines = wrap(ctx, state.label, maxWidth);
+  while (lines.length > 2 && size > h * 0.18) {
+    size -= 2;
+    ctx.font = font(800, size);
+    lines = wrap(ctx, state.label, maxWidth);
+  }
+  ctx.fillStyle = C.ink;
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'middle';
+  const lineHeight = size * 1.15;
+  lines.slice(0, 2).forEach((line, i) => {
+    ctx.fillText(line, pad + w * 0.06, h * 0.5 + (i - (Math.min(lines.length, 2) - 1) / 2) * lineHeight);
   });
   const draw = icons[state.icon];
   draw?.(ctx, iconX, h * 0.5, iconSize, C.red);
@@ -68,16 +81,17 @@ function drawCardButton(ctx, w, h, state) {
 /** Enlace subrayado con flecha ("← Seguir editando"). */
 function drawLinkButton(ctx, w, h, state) {
   ctx.clearRect(0, 0, w, h);
-  ctx.font = font(800, h * 0.5);
+  if (!state.label) return;
+  ctx.font = font(800, h * 0.62);
   const label = state.label;
   const width = ctx.measureText(label).width;
   const arrow = h * 0.9;
   const total = arrow + width;
   const left = (w - total) / 2;
-  text(ctx, '←', left + arrow * 0.35, h * 0.5, { size: h * 0.62, color: C.ink });
-  text(ctx, label, left + arrow + width / 2, h * 0.48, { size: h * 0.5, color: C.ink });
+  text(ctx, '←', left + arrow * 0.35, h * 0.5, { size: h * 0.74, color: C.ink });
+  text(ctx, label, left + arrow + width / 2, h * 0.46, { size: h * 0.62, color: C.ink });
   ctx.fillStyle = C.ink;
-  ctx.fillRect(left + arrow, h * 0.48 + h * 0.3, width, Math.max(3, h * 0.05));
+  ctx.fillRect(left + arrow, h * 0.46 + h * 0.36, width, Math.max(3, h * 0.05));
 }
 
 /** Boton redondo con X para cerrar. */
@@ -174,6 +188,7 @@ export function createConfirmPanel(world, { card, exit }) {
 // ---------- "Comparte tu tarjeta" ----------
 function drawActionButton(ctx, w, h, state) {
   ctx.clearRect(0, 0, w, h);
+  if (!state.label) return;
   const pad = 8;
   const bh = h - pad * 2 - 6;
   if (state.primary) {
@@ -203,6 +218,7 @@ function drawActionButton(ctx, w, h, state) {
 
 function drawSocialButton(ctx, w, h, state) {
   ctx.clearRect(0, 0, w, h);
+  if (!state.kind) return;
   const pad = 7;
   ctx.save();
   ctx.shadowColor = 'rgba(94, 77, 71, 0.18)';
@@ -241,33 +257,37 @@ function drawCopyPill(ctx, w, h) {
 
 export function createSharePanel(world, { download, device, social, copy, close }) {
   const W = 0.54;
-  const H = 0.6;
+  const H = 0.66;
   const sheet = makeSheet(world, {
     name: 'SharePanel',
     width: W,
     height: H,
     draw: (ctx, w, h, state) => {
       drawPanelBackground(ctx, w, h, { fill: '#FFFFFF', edge: '#F1E9C4', pattern: false, radius: 64 });
-      text(ctx, 'Lista para compartir', w * 0.075, h * 0.085, { size: h * 0.032, weight: 800, color: C.red, align: 'left' });
-      text(ctx, 'Comparte tu tarjeta', w * 0.075, h * 0.16, { size: h * 0.066, weight: 800, color: '#111', align: 'left' });
+      text(ctx, 'Lista para compartir', w * 0.075, h * 0.075, { size: h * 0.032, weight: 800, color: C.red, align: 'left' });
+      text(ctx, 'Comparte tu tarjeta', w * 0.075, h * 0.145, { size: h * 0.062, weight: 800, color: '#111', align: 'left' });
       ctx.font = font(700, h * 0.03);
       ctx.fillStyle = C.ink2;
       ctx.textAlign = 'left';
       ctx.textBaseline = 'middle';
-      wrap(ctx, 'Descárgala como imagen o elige una red. Es una simulación: no se publicará nada.', w * 0.84).forEach(
-        (line, i) => ctx.fillText(line, w * 0.075, h * 0.235 + i * h * 0.04),
+      wrap(ctx, 'Descárgala como imagen o elige una red. Es una simulación: no se publicará nada.', w * 0.86).forEach(
+        (line, i) => ctx.fillText(line, w * 0.075, h * 0.215 + i * h * 0.037),
       );
-      text(ctx, 'Redes sociales (simulado)', w * 0.075, h * 0.635, { size: h * 0.03, weight: 800, color: C.field, align: 'left' });
+      text(ctx, 'Redes sociales (simulado)', w * 0.075, h * 0.6, { size: h * 0.03, weight: 800, color: C.field, align: 'left' });
       if (state.status) {
         const color = state.tone === 'error' ? C.redDark : state.tone === 'ok' ? C.forest : C.ink2;
-        fitText(ctx, state.status, w * 0.075, h * 0.955, w * 0.85, { size: h * 0.027, weight: 700, color, align: 'left' });
+        ctx.font = font(800, h * 0.031);
+        ctx.fillStyle = color;
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'middle';
+        wrap(ctx, state.status, w * 0.86).slice(0, 2).forEach((line, i) => ctx.fillText(line, w * 0.075, h * 0.912 + i * h * 0.036));
       }
     },
   });
   const buttonSize = { width: 0.47, height: 0.075 };
   const downloadButton = addItem(world, sheet.entity, {
     x: 0,
-    y: yAt(H, 0.4),
+    y: yAt(H, 0.365),
     width: buttonSize.width,
     height: buttonSize.height,
     pxPerMeter: PX,
@@ -278,7 +298,7 @@ export function createSharePanel(world, { download, device, social, copy, close 
   downloadButton.redraw({ label: 'Descargar imagen', icon: 'drawDownload', primary: true });
   const deviceButton = addItem(world, sheet.entity, {
     x: 0,
-    y: yAt(H, 0.505),
+    y: yAt(H, 0.465),
     width: buttonSize.width,
     height: buttonSize.height,
     pxPerMeter: PX,
@@ -290,7 +310,7 @@ export function createSharePanel(world, { download, device, social, copy, close 
   ['Instagram', 'Facebook', 'X', 'WhatsApp'].forEach((kind, i) => {
     const item = addItem(world, sheet.entity, {
       x: (i - 1.5) * 0.1175,
-      y: yAt(H, 0.755),
+      y: yAt(H, 0.715),
       width: 0.108,
       height: 0.1,
       pxPerMeter: PX,
@@ -302,7 +322,7 @@ export function createSharePanel(world, { download, device, social, copy, close 
   });
   const copyButton = addItem(world, sheet.entity, {
     x: -W / 2 + 0.075 + 0.105,
-    y: yAt(H, 0.885),
+    y: yAt(H, 0.835),
     width: 0.21,
     height: 0.05,
     pxPerMeter: PX,

@@ -152,6 +152,7 @@ export function drawLeaf(ctx, cx, cy, s) {
 
 /** Insignia de una red social (simulada): circulo de su color con sus iniciales. */
 export function drawSocialBadge(ctx, cx, cy, r, kind) {
+  if (!kind) return;
   ctx.save();
   let fill = '#000';
   let label = kind;

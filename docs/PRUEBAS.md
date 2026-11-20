@@ -53,11 +53,11 @@ Marcar con el resultado en el visor (el emulador ya cubrió la columna «Emulado
 | No quitar lo puesto | Con un objeto en la mano (o recién soltado) tocar otra parte del personaje no la retira | ✔ (con una caja en la mano, tocar las gafas puestas no las quita; sin objeto en la mano, sí) | ☐ |
 | Navegación adelante/atrás | Botones de cada estación; **lo elegido se conserva** | ✔ | ☐ |
 | Terminar avatar | Caja de regalo, viaje al frente y figura final | ✔ (lanzado desde el estado) | ☐ |
-| «¡Tu avatar está listo!» | Panel crema: título, «Esta es tu obra maestra…», *Pedir mi producto* y *Crear tarjeta Amiibo*, y «← Seguir editando» (también la X) | ☐ | ☐ |
+| «¡Tu avatar está listo!» | Panel crema: título, «Esta es tu obra maestra…», *Pedir mi producto* y *Crear tarjeta Amiibo*, y «← Seguir editando» (también la X) | ✔ (los botones responden al toque con el dedo emulado) | ☐ |
 | Pedido simulado | Tres pasos; nombre, apellido, correo, teléfono y dirección con el **teclado de letras**; confirmación con número | ✔ (paso «Tus datos» y teclado con tildes; pago sin repetir) | ☐ |
-| **Compra satisfactoria** | Hoja, **N.º guía de pedido**, «Rastrea desde… www.miniso.com», confeti; *Crear tarjeta Amiibo*; **«Salir de la experiencia»** cierra la sesión de RA | ☐ | ☐ |
+| **Compra satisfactoria** | Hoja, **N.º guía de pedido**, «Rastrea desde… www.miniso.com», confeti; *Crear tarjeta Amiibo*; **«Salir de la experiencia»** cierra la sesión de RA | ✔ (confeti, número de guía, *Crear tarjeta* y *Salir*, que cierra la sesión y vuelve a la bienvenida) | ☐ |
 | Tarjeta Amiibo | Retrato, **nombre con el teclado**, cumpleaños y fondo; sin esquinas negras | ✔ | ☐ |
-| **Comparte tu tarjeta** | Modal de la web con la **tarjeta detrás**; **Descargar imagen**, **Compartir desde el dispositivo** y **Copiar enlace** funcionan; las redes sociales solo muestran «Simulación…»; X cierra | ☐ | ☐ |
+| **Comparte tu tarjeta** | Modal de la web con la **tarjeta detrás**; **Descargar imagen**, **Compartir desde el dispositivo** y **Copiar enlace** funcionan; las redes sociales solo muestran «Simulación…»; X cierra | ✔ con reservas (todos los botones responden y muestran su mensaje; **no se comprobó que el archivo PNG llegue a la carpeta de descargas ni el menú de compartir real**: el navegador del emulador no tiene Web Share) | ☐ |
 | Sonido | Efectos en cada acción y música de fondo | no se oye | ☐ |
 | Rendimiento | Sin tirones; objetivo 72 fps | no medible | ☐ |
 

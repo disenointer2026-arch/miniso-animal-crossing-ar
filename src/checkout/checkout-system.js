@@ -91,6 +91,15 @@ export class CheckoutSystem extends createSystem({}) {
   async ensurePanels() {
     if (this.panels || this.loading) return;
     this.loading = true;
+    try {
+      await this.buildPanels();
+    } catch (error) {
+      console.error('[cierre] No se pudieron crear los paneles:', error);
+      this.loading = false;
+    }
+  }
+
+  async buildPanels() {
     const make = async (id) => {
       const panel = await this.world.assets.instantiate(id);
       panel.scale.setScalar(PANEL_SCALE[id]);
@@ -385,8 +394,8 @@ export class CheckoutSystem extends createSystem({}) {
         // La tarjeta queda por detras del panel de compartir: mas grande y mas lejos, asoma arriba y abajo
         this.place(share.group, 0, 0.78, -0.03);
         if (this.cardMesh) {
-          this.place(this.cardMesh, 0, 0.9, -0.03);
-          this.cardMesh.scale.setScalar(1.72);
+          this.place(this.cardMesh, 0, 0.95, -0.03);
+          this.cardMesh.scale.setScalar(2.3);
         }
       } else {
         this.place(card, 0.24, 0.85, -0.02);
