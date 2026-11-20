@@ -19,6 +19,7 @@
   .btn { flex-grow: 1; padding-top: 12px; padding-bottom: 12px; padding-left: 18px; padding-right: 18px; border-radius: 40px; background-color: #FFFBF2; color: #E60012;
     font-size: 20px; font-weight: 700; text-align: center; cursor: pointer; border-width: 4px; border-color: #FF0000; }
   .primary { background-color: #FF0000; color: #ffffff; }
+  .root:dark { background-color: #FAF6D4; border-color: #FDD885; }
 </style>
 <Panel class="root">
   <div class="content">

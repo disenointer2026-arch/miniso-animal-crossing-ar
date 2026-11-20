@@ -73,6 +73,7 @@ const SLOT_OF = { [FACE]: 3, [CLOTHES]: 4, [CHARMS]: 5 }; // slot de la banda de
 const PROP_SCALE = AVATAR_HEIGHT / MODEL.height;
 const CHARM_SCALE = PROP_SCALE * 1.6; // los charms se ven mas grandes al salir de la caja
 const ACCESSORY_SCALE = PROP_SCALE * 0.9;
+const ACCESSORY_LIFT = 0.15; // flotan sobre las cajas para verse y agarrarse desde la altura de la vista
 const SNAP = { head: 0.26, body: 0.28, feet: 0.24 }; // metros del objeto al lugar donde va
 const GROW_SECONDS = 0.35;
 const PAGE_COOLDOWN = 0.35;
@@ -535,7 +536,7 @@ export class CatalogStationSystem extends createSystem({
         const cols = Math.ceil(count / 2);
         const pitch = (x[1] - x[0]) / Math.max(cols - 0.5, 1);
         const mx = x[0] + pitch * (Math.floor(index / 2) + row * 0.5);
-        home = modelFrame(l, [mx, y[row], z], 0, 0, 0.04, SLOT_OF[CHARMS]);
+        home = modelFrame(l, [mx, y[row], z], 0, 0, ACCESSORY_LIFT, SLOT_OF[CHARMS]);
         base = ACCESSORY_SCALE;
       }
     }

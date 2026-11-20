@@ -15,6 +15,7 @@
   .shift { background-color: #FDD885; }
   .back { background-color: #C1E2DD; }
   .ok { background-color: #FF0000; border-color: #FF0000; color: #ffffff; }
+  .root:dark { background-color: #FAF6D4; border-color: #FDD885; }
 </style>
 <Panel class="root">
   <div class="content">

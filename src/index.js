@@ -19,6 +19,7 @@
    SettingsSystem     ajustes: altura, volumenes y recalibrar
    UiSystem           elementos pulsables de la interfaz espacial (lienzos crema)
    StandSystem        circulo en el piso que guia al usuario hasta la estacion activa */
+import './ui/uikit-fonts.js';
 import { World } from '@iwsdk/core';
 import * as state from './state.js';
 import projectOptions from 'virtual:iwsdk-project';
