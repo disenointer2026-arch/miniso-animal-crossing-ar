@@ -49,12 +49,14 @@ La versión 5 aplica las correcciones del equipo tras probar en el visor y la **
 | **5 · Charms y accesorios** | **Seis cajas cerradas** (tres sobre la mesa y tres abajo) con el icono de su charm: bolsa de dinero, guitarra, moneda / tulipán, nota musical, regalo. **Se agarran con una mano y se abren**; con la otra se saca el charm. Al soltarla se cierra y vuelve a su sitio. Los accesorios flotan en dos filas sobre las cajas, al fondo de la mesa | `catalog-station-system.js`, `catalog-objects.js` |
 
 **Cierre.** Tras la estación 5, «Terminar avatar» lleva al personaje a la caja de regalo (la caja de regalo se rehará y se aplicará en una sesión
-posterior). Todo aparece al frente del usuario:
+posterior). Los tres paneles del final siguen el boceto del equipo y el modal de la web, con el sistema visual (`src/checkout/sheets-ui.js`), y aparecen al frente del usuario:
 
-1. **«¡Tu avatar está listo!»**: panel crema con tres tarjetas (*Pedir mi producto*, *Crear tarjeta Amiibo*, *Seguir editando*); sin campo de nombre ni resumen.
+1. **«¡Tu avatar está listo!»:** «Esta es tu obra maestra. ¿Quieres hacer algo más con ella?», con dos botones (*Pedir mi producto*, con camión, y *Crear tarjeta Amiibo*, con tarjeta y lápiz) y el enlace **← Seguir editando** (también la X de la esquina).
 2. **Pedir mi producto:** pedido simulado en tres pasos. Nombre, apellido, correo, teléfono, dirección y datos de pago se llenan con un **teclado completo** (letras con tilde y ñ, números y signos).
-3. **Tarjeta Amiibo:** el nombre se escribe con el mismo teclado; cumpleaños y fondo se eligen con botones. La tarjeta es un plano transparente (sin esquinas negras).
-4. «Finalizar» lleva al cierre con «Crear otro avatar».
+3. **«Compra satisfactoria»:** hoja de Animal Crossing, **N.º guía de pedido**, «Rastrea desde nuestro sitio web oficial www.miniso.com», **confeti**, el botón *Crear tarjeta Amiibo* y **← Salir de la experiencia** (cierra la sesión de realidad aumentada).
+4. **Tarjeta Amiibo:** el nombre se escribe con el mismo teclado; cumpleaños y fondo se eligen con botones. La tarjeta es un plano transparente (sin esquinas negras).
+5. **«Comparte tu tarjeta»** (el mismo modal de la web; **la tarjeta queda detrás** del panel, más grande y asomando arriba y abajo). Funcionan de verdad: **Descargar imagen** (PNG de la tarjeta, `tarjeta-amiibo-<nombre>.png`), **Compartir desde el dispositivo** (menú de compartir del navegador, con la imagen si lo admite) y **Copiar enlace** (si el navegador no deja copiar, muestra el enlace para copiarlo a mano). **Instagram, Facebook, X y WhatsApp son simulados** (no publican nada) y lo avisan en el panel.
+6. «Finalizar» lleva a un cierre con «Crear otro avatar».
 
 La tarjeta es un coleccionable digital conceptual inspirado en el formato de las tarjetas Amiibo; no es un producto oficial de Nintendo.
 
@@ -130,7 +132,7 @@ Desactivados a propósito: física (Havok) y detección de mallas, para cuidar e
 - **Sin probar todavía:** las flechas del libro y los colores de ojos, el bote del cabello, el pedido hasta la confirmación y «compartir», y el índice + la puntería del spray a la vez.
 - Los paneles UIKitML (pedido, teclado, tarjeta) cargan Nunito desde `public/fonts/` (licencia OFL); los demás usan la Nunito integrada, sin tildes.
 - El ajuste fino cambia la altura; la distancia se corrige recalibrando con la mano.
-- Pedido y tarjeta: todo es simulado; no se descarga ni se comparte nada de verdad.
+- Pedido y tarjeta: el pedido y las redes sociales son simulados. **Descargar imagen, Compartir desde el dispositivo y Copiar enlace sí funcionan**, pero dependen del navegador: el del Quest puede no ofrecer el menú de compartir ni el portapapeles dentro de una sesión de RA (en ese caso el panel lo dice y ofrece descargar o ver el enlace).
 - Gorra y sombrero ocultan el pelo entero (la web lo recorta bajo el borde).
 - El juego carga todos los modelos del avatar al inicio (~6 MB).
 - Audio: `public/audio/ambiente.mp3` viene de la web original y se usa solo con fines académicos

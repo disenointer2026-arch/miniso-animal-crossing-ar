@@ -1,21 +1,26 @@
 /* Final de la experiencia, despues de la caja de regalo. Todo aparece al frente del usuario, de frente:
    Choose   "¡Tu avatar esta listo!": pedir el producto, crear la tarjeta Amiibo o seguir editando
    Order    pedido simulado (order-ui.js) con teclado completo de letras y numeros
-   Confirm  compra satisfactoria
-   Card     editor de la tarjeta (nombre con el teclado, cumpleanos, fondo) con la tarjeta en 3D; compartir (simulado)
+   Confirm  "Compra satisfactoria": numero de guia, confeti, crear tarjeta o salir de la experiencia
+   Card     editor de la tarjeta (nombre con el teclado, cumpleanos, fondo) con la tarjeta en 3D; "Comparte tu
+            tarjeta" (la tarjeta queda detras): descargar la imagen, compartir desde el dispositivo y copiar el
+            enlace funcionan de verdad; las redes sociales son simuladas
    Thanks   cierre y posibilidad de crear otro avatar
    Los paneles se colocan respecto al marco del usuario (src/finale/frame.js) y la caja con la
    figura se aparta a un lado con la senal "showcase". */
 import { createSystem, RayInteractable } from '@iwsdk/core';
 import { sfx } from '../audio/sfx.js';
 import { FactoryPart } from '../components.js';
-import { CARD, PRODUCT, SOCIALS, cop, formatField } from '../data/shop.js';
+import { CARD, formatField } from '../data/shop.js';
 import { framePoint, frameYaw } from '../finale/frame.js';
 import { showcase } from '../finale/finale-system.js';
 import { avatarConfig, phase, Phase, resetExperience } from '../state.js';
+import { drawCard } from './card-renderer.js';
 import { createCardView } from './card-view.js';
+import { Confetti } from './confetti.js';
 import { createDialog } from './dialog-ui.js';
 import { KeyboardUI } from './keyboard-ui.js';
+import { createChoosePanel, createConfirmPanel, createSharePanel } from './sheets-ui.js';
 import { cardProfile, focusField, lastOrder, orderDraft, patchProfile } from './checkout-state.js';
 import { OrderUI } from './order-ui.js';
 import { renderPortrait } from './portrait.js';
@@ -39,9 +44,9 @@ export class CheckoutSystem extends createSystem({}) {
     this.panels = null;
     this.loading = false;
     this.shareOpen = false;
-    this.socialIndex = 0;
-    this.shareNote = '';
+    this.lastPhase = null;
     this.portrait = null;
+    this.confetti = null;
     this.cardEntity = null;
     this.order = null;
     this.cardBound = false;
@@ -54,6 +59,13 @@ export class CheckoutSystem extends createSystem({}) {
         if (value === Phase.Card) this.makePortrait();
         if (value !== Phase.Card) this.shareOpen = false;
         if (value !== Phase.Order && value !== Phase.Card) focusField.value = null;
+        // El confeti se lanza al entrar a la compra satisfactoria
+        if (value === Phase.Confirm && this.lastPhase !== Phase.Confirm) {
+          this.confetti?.start();
+          sfx.ding();
+        }
+        if (value !== Phase.Confirm) this.confetti?.stop();
+        this.lastPhase = value;
         this.refresh();
       }),
       orderDraft.subscribe(refresh),
@@ -67,6 +79,7 @@ export class CheckoutSystem extends createSystem({}) {
   }
 
   reset() {
+    this.confetti = null;
     this.panels = null;
     this.order = null;
     this.cardEntity = null;
@@ -78,6 +91,15 @@ export class CheckoutSystem extends createSystem({}) {
   async ensurePanels() {
     if (this.panels || this.loading) return;
     this.loading = true;
+    try {
+      await this.buildPanels();
+    } catch (error) {
+      console.error('[cierre] No se pudieron crear los paneles:', error);
+      this.loading = false;
+    }
+  }
+
+  async buildPanels() {
     const make = async (id) => {
       const panel = await this.world.assets.instantiate(id);
       panel.scale.setScalar(PANEL_SCALE[id]);
@@ -89,7 +111,29 @@ export class CheckoutSystem extends createSystem({}) {
     };
     const [order, keyboard, card] = await Promise.all([make('order-panel'), make('keyboard-panel'), make('card-panel')]);
     if (phase.peek() === Phase.Welcome) return; // se salio de la sesion mientras cargaba
-    this.panels = { dialog: createDialog(this.world), order, keyboard, card };
+    this.panels = {
+      dialog: createDialog(this.world),
+      choose: createChoosePanel(this.world, {
+        order: () => (phase.value = Phase.Order),
+        card: () => (phase.value = Phase.Card),
+        back: () => (phase.value = Phase.Customizing),
+      }),
+      confirm: createConfirmPanel(this.world, {
+        card: () => (phase.value = Phase.Card),
+        exit: () => this.exitExperience(),
+      }),
+      share: createSharePanel(this.world, {
+        download: () => this.downloadCard(),
+        device: () => this.shareFromDevice(),
+        social: (kind) => this.shareSimulated(kind),
+        copy: () => this.copyLink(),
+        close: () => this.closeShare(),
+      }),
+      order,
+      keyboard,
+      card,
+    };
+    this.confetti = new Confetti(this.world);
     this.order = new OrderUI(order);
     this.keyboard = new KeyboardUI(keyboard, {
       get: (key) => (key === 'cardName' ? cardProfile.peek().name : this.order.getField(key)),
@@ -119,56 +163,9 @@ export class CheckoutSystem extends createSystem({}) {
     }
   }
 
-  // ---------- Dialogo ----------
-  dialogFor(value) {
-    const order = lastOrder.peek();
-    if (value === Phase.Choose) {
-      return {
-        title: '¡Tu avatar está listo!',
-        body: 'Sé cuánto trabajo requiere crear tu propio estilo. ¡Lo estás haciendo increíble!',
-        buttons: [
-          { label: 'Pedir mi producto', sub: 'Figura con cadena y base de acrílico', run: () => (phase.value = Phase.Order) },
-          { label: 'Crear tarjeta Amiibo', sub: 'Coleccionable digital para compartir', run: () => (phase.value = Phase.Card) },
-          { label: 'Seguir editando', back: true, run: () => (phase.value = Phase.Customizing) },
-        ],
-      };
-    }
-    if (value === Phase.Confirm && order) {
-      return {
-        kicker: 'COMPRA SATISFACTORIA',
-        title: '¡Tu pedido está listo!',
-        body:
-          `Te enviamos (de mentira) la confirmación a ${order.email}.\n` +
-          `Pedido ${order.number}\n` +
-          `${PRODUCT.name} x ${order.qty} de ${order.avatarName}\n` +
-          `Entrega a domicilio en ${order.city}. Tiempo estimado: ${PRODUCT.days}.\n` +
-          `Pago: ${order.payment} - Total ${cop(order.total)}`,
-        buttons: [
-          { label: 'Crear tarjeta Amiibo', sub: 'Tu coleccionable digital', run: () => (phase.value = Phase.Card) },
-          { label: 'Finalizar', sub: 'Volver al inicio', run: () => (phase.value = Phase.Thanks) },
-        ],
-      };
-    }
-    if (value === Phase.Card && this.shareOpen) {
-      const social = SOCIALS[this.socialIndex % SOCIALS.length];
-      return {
-        kicker: 'LISTA PARA COMPARTIR',
-        title: 'Comparte tu tarjeta',
-        body: this.shareNote || 'Descárgala como imagen o elige una red. Es una simulación: no se publicará nada.',
-        buttons: [
-          { label: 'Descargar imagen', run: () => this.share('Simulación: imagen descargada. No se guardó nada.') },
-          {
-            label: 'Redes sociales (simulado)',
-            sub: `Siguiente: ${social}`,
-            run: () => {
-              this.share(`Simulación: tu tarjeta quedó lista para ${social}. No se publicó nada.`);
-              this.socialIndex += 1;
-            },
-          },
-          { label: 'Cerrar', back: true, run: () => ((this.shareOpen = false), this.refresh()) },
-        ],
-      };
-    }
+  // ---------- Cierre ----------
+  /** Dialogo generico: solo queda el agradecimiento final. */
+  dialogFor() {
     return {
       kicker: '¡GRACIAS!',
       title: 'Tu avatar ya existe',
@@ -178,9 +175,132 @@ export class CheckoutSystem extends createSystem({}) {
     };
   }
 
-  share(note) {
-    this.shareNote = note;
+  /** "Salir de la experiencia": termina la sesion de realidad aumentada (la bienvenida reinicia todo). */
+  exitExperience() {
+    try {
+      this.world.exitXR();
+    } catch (error) {
+      console.warn('[cierre] No se pudo cerrar la sesion XR:', error);
+      resetExperience();
+    }
+  }
+
+  closeShare() {
+    this.shareOpen = false;
+    this.panels?.share.setStatus('');
     this.refresh();
+  }
+
+  // ---------- Compartir la tarjeta ----------
+  /** Opciones para dibujar la tarjeta con los datos actuales. */
+  cardOptions() {
+    const p = cardProfile.peek();
+    const birthday =
+      p.day > 0 && p.month >= 0 ? `${String(p.day).padStart(2, '0')}/${String(p.month + 1).padStart(2, '0')}` : '';
+    return { portrait: this.portrait, name: p.name, birthday, theme: p.theme, avatar: avatarConfig.peek() };
+  }
+
+  async cardBlob() {
+    const canvas = await drawCard(this.cardOptions());
+    const blob = await new Promise((resolve) => canvas.toBlob(resolve, 'image/png'));
+    if (!blob) throw new Error('No se pudo crear la imagen');
+    return blob;
+  }
+
+  cardFileName() {
+    const name = cardProfile.peek().name || 'avatar';
+    const slug = name
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-|-$/g, '');
+    return `tarjeta-amiibo-${slug || 'avatar'}.png`;
+  }
+
+  shareUrl() {
+    return `${location.origin}${location.pathname}`;
+  }
+
+  /** Descarga de verdad la imagen de la tarjeta (PNG) en el navegador del visor o del computador. */
+  async downloadCard() {
+    const status = this.panels.share.setStatus;
+    try {
+      const blob = await this.cardBlob();
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.download = this.cardFileName();
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      setTimeout(() => URL.revokeObjectURL(link.href), 15000);
+      status('Imagen descargada: búscala en las descargas del navegador.', 'ok');
+    } catch (error) {
+      console.warn('[tarjeta] No se pudo descargar la imagen:', error);
+      status('No se pudo descargar la imagen en este navegador.', 'error');
+    }
+  }
+
+  /** Menu de compartir del dispositivo (Web Share API), con la imagen si el navegador la admite. */
+  async shareFromDevice() {
+    const status = this.panels.share.setStatus;
+    if (!navigator.share) {
+      status('Este navegador no permite compartir desde aquí. Usa «Descargar imagen» o «Copiar enlace».', 'info');
+      return;
+    }
+    try {
+      const data = {
+        title: 'Mi tarjeta Amiibo · MINISO × Animal Crossing',
+        text: `Mira el avatar de ${cardProfile.peek().name || 'mi avatar'}`,
+        url: this.shareUrl(),
+      };
+      try {
+        const file = new File([await this.cardBlob()], this.cardFileName(), { type: 'image/png' });
+        if (navigator.canShare?.({ files: [file] })) data.files = [file];
+      } catch {
+        /* sin imagen: se comparte solo el enlace */
+      }
+      await navigator.share(data);
+      status('Listo: se abrió el menú de compartir.', 'ok');
+    } catch (error) {
+      if (error?.name === 'AbortError') status('Cancelaste el envío.', 'info');
+      else status('No se pudo abrir el menú de compartir en este dispositivo.', 'error');
+    }
+  }
+
+  /** Copia el enlace de la experiencia; si el navegador no lo permite, lo muestra para copiarlo a mano. */
+  async copyLink() {
+    const status = this.panels.share.setStatus;
+    const url = this.shareUrl();
+    try {
+      await navigator.clipboard.writeText(url);
+      status('Enlace copiado.', 'ok');
+      return;
+    } catch {
+      /* se prueba el metodo antiguo */
+    }
+    try {
+      const area = document.createElement('textarea');
+      area.value = url;
+      area.style.position = 'fixed';
+      area.style.opacity = '0';
+      document.body.appendChild(area);
+      area.select();
+      const done = document.execCommand('copy');
+      area.remove();
+      if (done) {
+        status('Enlace copiado.', 'ok');
+        return;
+      }
+    } catch {
+      /* sin portapapeles */
+    }
+    status(`No se pudo copiar. Enlace: ${url.replace(/^https?:\/\//, '')}`, 'error');
+  }
+
+  /** Las redes sociales son una simulacion: no se publica nada. */
+  shareSimulated(kind) {
+    this.panels.share.setStatus(`Simulación: tu tarjeta quedó lista para ${kind}. No se publicó nada.`, 'info');
   }
 
   // ---------- Editor de la tarjeta ----------
@@ -209,7 +329,7 @@ export class CheckoutSystem extends createSystem({}) {
     CARD.themes.forEach((theme, i) => on(`th-${i}`, () => patchProfile({ theme: theme.id })));
     on('share', () => {
       this.shareOpen = true;
-      this.shareNote = '';
+      this.panels.share.setStatus('');
       this.refresh();
     });
     on('finish', () => (phase.value = Phase.Thanks));
@@ -232,15 +352,7 @@ export class CheckoutSystem extends createSystem({}) {
     set('d-plus', { text: '+' });
     set('mo-next', { text: '>' });
     if (!this.cardMesh) return;
-    const birthday =
-      p.day > 0 && p.month >= 0 ? `${String(p.day).padStart(2, '0')}/${String(p.month + 1).padStart(2, '0')}` : '';
-    this.cardMesh.userData.redraw({
-      portrait: this.portrait,
-      name: p.name,
-      birthday,
-      theme: p.theme,
-      avatar: avatarConfig.peek(),
-    });
+    this.cardMesh.userData.redraw(this.cardOptions());
   }
 
   // ---------- Colocacion y visibilidad ----------
@@ -252,28 +364,45 @@ export class CheckoutSystem extends createSystem({}) {
   refresh() {
     if (!this.panels) return;
     const value = phase.peek();
-    const { dialog, order, keyboard, card } = this.panels;
-    const dialogPhase =
-      value === Phase.Choose || value === Phase.Confirm || value === Phase.Thanks || (value === Phase.Card && this.shareOpen);
-    dialog.setVisible(dialogPhase);
+    const { dialog, choose, confirm, share, order, keyboard, card } = this.panels;
+    const sharing = value === Phase.Card && this.shareOpen;
+    dialog.setVisible(value === Phase.Thanks);
+    choose.setVisible(value === Phase.Choose);
+    confirm.setVisible(value === Phase.Confirm);
+    share.setVisible(sharing);
     order.visible = value === Phase.Order;
-    keyboard.visible = (value === Phase.Order || value === Phase.Card) && focusField.peek() !== null;
-    card.visible = value === Phase.Card && !this.shareOpen;
+    keyboard.visible = (value === Phase.Order || value === Phase.Card) && !sharing && focusField.peek() !== null;
+    card.visible = value === Phase.Card && !sharing;
     if (this.cardMesh) this.cardMesh.visible = value === Phase.Card;
 
-    if (dialogPhase) {
-      dialog.set(this.dialogFor(value));
+    if (value === Phase.Thanks) {
+      dialog.set(this.dialogFor());
       this.place(dialog.group, 0, 0.85, -0.05);
+    }
+    if (value === Phase.Choose) this.place(choose.group, 0, 0.85, -0.03);
+    if (value === Phase.Confirm) {
+      const placed = lastOrder.peek();
+      confirm.set({ number: placed?.number });
+      this.place(confirm.group, 0, 0.85, -0.03);
     }
     if (value === Phase.Order) {
       this.order.refresh();
       this.place(order, 0, 0.9, 0.12);
     }
     if (value === Phase.Card) {
-      this.place(card, 0.24, 0.85, -0.02);
-      if (this.cardMesh) {
-        this.place(this.cardMesh, -0.4, 0.82, 0);
-        this.cardMesh.scale.setScalar(1);
+      if (sharing) {
+        // La tarjeta queda por detras del panel de compartir: mas grande y mas lejos, asoma arriba y abajo
+        this.place(share.group, 0, 0.78, -0.03);
+        if (this.cardMesh) {
+          this.place(this.cardMesh, 0, 0.95, -0.03);
+          this.cardMesh.scale.setScalar(2.3);
+        }
+      } else {
+        this.place(card, 0.24, 0.85, -0.02);
+        if (this.cardMesh) {
+          this.place(this.cardMesh, -0.4, 0.82, 0);
+          this.cardMesh.scale.setScalar(1);
+        }
       }
       this.refreshCardEditor();
     }
@@ -283,5 +412,9 @@ export class CheckoutSystem extends createSystem({}) {
     }
     const spec = SHOWCASE[value];
     if (spec) showcase.value = spec;
+  }
+
+  update(delta) {
+    this.confetti?.update(delta);
   }
 }
