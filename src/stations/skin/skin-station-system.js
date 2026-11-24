@@ -52,14 +52,14 @@ const FALL_SECONDS = 0.5;
 const SPRAY_RANGE = 0.45; // metros de la boquilla al personaje
 const SPRAY_CONE = 0.95; // radianes de tolerancia al apuntar
 const PAINT_TIME = 0.8; // segundos para mezclar casi todo el color
-const PRESS_RADIUS = 0.045; // distancia de la punta del indice a la valvula para pulsarla
+const PRESS_RADIUS = 0.055; // distancia de la punta del indice a la valvula para pulsarla
 // Agarre anatomico (distancias en metros, de la punta de cada dedo al centro de la palma)
 const CURL_CLOSE = 0.088; // un dedo esta flexionado (envolviendo la lata) por debajo de esto
 const CURL_OPEN = 0.115; // y se considera abierto por encima de esto (histeresis)
-const GRASP_REACH = 0.07; // distancia maxima de la palma al eje de la lata para poder agarrarla
+const GRASP_REACH = 0.09; // distancia maxima de la palma al eje de la lata para poder agarrarla
 const INDEX_BENT = 0.078; // el indice esta flexionado si su punta queda a menos de esto del nudillo (estirado mide ~0,09)
 const HOLD_OFFSET = 0.03; // la lata queda a esta distancia de la palma, hacia el lado de los dedos
-const HOLD_SHIFT = 0.012; // y desplazada hacia el lado del indice: la valvula queda sobre el nudillo del indice
+const HOLD_SHIFT = -0.01; // y desplazada hacia el menique: la valvula queda justo sobre el nudillo del indice (la punta del indice flexionado no sale de su plano)
 const HOLD_RATE = 22; // rapidez con que la lata se acomoda en la mano (1/s)
 const HAND_JOINTS = [
   ['wrist', 'wrist'],
@@ -112,6 +112,7 @@ export class SkinStationSystem extends createSystem({
     this.emit = 0;
     this.cursor = 0;
     this.createParticles();
+    if (import.meta.env.DEV && window.__miniso) window.__miniso.skin = this; // solo desarrollo: para probar el agarre en el emulador
 
     this.cleanupFuncs.push(
       this.queries.factories.subscribe('qualify', (factory) => this.build(factory)),
@@ -354,8 +355,8 @@ export class SkinStationSystem extends createSystem({
       const h = this.hand;
       this.offset.subVectors(h.indexTip, this.valve);
       const bent = h.indexTip.distanceTo(h.indexK) < INDEX_BENT;
-      const onTop = this.offset.length() < PRESS_RADIUS && this.offset.dot(this.up) > -0.02;
-      debug?.tips.push({ side: holder, distance: +this.offset.length().toFixed(3), bent });
+      const onTop = this.offset.length() < PRESS_RADIUS && this.offset.dot(this.up) > -0.055;
+      debug?.tips.push({ side: holder, distance: +this.offset.length().toFixed(3), above: +this.offset.dot(this.up).toFixed(3), bent });
       return bent && onTop;
     }
     return this.input.xr.getSelectState(holder).active;
@@ -464,8 +465,36 @@ export class SkinStationSystem extends createSystem({
     position.needsUpdate = true;
   }
 
+  /** Solo desarrollo: deja en window.__miniso.skinDebug lo que ve el agarre (curvatura de los dedos, distancia a la lata...). */
+  debugHands() {
+    const out = { tracked: this.handsTracked, grip: this.grip?.side ?? null, hands: {} };
+    const can = this.queries.cans.entities.values().next().value?.object3D;
+    for (const side of ['right', 'left']) {
+      if (!this.readHand(side)) {
+        out.hands[side] = null;
+        continue;
+      }
+      const h = this.hand;
+      out.hands[side] = {
+        palm: h.palm.toArray().map((v) => +v.toFixed(3)),
+        curl: [h.middleTip, h.ringTip, h.pinkyTip].map((t) => +h.palm.distanceTo(t).toFixed(3)),
+        canDistance: can ? +this.distanceToCan(can, h.palm).toFixed(3) : null,
+        indexBend: +h.indexTip.distanceTo(h.indexK).toFixed(3),
+        valveDistance: can ? +h.indexTip.distanceTo(this.valve).toFixed(3) : null,
+      };
+    }
+    if (can) {
+      can.getWorldPosition(this.scratch);
+      out.can = this.scratch.toArray().map((v) => +v.toFixed(3));
+      this.valve.set(CAN_VALVE[0], CAN_VALVE[1], CAN_VALVE[2]).applyMatrix4(can.matrixWorld);
+      out.valve = this.valve.toArray().map((v) => +v.toFixed(3));
+    }
+    window.__miniso.skinDebug = out;
+  }
+
   update(delta) {
     this.updateFalls(delta);
+    if (import.meta.env.DEV && window.__miniso && this.handsTracked) this.debugHands();
     this.updateGrip(delta);
     this.updateParticles(delta, this.updateSpray(delta));
   }
