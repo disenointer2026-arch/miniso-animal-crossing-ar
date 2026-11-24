@@ -79,7 +79,7 @@ const CHEST_ICON_Y = 1.22; // alto del icono sobre la tapa, en unidades de la ca
 // Interior de la caja (unidades de la caja; el modelo mide 2 de ancho): el suelo interior esta en -0,43 y las paredes
 // llegan a 1,08. El charm se ajusta para caber con holgura, apoyado sobre el suelo, sin tocar paredes ni solapas.
 const CHEST_FLOOR = -0.43;
-const CHARM_FIT = { width: 1.3, height: 1.15, rest: 0.05 }; // espacio util (ancho x fondo, alto) y separacion del suelo
+const CHARM_FIT = { width: 1.55, height: 1.4, rest: 0.02 }; // espacio util (ancho x fondo, alto) y separacion del suelo: llena la caja y asoma hasta cerca de la boca
 
 /** Si alguna pieza sale al reves en el mueble, se corrige aqui: rotacion [x, y, z] en radianes por "clave/id". */
 const DISPLAY_FIX = {};
@@ -338,7 +338,9 @@ export class CatalogStationSystem extends createSystem({
         home: [node.position.x, node.position.y, node.position.z],
         homeYaw: node.rotation.y,
       });
-      entity.addComponent(OneHandGrabbable);
+      // La caja solo gira alrededor de la vertical: nunca se inclina (ni se hunde en la balda ni derrama el charm)
+      entity.addComponent(OneHandGrabbable, { rotateMin: [0, -Infinity, 0], rotateMax: [0, Infinity, 0] });
+      node.userData.homeY = node.position.y; // altura de reposo: el fondo de la caja queda justo sobre la balda
       this.pendingIcons.push({ id: charm, node });
     }
   }
@@ -501,7 +503,7 @@ export class CatalogStationSystem extends createSystem({
     const size = new Box3().setFromObject(root).getSize(new Vector3());
     const unit = chest.scale.x; // metros por unidad de la caja
     const fit = unit * Math.min(CHARM_FIT.width / size.x, CHARM_FIT.width / size.z, CHARM_FIT.height / size.y);
-    const base = Math.min(fit, avatarScale() * CHARM_SCALE);
+    const base = fit; // el mayor tamano que cabe en la caja
     const halfHeight = (size.y * base) / unit / 2; // en unidades de la caja
     root.userData.base = base;
     root.userData.grow = 0;
@@ -567,7 +569,7 @@ export class CatalogStationSystem extends createSystem({
       if (object.userData.grow !== undefined) {
         object.userData.grow += delta;
         const t = Math.min(object.userData.grow / GROW_SECONDS, 1);
-        k = easeOutBack(t);
+        k = object.userData.anchor?.chest ? 1 - (1 - t) ** 3 : easeOutBack(t); // el de la caja no rebasa su tamano
         if (t >= 1) {
           delete object.userData.grow;
           if (!object.userData.anchor) entity.setValue(Carryable, 'locked', false);
@@ -594,6 +596,8 @@ export class CatalogStationSystem extends createSystem({
       const chest = chestEntity.object3D;
       if (!chest) continue;
       const held = this.queries.heldChests.entities.has(chestEntity);
+      // Colision con la balda: sostenida, la caja no baja de su altura de reposo (su fondo no atraviesa la balda)
+      if (held && chest.position.y < chest.userData.homeY) chest.position.y = chest.userData.homeY;
       const target = held && active ? 1 : 0;
       const data = chest.userData;
       const previous = data.open;
