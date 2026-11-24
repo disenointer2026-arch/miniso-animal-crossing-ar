@@ -1,11 +1,15 @@
 /* Estacion 1: color de piel.
    1. Los doce botones redondos de la pantalla del modelo (nodos btn_piel_1 .. btn_piel_12) son pulsables: elegir un
       tono hace caer una lata de ese color junto al personaje.
-   2. La lata (modelo del equipo, con la textura del tono) se agarra con una mano (OneHandGrabbable).
-   3. El aerosol se acciona PULSANDO LA VALVULA (el boton de arriba) con la punta del dedo indice:
-      sale pintura (particulas + sonido) y, si la boquilla apunta al personaje, su color se mezcla
-      poco a poco con el de la lata. Al llegar, queda guardado en avatarConfig; se puede repetir con
-      otro tono. Con controles (sin manos) el gatillo de la mano que sostiene la lata hace de dedo. */
+   2. La lata (modelo del equipo, con la textura del tono) se agarra con UNA MANO como un aerosol de verdad. Con el
+      seguimiento de manos (Quest 3): se cierra la mano alrededor de la lata (medio, anular y menique flexionados; la
+      palma la rodea) y la lata queda sujeta con el eje a lo largo de la palma (de menique a indice), la valvula hacia
+      el lado del indice y la boquilla al frente. Abrir la mano la suelta. Con controles se agarra con el pellizco
+      (OneHandGrabbable) como antes.
+   3. El aerosol se acciona FLEXIONANDO EL INDICE de la misma mano sobre la VALVULA (el boton de arriba): sale pintura
+      (particulas + sonido) y, si la boquilla apunta al personaje, su color se mezcla poco a poco con el de la lata.
+      Acercar la mano o tener el indice estirado no la activa. Al llegar, queda guardado en avatarConfig; se puede
+      repetir con otro tono. Con controles el gatillo de la mano que sostiene la lata hace de dedo. */
 import {
   BufferGeometry,
   Color,
@@ -13,9 +17,11 @@ import {
   Float32BufferAttribute,
   GrabSystem,
   Grabbed,
+  Matrix4,
   OneHandGrabbable,
   Points,
   PointsMaterial,
+  Quaternion,
   Vector3,
 } from '@iwsdk/core';
 import { sfx } from '../../audio/sfx.js';
@@ -46,7 +52,25 @@ const FALL_SECONDS = 0.5;
 const SPRAY_RANGE = 0.45; // metros de la boquilla al personaje
 const SPRAY_CONE = 0.95; // radianes de tolerancia al apuntar
 const PAINT_TIME = 0.8; // segundos para mezclar casi todo el color
-const PRESS_RADIUS = 0.06; // distancia de la punta del dedo a la valvula para pulsarla
+const PRESS_RADIUS = 0.045; // distancia de la punta del indice a la valvula para pulsarla
+// Agarre anatomico (distancias en metros, de la punta de cada dedo al centro de la palma)
+const CURL_CLOSE = 0.088; // un dedo esta flexionado (envolviendo la lata) por debajo de esto
+const CURL_OPEN = 0.115; // y se considera abierto por encima de esto (histeresis)
+const GRASP_REACH = 0.07; // distancia maxima de la palma al eje de la lata para poder agarrarla
+const INDEX_BENT = 0.078; // el indice esta flexionado si su punta queda a menos de esto del nudillo (estirado mide ~0,09)
+const HOLD_OFFSET = 0.03; // la lata queda a esta distancia de la palma, hacia el lado de los dedos
+const HOLD_SHIFT = 0.012; // y desplazada hacia el lado del indice: la valvula queda sobre el nudillo del indice
+const HOLD_RATE = 22; // rapidez con que la lata se acomoda en la mano (1/s)
+const HAND_JOINTS = [
+  ['wrist', 'wrist'],
+  ['indexK', 'index-finger-phalanx-proximal'],
+  ['middleK', 'middle-finger-phalanx-proximal'],
+  ['pinkyK', 'pinky-finger-phalanx-proximal'],
+  ['indexTip', 'index-finger-tip'],
+  ['middleTip', 'middle-finger-tip'],
+  ['ringTip', 'ring-finger-tip'],
+  ['pinkyTip', 'pinky-finger-tip'],
+];
 const PARTICLES = 60;
 const PARTICLE_LIFE = 0.45;
 
@@ -64,6 +88,17 @@ export class SkinStationSystem extends createSystem({
     this.nozzle = new Vector3();
     this.valve = new Vector3();
     this.tip = new Vector3();
+    // Agarre anatomico con seguimiento de manos
+    this.hand = { palm: new Vector3(), X: new Vector3(), Y: new Vector3(), Z: new Vector3() };
+    for (const [key] of HAND_JOINTS) this.hand[key] = new Vector3();
+    this.grip = null; // { entity, side }
+    this.handsTracked = false;
+    this.basis = new Matrix4();
+    this.heldQuaternion = new Quaternion();
+    this.parentQuaternion = new Quaternion();
+    this.holdPoint = new Vector3();
+    this.axis = new Vector3();
+    this.scratch = new Vector3();
     this.up = new Vector3();
     this.offset = new Vector3();
     this.direction = new Vector3();
@@ -174,7 +209,7 @@ export class SkinStationSystem extends createSystem({
       home: [home.x, home.y, home.z],
       homeYaw: home.rotY,
     });
-    entity.addComponent(OneHandGrabbable);
+    this.useGrabMode(entity); // con manos se agarra con la mano cerrada; con controles, con el pellizco
     sfx.select();
   }
 
@@ -194,23 +229,136 @@ export class SkinStationSystem extends createSystem({
     }
   }
 
-  /** Verdadero si la punta de un dedo indice pulsa la valvula (por arriba o al lado). Con controles
-      no hay dedos: el gatillo de la mano que sostiene la lata cumple ese papel. */
+  /** Lee las articulaciones de una mano y calcula su marco: Y = de menique a indice, Z = hacia delante (de la muneca a los
+      dedos), X = Y x Z. Devuelve false si esa mano no esta seguida. */
+  readHand(side) {
+    const h = this.hand;
+    for (const [key, name] of HAND_JOINTS) {
+      if (!jointWorld(this.renderer, this.player, side, name, h[key])) return false;
+    }
+    h.palm.copy(h.wrist).add(h.indexK).add(h.middleK).add(h.pinkyK).multiplyScalar(0.25);
+    h.Y.subVectors(h.indexK, h.pinkyK).normalize();
+    h.Z.subVectors(h.middleK, h.wrist);
+    h.Z.addScaledVector(h.Y, -h.Z.dot(h.Y)).normalize();
+    h.X.crossVectors(h.Y, h.Z);
+    return true;
+  }
+
+  /** Cuantos dedos (medio, anular, menique) envuelven algo: su punta esta cerca de la palma. `limit` = CURL_CLOSE o CURL_OPEN. */
+  curledFingers(limit) {
+    const h = this.hand;
+    return (
+      (h.palm.distanceTo(h.middleTip) < limit ? 1 : 0) +
+      (h.palm.distanceTo(h.ringTip) < limit ? 1 : 0) +
+      (h.palm.distanceTo(h.pinkyTip) < limit ? 1 : 0)
+    );
+  }
+
+  /** Con manos la lata no usa el pellizco (ocupa el indice): se quita OneHandGrabbable y la lata se agarra con la mano cerrada.
+      Con controles se conserva el agarre del SDK. */
+  useGrabMode(entity) {
+    const has = entity.hasComponent(OneHandGrabbable);
+    if (this.handsTracked && has) {
+      if (this.queries.held.entities.has(entity)) this.grab.forceRelease(entity);
+      entity.removeComponent(OneHandGrabbable);
+    } else if (!this.handsTracked && !has) {
+      entity.addComponent(OneHandGrabbable);
+    }
+  }
+
+  /** Distancia de un punto al eje de la lata (el segmento de su base a su valvula). */
+  distanceToCan(object, point) {
+    object.updateWorldMatrix(true, false);
+    object.getWorldPosition(this.scratch); // base
+    this.valve.set(CAN_VALVE[0], CAN_VALVE[1], CAN_VALVE[2]).applyMatrix4(object.matrixWorld);
+    this.axis.subVectors(this.valve, this.scratch);
+    const length = this.axis.length();
+    this.axis.divideScalar(length || 1);
+    const t = Math.min(Math.max(this.offset.subVectors(point, this.scratch).dot(this.axis), 0), length);
+    this.holdPoint.copy(this.scratch).addScaledVector(this.axis, t);
+    return this.holdPoint.distanceTo(point);
+  }
+
+  /** Agarre y suelta con la mano cerrada (solo con el seguimiento de manos). */
+  updateGrip(delta) {
+    this.handsTracked = jointWorld(this.renderer, this.player, 'right', 'wrist', this.tip) || jointWorld(this.renderer, this.player, 'left', 'wrist', this.tip);
+    for (const entity of this.queries.cans.entities) this.useGrabMode(entity);
+    if (!this.handsTracked) {
+      this.grip = null;
+      return;
+    }
+    const factoryObject = this.factory?.object3D;
+    if (this.grip) {
+      const { entity, side } = this.grip;
+      const object = entity.object3D;
+      if (!entity.active || !object || !this.readHand(side) || this.curledFingers(CURL_OPEN) < 2) {
+        // Mano abierta: suelta la lata (vuelve a su sitio si queda lejos)
+        if (entity.active) {
+          entity.setValue(Carryable, 'locked', false);
+          entity.setValue(Carryable, 'idle', 0);
+        }
+        this.grip = null;
+        return;
+      }
+      this.holdCan(object, delta, factoryObject);
+      entity.setValue(Carryable, 'idle', 0);
+      return;
+    }
+    for (const entity of this.queries.cans.entities) {
+      const object = entity.object3D;
+      if (!object || object.userData.fall || !factoryObject) continue;
+      for (const side of ['right', 'left']) {
+        if (!this.readHand(side) || this.curledFingers(CURL_CLOSE) < 3) continue;
+        if (this.distanceToCan(object, this.hand.palm) > GRASP_REACH) continue;
+        this.grip = { entity, side };
+        entity.setValue(Carryable, 'locked', true); // mientras la mano la sujeta no vuelve sola a su sitio
+        sfx.select();
+        return;
+      }
+    }
+  }
+
+  /** Acomoda la lata en la palma: eje de menique a indice (valvula hacia el indice), boquilla al frente, un poco hacia el
+      lado de los dedos para que la palma la rodee. */
+  holdCan(object, delta, factoryObject) {
+    const h = this.hand;
+    // Hacia que lado de la palma envuelven los dedos (signo de la normal de la palma)
+    this.scratch.copy(h.middleTip).add(h.ringTip).add(h.pinkyTip).multiplyScalar(1 / 3).sub(h.palm);
+    const sign = this.scratch.dot(h.X) >= 0 ? 1 : -1;
+    object.getWorldScale(this.axis);
+    const half = (CAN_VALVE[1] * this.axis.x) / 2; // media lata, en metros
+    this.holdPoint
+      .copy(h.palm)
+      .addScaledVector(h.X, HOLD_OFFSET * sign)
+      .addScaledVector(h.Y, HOLD_SHIFT - half); // origen de la lata: el centro de su base
+    this.basis.makeBasis(h.X, h.Y, h.Z); // +Y de la lata = valvula, +Z = boquilla
+    this.heldQuaternion.setFromRotationMatrix(this.basis);
+    const parent = object.parent;
+    if (parent) {
+      parent.updateWorldMatrix(true, false);
+      parent.getWorldQuaternion(this.parentQuaternion).invert();
+      this.heldQuaternion.premultiply(this.parentQuaternion);
+      parent.worldToLocal(this.holdPoint);
+    }
+    const k = 1 - Math.exp(-HOLD_RATE * delta);
+    object.position.lerp(this.holdPoint, k);
+    object.quaternion.slerp(this.heldQuaternion, k);
+  }
+
+  /** Verdadero si se pulsa la valvula. Con manos: el indice de la MISMA mano que sostiene la lata, flexionado, con la punta
+      sobre la valvula (no basta acercarla ni tener el indice estirado). Con controles: el gatillo de la mano que sostiene. */
   valvePressed(holder) {
-    let tracked = false;
     const debug = import.meta.env.DEV && window.__miniso ? (window.__miniso.spray = { holder, tips: [] }) : null;
-    for (const side of ['right', 'left']) {
-      if (!jointWorld(this.renderer, this.player, side, 'index-finger-tip', this.tip)) continue;
-      tracked = true;
-      this.offset.subVectors(this.tip, this.valve);
-      debug?.tips.push({ side, distance: +this.offset.length().toFixed(3), above: +this.offset.dot(this.up).toFixed(3) });
-      if (this.offset.length() < PRESS_RADIUS && this.offset.dot(this.up) > -0.02) return true;
+    if (this.handsTracked) {
+      if (!this.grip || this.grip.side !== holder || !this.readHand(holder)) return false;
+      const h = this.hand;
+      this.offset.subVectors(h.indexTip, this.valve);
+      const bent = h.indexTip.distanceTo(h.indexK) < INDEX_BENT;
+      const onTop = this.offset.length() < PRESS_RADIUS && this.offset.dot(this.up) > -0.02;
+      debug?.tips.push({ side: holder, distance: +this.offset.length().toFixed(3), bent });
+      return bent && onTop;
     }
-    if (debug) {
-      debug.tracked = tracked;
-      debug.valve = this.valve.toArray().map((v) => +v.toFixed(3));
-    }
-    return tracked ? false : this.input.xr.getSelectState(holder).active;
+    return this.input.xr.getSelectState(holder).active;
   }
 
   /** El tope de la lata se hunde un poco mientras se pulsa la valvula y vuelve al soltarla. */
@@ -227,7 +375,11 @@ export class SkinStationSystem extends createSystem({
     for (const entity of this.queries.cans.entities) {
       const object = entity.object3D;
       if (!object) continue;
-      const hand = this.queries.held.entities.has(entity) ? this.grab.getHolderHand(entity) : null;
+      const hand = this.grip?.entity === entity
+        ? this.grip.side
+        : this.queries.held.entities.has(entity)
+          ? this.grab.getHolderHand(entity)
+          : null;
       if (!hand) {
         this.moveValve(object, false, delta);
         continue;
@@ -314,6 +466,7 @@ export class SkinStationSystem extends createSystem({
 
   update(delta) {
     this.updateFalls(delta);
+    this.updateGrip(delta);
     this.updateParticles(delta, this.updateSpray(delta));
   }
 }
