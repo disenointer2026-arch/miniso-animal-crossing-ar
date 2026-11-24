@@ -11,6 +11,7 @@
    Lo puesto vive en avatarConfig; el mueble se calcula a partir de ahi. */
 import {
   Box3,
+  BoxGeometry,
   createSystem,
   Grabbed,
   Group,
@@ -85,6 +86,8 @@ const CHARM_FIT = { width: 1.55, height: 1.4, rest: 0.02 }; // espacio util (anc
 const DISPLAY_FIX = {};
 
 const noRaycast = () => {};
+const charmGrabGeometry = new BoxGeometry(1, 1, 1);
+const charmGrabMaterial = new MeshBasicMaterial({ transparent: true, opacity: 0, depthWrite: false });
 
 /** Pestaña divisoria de carpeta: borde de arriba redondeado, del color de su categoria; la elegida va viva y con el rotulo oscuro,
     las demas palidas. */
@@ -576,6 +579,14 @@ export class CatalogStationSystem extends createSystem({
       chest: chestEntity,
     };
     root.scale.setScalar(0.0001);
+    // Zona de agarre invisible un poco mayor que el charm (al menos 6 cm de lado en el mundo): se alcanza sin precision y la
+    // caja, que ya no se puede apuntar mientras esta abierta, no la tapa
+    const reach = Math.max(1.4, 0.06 / (Math.max(size.x, size.y, size.z) * base));
+    const grab = new Mesh(charmGrabGeometry, charmGrabMaterial);
+    grab.name = 'GrabZone';
+    grab.scale.set(size.x * reach, size.y * reach, size.z * reach);
+    root.add(grab);
+    this.placeAnchored(root); // ya en su sitio dentro de la caja desde el primer cuadro
     const entity = this.world.createTransformEntity(root, { parent: this.factory });
     entity.addComponent(FactoryPart);
     entity.addComponent(CatalogItem, { key: 'companion', itemId: id, target: 'body', kind: 'part' });
@@ -641,15 +652,25 @@ export class CatalogStationSystem extends createSystem({
       object.scale.setScalar(Math.max(object.userData.base * k, 0.0001));
       // Los stickers y los charms siguen a su libro o caja (si nadie los sostiene)
       const anchor = object.userData.anchor;
-      if (anchor?.object && !this.queries.held.entities.has(entity)) {
-        this.point.copy(anchor.local);
-        anchor.object.localToWorld(this.point);
-        factoryObject.worldToLocal(this.point);
-        object.position.copy(this.point);
-        anchor.object.getWorldQuaternion(this.quaternion).premultiply(this.factoryQuaternion);
-        object.quaternion.copy(this.quaternion);
-      }
+      if (anchor?.object && !this.queries.held.entities.has(entity)) this.placeAnchored(object);
     }
+  }
+
+  /** Coloca un objeto anclado (sticker en su pagina, charm en su caja) en su sitio segun la posicion ACTUAL de su ancla: se
+      refresca la matriz de la caja o el libro antes, para que el charm vaya siempre dentro y no un cuadro por detras. */
+  placeAnchored(object) {
+    const anchor = object.userData.anchor;
+    const factoryObject = this.factory?.object3D;
+    if (!anchor?.object || !factoryObject) return;
+    factoryObject.updateWorldMatrix(true, false);
+    anchor.object.updateWorldMatrix(true, false);
+    factoryObject.getWorldQuaternion(this.factoryQuaternion).invert();
+    this.point.copy(anchor.local);
+    anchor.object.localToWorld(this.point);
+    factoryObject.worldToLocal(this.point);
+    object.position.copy(this.point);
+    anchor.object.getWorldQuaternion(this.quaternion).premultiply(this.factoryQuaternion);
+    object.quaternion.copy(this.quaternion);
   }
 
   /** Activa o desactiva el apuntado (rayo, dedo y agarre cercano) sobre las mallas de la caja. */
@@ -676,7 +697,7 @@ export class CatalogStationSystem extends createSystem({
       const target = held && active ? 1 : 0;
       // Abierta y en la mano, la caja deja de ser un objetivo de agarre: su malla ocupa el mismo volumen que el charm de
       // dentro y la otra mano "agarraba" la caja (ya sostenida) en lugar del charm. Al soltarla vuelve a ser agarrable.
-      this.setChestPickable(chest, !(held && data.open > 0.05));
+      this.setChestPickable(chest, !(data.open > 0.05 || data.charm));
       const previous = data.open;
       data.open += (target - data.open) * Math.min(1, delta * 9);
       if (Math.abs(data.open - target) < 0.004) data.open = target;
@@ -685,7 +706,7 @@ export class CatalogStationSystem extends createSystem({
       if (previous < 0.1 && data.open >= 0.1 && target === 1) sfx.thunk();
 
       const id = chestEntity.getValue(ChestBox, 'charm');
-      if (held && active && !data.charm && avatarConfig.peek().companion !== id) {
+      if (held && active && !data.charm && data.open >= 0.3 && avatarConfig.peek().companion !== id) {
         data.charm = this.spawnCharm(chestEntity);
       }
       if (data.charm && !data.charm.active) data.charm = null; // se coloco en el personaje
@@ -719,8 +740,8 @@ export class CatalogStationSystem extends createSystem({
   update(delta, time) {
     if (this.cooldown > 0) this.cooldown -= delta;
     if (this.pendingIcons.length && this.frame++ % 6 === 0) this.drawNextIcon();
-    this.updateItems(delta, time);
     this.updateChests(delta);
+    this.updateItems(delta, time);
     this.updateZones();
   }
 }
