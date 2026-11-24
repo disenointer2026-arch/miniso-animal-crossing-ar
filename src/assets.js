@@ -2,8 +2,9 @@
    debe ser determinista y sin efectos secundarios. */
 import { AssetType, defineAssets } from '@iwsdk/core';
 
+// __BUILD_ID__ cambia en cada compilacion (vite.config.js): evita que el visor use modelos viejos en cache
 const publicAssetUrl = (filePath) =>
-  `${import.meta.env.BASE_URL}${filePath.replace(/^\/+/u, '')}`;
+  `${import.meta.env.BASE_URL}${filePath.replace(/^\/+/u, '')}?v=${__BUILD_ID__}`;
 
 const glb = (file, name) => ({
   url: publicAssetUrl(`models/${file}.glb`),
