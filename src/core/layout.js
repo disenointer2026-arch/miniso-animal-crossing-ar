@@ -29,7 +29,7 @@ export const MODEL = {
   giftBox: [-15.5, -21.6],
   /** Donde se para el usuario en cada slot: del lado de adentro de la banda, de frente a la
       estacion y a ~0.45 m de la banda (alcance comodo de la mano). El slot 0 usa el de la estacion 1. */
-  stands: [[2, -1.5], [2, -1.5], [32, 27], [36, 8], [32, -13], [3, -13], [-8, -13]],
+  stands: [[2, -1.5], [2, -1.5], [32, 27], [35, 15], [32, -13], [3, -13], [-8, -13]],
 };
 
 /** Los puntos de pie nunca quedan a mas de SAFE_STAND_RADIUS metros del punto donde el usuario calibro (su espacio
@@ -38,7 +38,8 @@ export const MODEL = {
     estacion sigue a alcance de la mano. La fabrica no se mueve ni se reduce. */
 export const SAFE_STAND_RADIUS = 0.72;
 /** Slots cuyo punto se coloco a mano justo al frente de su estacion (pedido del equipo) y no se acerca al centro:
-    la estacion 2 (cabello) queda de frente a su maquina, a ~0,4 m del borde de la plataforma. */
+    la estacion 2 (cabello) queda de frente a su maquina, a ~0,4 m del borde de la plataforma. (El de la estacion 3 queda en
+    la perpendicular a la banda por su parada, a 0,71 m del centro, dentro del limite.) */
 const HAND_PLACED_STANDS = new Set([2]);
 {
   const limit = SAFE_STAND_RADIUS / MODEL.scale; // en unidades del modelo
