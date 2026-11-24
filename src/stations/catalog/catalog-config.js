@@ -65,8 +65,8 @@ export const CATALOGS = {
 
 // ---------- Muebles del modelo (unidades del modelo) ----------
 export const FURNITURE = {
-  /** Libro de stickers: sustituye al libro "libro_ojos" del modelo (centro de su caja). */
-  book: [49.7, 8.25, 7.0],
+  /** Libro de stickers: es el libro "libro_ojos" del modelo; este es el punto del fondo de su cubierta, sobre la mesa. */
+  book: [49.7, 8.2, 7.3],
 };
 
 /** Armario: las prendas se acomodan donde el equipo puso las seis camisas de referencia (docs/fuentes/fabrica/medidas.json):
@@ -100,18 +100,19 @@ export const CHEST_NODES = {
   caja_3: 'regalo',
 };
 
-/** Posicion de un sticker o muestra en el libro abierto, respecto al centro del libro (metros: x derecha,
-    z hacia el usuario). */
+/** Posicion de un sticker o muestra en las paginas del libro (metros, en el sistema del libro: x a la derecha, z hacia el usuario;
+    el lomo queda en x = 0). Los stickers van en una cuadricula de 4 columnas (el lomo cae entre la segunda y la tercera) y las
+    muestras en 6 columnas, dejando libre el borde de arriba (titulo) y el de abajo (flechas). */
 export function bookSlot(group, index, count) {
   if (group.kind === 'swatch') {
     const cols = 6;
     const col = index % cols;
     const row = Math.floor(index / cols);
-    return [(col - (cols - 1) / 2) * 0.047, (row - 0.5) * 0.047 + 0.005];
+    return [(col - (cols - 1) / 2) * 0.047, (row - 0.5) * 0.047 + 0.012];
   }
   const cols = count > 4 ? 4 : count;
   const col = index % cols;
   const row = Math.floor(index / cols);
   const rows = Math.ceil(count / cols);
-  return [(col - (cols - 1) / 2) * 0.068, (row - (rows - 1) / 2) * 0.07 + 0.005];
+  return [(col - (cols - 1) / 2) * 0.07, (row - (rows - 1) / 2) * 0.075 + 0.012];
 }

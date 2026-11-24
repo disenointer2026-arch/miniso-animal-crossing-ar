@@ -8,6 +8,6 @@ export const ANCHORS = {
   hairBin: [24.5, 21.5, 7], // bote de descarte
 };
 
-/** Piezas del modelo que no se dibujan porque las reemplaza un objeto funcional: el libro de la estacion de
-    rostro lo sustituye el libro de stickers que se agarra. */
-export const HIDDEN_NODES = ['libro_ojos'];
+/** Piezas del modelo que no se dibujan porque las reemplaza un objeto funcional (hoy ninguna: el libro de la estacion de rostro
+    es el propio "libro_ojos" del modelo, que se agarra). */
+export const HIDDEN_NODES = [];
