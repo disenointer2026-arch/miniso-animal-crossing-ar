@@ -8,6 +8,7 @@ import { Carryable } from '../components.js';
 
 const RETURN_DELAY = 1.4; // segundos quieto antes de volver
 const RETURN_RATE = 7; // velocidad del regreso (1/s)
+const BOOK_RETURN_DELAY = 12; // el libro de stickers se queda donde se suelta mucho mas tiempo: asi se pasa de una mano a otra
 
 const dropHandlers = new Map();
 
@@ -58,7 +59,7 @@ export class CarryableSystem extends createSystem({
       if (!object) continue;
       const idle = entity.getValue(Carryable, 'idle') + delta;
       entity.setValue(Carryable, 'idle', idle);
-      if (idle < RETURN_DELAY) continue;
+      if (idle < (entity.getValue(Carryable, 'kind') === 'book' ? BOOK_RETURN_DELAY : RETURN_DELAY)) continue;
       const home = entity.getVectorView(Carryable, 'home');
       this.target.set(home[0], home[1], home[2]);
       const k = 1 - Math.exp(-RETURN_RATE * delta);

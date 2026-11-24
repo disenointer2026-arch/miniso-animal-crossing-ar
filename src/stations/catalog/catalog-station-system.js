@@ -12,6 +12,7 @@
 import {
   Box3,
   BoxGeometry,
+  Matrix4,
   createSystem,
   Grabbed,
   Group,
@@ -193,6 +194,11 @@ export class CatalogStationSystem extends createSystem({
     this.other = new Vector3();
     this.quaternion = new Quaternion();
     this.factoryQuaternion = new Quaternion();
+    this.axisX = new Vector3();
+    this.axisY = new Vector3();
+    this.axisZ = new Vector3();
+    this.basis = new Matrix4();
+    this.bookQuaternion = new Quaternion();
 
     const refresh = () => this.refresh();
     this.cleanupFuncs.push(
@@ -673,6 +679,29 @@ export class CatalogStationSystem extends createSystem({
     object.quaternion.copy(this.quaternion);
   }
 
+  /** Mientras se sostiene, el libro se muestra DERECHO y de frente a la cabeza (como una tableta): su cara de arriba mira al usuario y
+      su borde de arriba (el de las pestañas) apunta hacia arriba, sin importar como gire la muñeca. La posicion sigue a la mano.
+      Al soltarlo se queda flotando donde esta (ver RETURN_DELAY en carryable-system.js) para pasarlo a la otra mano. */
+  updateHeldBook(delta) {
+    const held = this.queries.heldBooks.entities.values().next().value;
+    const book = held?.object3D;
+    const factoryObject = this.factory?.object3D;
+    if (!book || !factoryObject) return;
+    book.getWorldPosition(this.point);
+    this.player.head.getWorldPosition(this.other);
+    this.axisY.subVectors(this.other, this.point).normalize(); // la cara de arriba del libro mira a la cabeza
+    this.axisZ.set(0, 1, 0);
+    this.axisZ.addScaledVector(this.axisY, -this.axisZ.dot(this.axisY)); // el "arriba" del mundo visto desde el libro
+    if (this.axisZ.lengthSq() < 1e-4) return; // mirando exactamente de arriba: se conserva la orientacion
+    this.axisZ.normalize().negate(); // +Z del libro = hacia abajo; su borde de arriba (-Z) apunta hacia arriba
+    this.axisX.crossVectors(this.axisY, this.axisZ);
+    this.basis.makeBasis(this.axisX, this.axisY, this.axisZ);
+    this.bookQuaternion.setFromRotationMatrix(this.basis);
+    factoryObject.getWorldQuaternion(this.factoryQuaternion).invert();
+    this.bookQuaternion.premultiply(this.factoryQuaternion);
+    book.quaternion.slerp(this.bookQuaternion, 1 - Math.exp(-14 * delta));
+  }
+
   /** Activa o desactiva el apuntado (rayo, dedo y agarre cercano) sobre las mallas de la caja. */
   setChestPickable(chest, pickable) {
     if (chest.userData.pickable === pickable) return;
@@ -740,6 +769,7 @@ export class CatalogStationSystem extends createSystem({
   update(delta, time) {
     if (this.cooldown > 0) this.cooldown -= delta;
     if (this.pendingIcons.length && this.frame++ % 6 === 0) this.drawNextIcon();
+    this.updateHeldBook(delta);
     this.updateChests(delta);
     this.updateItems(delta, time);
     this.updateZones();
