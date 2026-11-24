@@ -25,6 +25,7 @@ import {
 import {
   EYE_CROP,
   EYE_MAPS,
+  BASE_CLOTHES_COLOR,
   HEAD_FIT,
   MODEL,
   MOUTH,
@@ -157,8 +158,28 @@ export class Avatar {
     this._setAccessory(this.config.accHead);
     this._setCharm(this.config.companion);
     this._applyHides();
+    this._keepBaseClothes();
     this._collectRoles();
     return this;
+  }
+
+  /** La camisa y el boxer base vienen en el cuerpo (material "ropa"). Son permanentes: aqui se garantiza que
+      siempre esten visibles y con su color, pase lo que pase con las prendas que se pongan encima. */
+  _keepBaseClothes() {
+    const body = this.parts.body;
+    if (!body) return;
+    body.visible = true;
+    body.traverse((o) => {
+      if (!o.isMesh) return;
+      const materials = Array.isArray(o.material) ? o.material : [o.material];
+      for (const material of materials) {
+        if (!material || !(material.name || '').toLowerCase().includes('ropa')) continue;
+        material.visible = true;
+        material.color.set(BASE_CLOTHES_COLOR);
+        material.userData.baseClothes = true;
+      }
+      if (materials.some((m) => m?.userData?.baseClothes)) o.visible = true;
+    });
   }
 
   /** Guarda los materiales de cada rol (piel, cabello) para repintarlos sin recorrer el arbol. */
@@ -269,6 +290,7 @@ export class Avatar {
     if (next.accHead !== c.accHead) this._setAccessory(next.accHead);
     if (next.companion !== c.companion) this._setCharm(next.companion);
     this._applyHides();
+    this._keepBaseClothes();
     this._collectRoles();
   }
 
