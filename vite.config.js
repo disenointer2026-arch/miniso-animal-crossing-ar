@@ -16,6 +16,8 @@ export default defineConfig({
         rollupOptions: { input: './index.html' },
     },
     esbuild: { target: 'esnext' },
+    // Identificador de cada compilacion: se agrega a las URLs de modelos y texturas para saltar la cache del visor
+    define: { __BUILD_ID__: JSON.stringify(process.env.NODE_ENV === 'production' ? String(Date.now()) : 'dev') },
     // @drawcall/uikitml otherwise pulls a second three/@pmndrs/uikit graph
     // (its own three vs the app's super-three alias). Duplicate Component classes break
     // instanceof checks → "Only pmndrs/uikit components can be added as children".
