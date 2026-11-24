@@ -1,12 +1,12 @@
 /* Cierre de la fabricacion (fase Finishing -> Choose):
    1. travel  la banda lleva al personaje hasta el final del recorrido
-   2. enter   la caja de regalo esta abierta: el personaje salta dentro y se encoge
-   3. close   la tapa se cierra
-   4. fly     la fabrica se desvanece y la caja viaja al frente del usuario, girando y
-              dejando destellos
-   5. reveal  la caja se abre y el personaje sale a su figura final
+   2. enter   la bolsa MINISO espera abierta: el personaje salta dentro (asoma la cabeza)
+   3. close   la bolsa da un saltito de contenta
+   4. fly     la fabrica se desvanece y la bolsa, con el personaje dentro, viaja al frente del usuario,
+              girando y dejando destellos
+   5. reveal  el personaje sale de la bolsa a su figura final
    idle: la figura gira sola (se puede girar con la mano) mientras se elige que hacer.
-   El resto del flujo (pedido, tarjeta) coloca la caja y la figura con la senal "showcase". */
+   El resto del flujo (pedido, tarjeta) coloca la bolsa y la figura con la senal "showcase". */
 import {
   BufferGeometry,
   Color,
@@ -24,7 +24,7 @@ import { AvatarFigure, Factory, FactoryPart } from '../components.js';
 import { MODEL as FACTORY_MODEL, SLOT, modelPoint, pathPoint, slotPose, slotS, stationSlot } from '../core/layout.js';
 import { beltMoving, beltRequest, layout, phase, Phase } from '../state.js';
 import { captureFrame, frameYaw, framePoint } from './frame.js';
-import { GIFT, createGiftBox } from './gift-box.scene-asset.js';
+import { createBag } from './bag.scene-asset.js';
 
 /** Donde se muestran la caja y la figura (respecto al marco del usuario). Lo cambian los paneles. */
 export const showcase = signal({ right: -0.28, forward: 0.65, scale: 1, visible: true });
@@ -32,6 +32,7 @@ export const showcase = signal({ right: -0.28, forward: 0.65, scale: 1, visible:
 const T = { enter: 1.3, close: 0.7, fly: 2.0, reveal: 1.6 };
 const BOX_SCALE = 1.4;
 const AVATAR_SCALE = 1.3;
+const INSIDE_SCALE = 0.9; // el personaje dentro de la bolsa: la cabeza asoma por la boca
 const SHOWCASE_DROP = -0.45; // altura de la caja respecto a la cabeza
 const SPARKS = 90;
 const PALETTE = [0xf6d365, 0xf89fad, 0x8cc37a, 0x8fb4e3, 0xffffff].map((c) => new Color(c));
@@ -59,6 +60,7 @@ export class FinaleSystem extends createSystem({
     this.targetYaw = 0;
     this.cursor = 0;
     this.createSparks();
+    if (import.meta.env.DEV && window.__miniso) window.__miniso.finale = this; // solo desarrollo: para ubicar la bolsa en las pruebas
 
     this.cleanupFuncs.push(
       this.queries.factories.subscribe('qualify', (factory) => {
@@ -140,14 +142,13 @@ export class FinaleSystem extends createSystem({
   begin() {
     const factory = this.factory;
     if (!factory || !this.avatarEntity?.object3D) return;
-    // La caja espera al final de la banda (centro de la base de regalo del modelo), mirando al usuario
+    // La bolsa espera al final de la banda (centro de la base de regalo del modelo), con el logo hacia el usuario
     const [gx, gy] = FACTORY_MODEL.giftBox;
     const p = modelPoint(layout.peek(), gx, gy, FACTORY_MODEL.beltTop);
     const rotY = Math.atan2(-p.x, -p.z);
-    const gift = createGiftBox();
+    const gift = createBag(layout.peek());
     gift.position.set(p.x, p.y + 0.012, p.z);
     gift.rotation.y = rotY;
-    gift.userData.parts.lid.rotation.x = GIFT.openAngle;
     this.box = this.world.createTransformEntity(gift, { parent: factory });
     this.box.addComponent(FactoryPart);
     this.boxStart.set(p.x, p.y + 0.012, p.z);
@@ -197,7 +198,8 @@ export class FinaleSystem extends createSystem({
     if (!figure || !gift) return;
     this.t += delta;
     const base = figure.userData.baseScale;
-    const lid = gift.userData.parts.lid;
+    const rim = gift.userData.rim;
+    const floor = gift.userData.floor;
 
     if (this.stage === 'travel') {
       if (!beltMoving.peek() && this.t > 0.3) this.go('enter');
@@ -207,17 +209,19 @@ export class FinaleSystem extends createSystem({
       pathPoint(layout.peek(), slotS(SLOT.giftBox), 0.003, this.point);
       figure.position.set(
         this.point.x + (this.boxStart.x - this.point.x) * e,
-        this.point.y + 0.017 * e + 0.16 * Math.sin(Math.PI * k),
+        this.point.y + (this.boxStart.y + floor - this.point.y) * e + 0.1 * Math.sin(Math.PI * k),
         this.point.z + (this.boxStart.z - this.point.z) * e,
       );
-      figure.scale.setScalar(base * (1 - 0.55 * e));
+      figure.scale.setScalar(base * (1 - (1 - INSIDE_SCALE) * e));
       figure.rotation.y = Math.atan2(this.boxStart.x - this.point.x, this.boxStart.z - this.point.z);
       if (k >= 1) this.go('close');
     } else if (this.stage === 'close') {
+      // La bolsa se aplasta un poquito y rebota (saltito de contenta)
       const k = Math.min(this.t / T.close, 1);
-      lid.rotation.x = GIFT.openAngle * (1 - easeInOut(k));
+      gift.scale.set(1 + 0.05 * Math.sin(Math.PI * k), 1 - 0.07 * Math.sin(Math.PI * k), 1 + 0.05 * Math.sin(Math.PI * k));
+      figure.scale.setScalar(base * INSIDE_SCALE * (1 - 0.07 * Math.sin(Math.PI * k)));
       if (k >= 1) {
-        figure.visible = false;
+        gift.scale.setScalar(1);
         sfx.thunk();
         this.go('fly');
       }
@@ -226,8 +230,13 @@ export class FinaleSystem extends createSystem({
       const e = easeInOut(k);
       gift.position.lerpVectors(this.boxStart, this.goal, e);
       gift.position.y += 0.3 * Math.sin(Math.PI * k);
-      gift.scale.setScalar(1 + (BOX_SCALE * showcase.peek().scale - 1) * e);
+      const g = 1 + (BOX_SCALE * showcase.peek().scale - 1) * e;
+      gift.scale.setScalar(g);
       gift.rotation.y = this.boxYaw + (this.targetYaw - this.boxYaw) * e + Math.PI * 2 * e;
+      // El personaje va dentro de la bolsa: se mueve, gira y crece con ella
+      figure.position.set(gift.position.x, gift.position.y + floor * g, gift.position.z);
+      figure.scale.setScalar(base * INSIDE_SCALE * g);
+      figure.rotation.y = gift.rotation.y;
       gift.getWorldPosition(this.tmp);
       if (Math.random() < 0.6) this.burst(1, this.tmp, 0.5);
       if (k >= 1) {
@@ -238,13 +247,9 @@ export class FinaleSystem extends createSystem({
       const k = Math.min(this.t / T.reveal, 1);
       const e = easeInOut(k);
       const s = showcase.peek().scale;
-      lid.rotation.x = GIFT.openAngle * Math.min(this.t / 0.6, 1);
-      figure.position.set(
-        this.goal.x,
-        this.goal.y + GIFT.height * BOX_SCALE * s * (0.4 + 0.6 * e),
-        this.goal.z,
-      );
-      figure.scale.setScalar(base * AVATAR_SCALE * s * (0.25 + 0.75 * e));
+      const g = BOX_SCALE * s;
+      figure.position.set(this.goal.x, this.goal.y + floor * g + (rim * g - floor * g) * e, this.goal.z);
+      figure.scale.setScalar(base * s * (INSIDE_SCALE * BOX_SCALE * (1 - e) + AVATAR_SCALE * e));
       figure.rotation.y += delta * 2;
       if (k >= 1) this.go('idle');
     } else if (this.stage === 'idle') {
@@ -261,7 +266,7 @@ export class FinaleSystem extends createSystem({
     gift.position.copy(this.current);
     gift.scale.setScalar(BOX_SCALE * s.scale);
     gift.rotation.y = this.targetYaw;
-    figure.position.set(this.current.x, this.current.y + GIFT.height * BOX_SCALE * s.scale, this.current.z);
+    figure.position.set(this.current.x, this.current.y + gift.userData.rim * BOX_SCALE * s.scale, this.current.z);
     figure.scale.setScalar(base * AVATAR_SCALE * s.scale);
     gift.visible = s.visible;
     figure.visible = s.visible;

@@ -27,6 +27,12 @@ const uikitml = (fileName, name) => ({
 export default defineAssets({
   // Fabrica: banda, edificio de inicio y estaciones (FABRICA.blend convertido; fuente en docs/fuentes/)
   fabrica: glb('fabrica/fabrica', 'Fabrica'),
+  // Lata de aerosol (con una textura por tono de piel) y bolsa MINISO del cierre
+  lata: glb('lata/lata', 'Lata'),
+  bolsa: glb('bolsa/bolsa', 'Bolsa'),
+  ...Object.fromEntries(
+    Array.from({ length: 12 }, (_, i) => [`lata-piel-${i + 1}`, texture(`textures/lata/piel-${i + 1}.png`)]),
+  ),
 
   // Personaje de la pagina original (copias en public/models/avatar)
   'avatar-cuerpo': glb('avatar/cuerpo', 'Cuerpo'),

@@ -34,7 +34,6 @@ import {
 } from '../../components.js';
 import { interactionBusy, registerDropHandler } from '../../interaction/carryable-system.js';
 import { renderPortrait } from '../../checkout/portrait.js';
-import { MODEL } from '../../data/avatar-defaults.js';
 import { CATEGORIES } from '../../data/categories.js';
 import { modelFrame } from '../../core/layout.js';
 import { ANCHORS } from '../../factory/anchors.js';
@@ -50,7 +49,7 @@ import {
   selection,
   setAvatar,
 } from '../../state.js';
-import { AVATAR_HEIGHT } from '../../systems/belt-system.js';
+import { avatarScale } from '../../systems/belt-system.js';
 import { C } from '../../ui/theme.js';
 import { addItem, createUiPanel, drawCheck, drawSwatch, fitText, roundRectPath, text } from '../../ui/world-ui.js';
 import { createBin } from './hair-props.scene-asset.js';
@@ -63,7 +62,6 @@ const GROW_SECONDS = 0.5;
 const HEAD_SNAP = 0.24; // metros del origen del cabello al centro de la cabeza
 const BIN_SNAP = 0.17;
 const ZONE_RADIUS = 0.1;
-const PROP_SCALE = AVATAR_HEIGHT / MODEL.height;
 
 const easeOutBack = (k) => 1 + 2.7 * (k - 1) ** 3 + 1.7 * (k - 1) ** 2;
 
@@ -328,7 +326,7 @@ export class HairStationSystem extends createSystem({
     const root = new Group();
     root.name = 'HairProp';
     root.add(buildPart(`cabello-${style}`, { ...avatarConfig.peek(), hair: style }));
-    root.scale.setScalar(fromHead ? PROP_SCALE : 0.0001);
+    root.scale.setScalar(fromHead ? avatarScale() : 0.0001);
     root.position.set(home.x, home.y, home.z);
     root.rotation.y = home.rotY;
     if (fromHead && this.avatar) {
@@ -409,7 +407,7 @@ export class HairStationSystem extends createSystem({
       if (!object || object.userData.grow === undefined) continue;
       object.userData.grow += delta;
       const k = Math.min(object.userData.grow / GROW_SECONDS, 1);
-      object.scale.setScalar(Math.max(PROP_SCALE * easeOutBack(k), 0.0001));
+      object.scale.setScalar(Math.max(avatarScale() * easeOutBack(k), 0.0001));
       if (k >= 1) {
         delete object.userData.grow;
         entity.setValue(Carryable, 'locked', false);

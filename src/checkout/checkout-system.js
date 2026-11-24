@@ -20,7 +20,8 @@ import { createCardView } from './card-view.js';
 import { Confetti } from './confetti.js';
 import { createDialog } from './dialog-ui.js';
 import { KeyboardUI } from './keyboard-ui.js';
-import { createChoosePanel, createConfirmPanel, createSharePanel } from './sheets-ui.js';
+import { createAvatarReadyPanel, createPurchasePanel } from './design-panels.js';
+import { createSharePanel } from './sheets-ui.js';
 import { cardProfile, focusField, lastOrder, orderDraft, patchProfile } from './checkout-state.js';
 import { OrderUI } from './order-ui.js';
 import { renderPortrait } from './portrait.js';
@@ -113,12 +114,12 @@ export class CheckoutSystem extends createSystem({}) {
     if (phase.peek() === Phase.Welcome) return; // se salio de la sesion mientras cargaba
     this.panels = {
       dialog: createDialog(this.world),
-      choose: createChoosePanel(this.world, {
+      choose: createAvatarReadyPanel(this.world, {
         order: () => (phase.value = Phase.Order),
         card: () => (phase.value = Phase.Card),
         back: () => (phase.value = Phase.Customizing),
       }),
-      confirm: createConfirmPanel(this.world, {
+      confirm: createPurchasePanel(this.world, {
         card: () => (phase.value = Phase.Card),
         exit: () => this.exitExperience(),
       }),

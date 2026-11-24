@@ -5,10 +5,10 @@
 
    Estacion 3 (rostro): el LIBRO de stickers se agarra con una mano y se abre; sus 4 paginas son ojos,
      color de ojos, boca y nariz. Los stickers se sacan de la pagina con la otra mano.
-   Estacion 4 (ropa): prendas repartidas en las baldas del armario; tres botones en los bloques de al
-     lado cambian entre camisetas, pantalones y zapatos.
-   Estacion 5 (charms): seis cajas cerradas (tres arriba y tres abajo) con el icono de su charm; al
-     agarrar una con una mano se abre y de ella se saca el charm. Los accesorios van en una vitrina. */
+   Estacion 4 (ropa y accesorios): prendas repartidas en las baldas del armario del modelo; los cuatro botones del
+     modelo (camisetas, pantalones, zapatos y accesorios) cambian lo que se muestra.
+   Estacion 5 (charms): las seis cajas del modelo, cerradas y con el icono de su charm; al agarrar una con una
+     mano se abre y de ella se saca el charm. */
 import { EYE_MAPS } from '../../data/avatar-defaults.js';
 import { CATEGORIES } from '../../data/categories.js';
 
@@ -44,52 +44,61 @@ export const CATALOGS = {
   [CLOTHES]: {
     furniture: 'wardrobe',
     groups: [
-      { apply: 'shirt', kind: 'part', prefix: 'ropa', target: 'body', ids: ids(CLOTHES, 0), label: 'Camisetas' },
-      { apply: 'pants', kind: 'part', prefix: 'ropa', target: 'body', ids: ids(CLOTHES, 1), label: 'Pantalones' },
-      { apply: 'shoes', kind: 'part', prefix: 'zapatos', target: 'feet', ids: ids(CLOTHES, 2), label: 'Zapatos' },
+      { apply: 'shirt', kind: 'part', prefix: 'ropa', target: 'body', ids: ids(CLOTHES, 0), label: 'Camisetas', button: 'btn_camisa' },
+      { apply: 'pants', kind: 'part', prefix: 'ropa', target: 'body', ids: ids(CLOTHES, 1), label: 'Pantalones', button: 'btn_pantalon' },
+      { apply: 'shoes', kind: 'part', prefix: 'zapatos', target: 'feet', ids: ids(CLOTHES, 2), label: 'Zapatos', button: 'btn_zapatos' },
+      { apply: 'accHead', kind: 'part', prefix: 'accesorio', target: 'head', ids: ids(CLOTHES, 3), label: 'Accesorios', button: 'btn_accesorios', small: true },
     ],
     zones: [
       { key: 'shirt', space: 'root', at: [0, 0.95, 0.15], radius: 0.04 },
       { key: 'pants', space: 'root', at: [0, 0.6, 0.15], radius: 0.04 },
       { key: 'shoes', space: 'root', at: [0, 0.08, 0.2], radius: 0.035 },
-    ],
-  },
-  [CHARMS]: {
-    furniture: 'box',
-    groups: [
-      { apply: 'companion', kind: 'part', prefix: 'charm', target: 'body', ids: ids(CHARMS, 0), label: 'Charms' },
-      { apply: 'accHead', kind: 'part', prefix: 'accesorio', target: 'head', ids: ids(CHARMS, 1), label: 'Accesorios' },
-    ],
-    zones: [
-      { key: 'companion', space: 'charm', at: [0, 0, 0], radius: 0.06 },
       { key: 'accHead', space: 'head', at: [0, 0.45, 0], radius: 0.04 },
     ],
   },
+  [CHARMS]: {
+    furniture: 'boxes',
+    groups: [{ apply: 'companion', kind: 'part', prefix: 'charm', target: 'body', ids: ids(CHARMS, 0), label: 'Charms' }],
+    zones: [{ key: 'companion', space: 'charm', at: [0, 0, 0], radius: 0.06 }],
+  },
 };
 
-// ---------- Muebles del modelo (puntos [x, y, altura] en unidades del modelo) ----------
+// ---------- Muebles del modelo (unidades del modelo) ----------
 export const FURNITURE = {
-  /** Libro de stickers: sustituye a los dos libros pequenos del modelo. */
-  book: [52.5, 5.3, 7],
-  /** Armario: centro de las baldas (cuerpo de 3 unidades de ancho). Las baldas estan a 9.1, 12.1 y 15.1. */
-  wardrobe: [29.75, -28, 9.1],
-  /** Bloques tipo cajon a la derecha del armario: llevan los tres botones de camisetas / pantalones / zapatos. */
-  closetButtons: [20.4, -25.3, 12.2],
-  /** Estante de charms: la mesa naranja (arriba, z = 15) y el piso de abajo (z = 7.1). */
-  boxes: { x: [-1.4, 3.2, 7.8], yTop: -27.4, yBottom: -24.9, zTop: 15, zBottom: 7.1 },
-  /** Vitrina de accesorios: dos filas escalonadas al fondo de la mesa. */
-  accessories: { y: [-30.4, -32.2], z: 15, x: [-3.2, 9.4] },
+  /** Libro de stickers: sustituye al libro "libro_ojos" del modelo (centro de su caja). */
+  book: [49.7, 8.25, 7.0],
 };
 
-/** Orden de las seis cajas: [id del charm, fila (0 arriba, 1 abajo), columna]. */
-export const CHEST_LAYOUT = [
-  ['bolsa-dinero', 0, 0],
-  ['guitarra', 0, 1],
-  ['moneda', 0, 2],
-  ['tulipan', 1, 0],
-  ['nota-musical', 1, 1],
-  ['regalo', 1, 2],
-];
+/** Armario: las prendas se acomodan donde el equipo puso las seis camisas de referencia (docs/fuentes/fabrica/medidas.json):
+    tres columnas y dos baldas (arriba y en medio); una tercera fila usa la balda de abajo. */
+export const CLOSET = {
+  y: -26.23,
+  /** x del centro de cada columna, de izquierda a derecha mirando el armario (la x del modelo decrece). */
+  columns: [29.84, 27.1, 24.15],
+  /** z del centro de las prendas colgadas en cada fila (las dos primeras son las camisas de referencia). */
+  rows: [16.71, 13.34, 10.44],
+  /** z de la superficie de cada balda: lo pequeño (zapatos, accesorios) se apoya ahi. */
+  shelves: [15.3, 12.0, 9.1],
+};
+
+/** Posicion [x, y, z] del modelo del objeto `index` de un grupo del armario. */
+export function closetSlot(index, small = false) {
+  const row = Math.min(Math.floor(index / 3), 2);
+  const col = index % 3;
+  const z = small ? CLOSET.shelves[row] + 0.75 : CLOSET.rows[row];
+  return [CLOSET.columns[col], CLOSET.y, z];
+}
+
+/** Cada caja del modelo (nodo caja_N) guarda un charm; arriba, de izquierda a derecha mirando las cajas: bolsa de
+    dinero, guitarra y moneda; abajo: tulipan, nota musical y regalo. */
+export const CHEST_NODES = {
+  caja_4: 'bolsa-dinero',
+  caja_5: 'guitarra',
+  caja_6: 'moneda',
+  caja_1: 'tulipan',
+  caja_2: 'nota-musical',
+  caja_3: 'regalo',
+};
 
 /** Posicion de un sticker o muestra en el libro abierto, respecto al centro del libro (metros: x derecha,
     z hacia el usuario). */
@@ -105,12 +114,4 @@ export function bookSlot(group, index, count) {
   const row = Math.floor(index / cols);
   const rows = Math.ceil(count / cols);
   return [(col - (cols - 1) / 2) * 0.068, (row - (rows - 1) / 2) * 0.07 + 0.005];
-}
-
-/** Posicion de una prenda en las baldas: [tangente, radial, altura sobre la balda mas baja] en metros.
-    Dos por balda, uno delante y otro detras, de abajo arriba. */
-export function wardrobeSlot(index, shelfPitch) {
-  const shelf = Math.floor(index / 2);
-  const col = index % 2;
-  return [col ? 0.02 : -0.02, col ? 0.024 : -0.012, shelf * shelfPitch + 0.045];
 }

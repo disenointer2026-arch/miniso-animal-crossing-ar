@@ -9,6 +9,7 @@ import { createSystem } from '@iwsdk/core';
 import { Avatar } from '../avatar/avatar.js';
 import { AvatarFigure, Factory, FactoryPart } from '../components.js';
 import {
+  AVATAR_UNITS,
   SLOT,
   lerpAngle,
   modelScale,
@@ -31,9 +32,11 @@ import {
   Phase,
 } from '../state.js';
 
-/** Altura del personaje sobre la banda, en metros. La maquina de cabello cuelga sobre la banda:
-    el personaje tiene que caber debajo. */
-export const AVATAR_HEIGHT = 0.2;
+/** El muñeco mide lo que el muñeco de referencia del modelo (AVATAR_UNITS unidades del modelo): su altura en
+    metros sigue a la escala de la fabrica (que cambia un poco con el alcance calibrado). */
+export const avatarHeight = (l = layout.peek()) => AVATAR_UNITS * modelScale(l);
+/** Escala que lleva el personaje modelado (MODEL.height) a esa altura. */
+export const avatarScale = (l = layout.peek()) => avatarHeight(l) / MODEL.height;
 
 const BELT_SPEED = 0.4; // metros por segundo
 const MIN_SECONDS = 1.8;
@@ -81,7 +84,7 @@ export class BeltSystem extends createSystem({
   createAvatar(factory) {
     const avatar = new Avatar(avatarConfig.peek()).build();
     avatar.root.userData.avatar = avatar;
-    avatar.root.userData.baseScale = AVATAR_HEIGHT / MODEL.height;
+    avatar.root.userData.baseScale = avatarScale();
     avatar.root.scale.setScalar(0.0001);
     const slot = stationSlot(categoryIndex.peek()); // al recalibrar vuelve a la estacion donde estaba
     const start = slotS(SLOT.portal);

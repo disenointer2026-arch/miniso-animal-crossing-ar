@@ -30,6 +30,13 @@ export class UiSystem extends createSystem({
       if (!object) continue;
       const data = object.userData;
       if (data.cooldown > 0) data.cooldown -= delta;
+      // Boton del modelo: el nodo del glb se hunde al pulsarlo y se adelanta un poco al pasar el dedo
+      if (data.node) {
+        const want = entity.hasComponent(Pressed) ? 1 : entity.hasComponent(Hovered) ? -0.25 : 0;
+        data.pressK += (want - data.pressK) * Math.min(1, delta * 22);
+        data.node.position.copy(data.nodeBase).addScaledVector(data.pressDir, data.pressK * data.pressDepth);
+      }
+      if (data.noScale) continue;
       let target = 0.0001;
       if (data.shown) {
         target = data.baseScale ?? 1;

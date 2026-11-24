@@ -24,13 +24,16 @@ export const MODEL = {
     [44, 40], [45.5, 37], [46, 32], [46, -11], [45, -15], [43, -18], [40, -20.5], [36, -21.5], [-8, -21.6],
   ],
   /** Donde para el avatar en cada slot (sobre la banda). */
-  stops: [[-9, 34], [6, 8.8], [20, 27], [46, 15], [28, -21.6], [2, -21.6], [-8, -21.6]],
+  stops: [[-9, 34], [6, 8.8], [20, 27], [46, 15], [30, -21.6], [2, -21.6], [-8, -21.6]],
   /** Centro de la caja de regalo, un poco mas alla del final de la banda. */
   giftBox: [-15.5, -21.6],
   /** Donde se para el usuario en cada slot: del lado de adentro de la banda, de frente a la
       estacion y a ~0.45 m de la banda (alcance comodo de la mano). El slot 0 usa el de la estacion 1. */
-  stands: [[6, -1.5], [6, -1.5], [38, 27], [36, 8], [27, -13], [3, -13], [-8, -13]],
+  stands: [[2, -1.5], [2, -1.5], [38, 27], [36, 8], [32, -13], [3, -13], [-8, -13]],
 };
+
+/** Alto del muñeco de referencia que trae el modelo (unidades del modelo): es el avatar base, sin cabello. */
+export const AVATAR_UNITS = 4.3;
 
 export const SLOT = { portal: 0, firstStation: 1, giftBox: 6 };
 export const STATION_COUNT = 5;

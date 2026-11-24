@@ -1,11 +1,11 @@
-/* Estaciones 3 (rostro), 4 (ropa) y 5 (charms y accesorios). Sin paneles: todo se hace con los
-   objetos del mueble, siempre de frente al usuario.
+/* Estaciones 3 (rostro), 4 (ropa y accesorios) y 5 (charms). Sin paneles: todo se hace con los objetos del modelo,
+   siempre de frente al usuario.
    - Rostro: el LIBRO de stickers se agarra con una mano y se abre (ojos, color de ojos, boca, nariz; las
      flechas del libro pasan de pagina). Con la otra mano se saca un sticker y se suelta sobre la cara.
-   - Ropa: las prendas del grupo activo estan en las baldas del armario; tres botones en los bloques de
-     al lado cambian entre camisetas, pantalones y zapatos.
-   - Charms: seis cajas cerradas con el icono de su charm. Al agarrar una con una mano se abre y de ella
-     se saca el charm. Los accesorios estan en una vitrina al fondo de la mesa.
+   - Ropa y accesorios: los objetos del grupo activo estan en las baldas del armario del modelo, donde el equipo puso
+     las camisas de referencia; los cuatro botones del modelo (camisetas, pantalones, zapatos, accesorios) cambian el grupo.
+   - Charms: las seis cajas del modelo, cerradas y con el icono de su charm. Al agarrar una con una mano se
+     abren las solapas y de ella se saca el charm.
    - Los objetos se sueltan sobre el personaje: si quedan cerca (radio generoso) se colocan solos.
    - Tocar con el dedo lo puesto lo retira, pero NO mientras se sostiene otro objeto (interactionBusy).
    Lo puesto vive en avatarConfig; el mueble se calcula a partir de ahi. */
@@ -36,9 +36,9 @@ import {
   FactoryPart,
   StickerBook,
 } from '../../components.js';
-import { modelFrame, modelScale } from '../../core/layout.js';
+import { modelFrame } from '../../core/layout.js';
 import { EYE_COLORS } from '../../data/categories.js';
-import { MODEL } from '../../data/avatar-defaults.js';
+import { addModelButton } from '../../factory/model-nodes.js';
 import { interactionBusy, registerDropHandler } from '../../interaction/carryable-system.js';
 import {
   avatarConfig,
@@ -52,34 +52,31 @@ import {
   selection,
   setAvatar,
 } from '../../state.js';
-import { AVATAR_HEIGHT } from '../../systems/belt-system.js';
+import { avatarHeight, avatarScale } from '../../systems/belt-system.js';
 import { C } from '../../ui/theme.js';
-import { addItem, drawPill, drawSwatch, fitText, roundRectPath } from '../../ui/world-ui.js';
-import { BOOK, CHEST, createBook, createChest } from './catalog-objects.js';
+import { addItem, canvasPlane, drawPill, drawSwatch } from '../../ui/world-ui.js';
+import { BOOK, createBook } from './catalog-objects.js';
 import { createSticker } from './catalog-props.scene-asset.js';
 import {
   CATALOGS,
   CHARMS,
-  CHEST_LAYOUT,
+  CHEST_NODES,
   CLOTHES,
   FACE,
   FURNITURE,
   bookSlot,
+  closetSlot,
   stickerTexture,
-  wardrobeSlot,
 } from './catalog-config.js';
 
 const SLOT_OF = { [FACE]: 3, [CLOTHES]: 4, [CHARMS]: 5 }; // slot de la banda de cada estacion
-const PROP_SCALE = AVATAR_HEIGHT / MODEL.height;
-const CHARM_SCALE = PROP_SCALE * 1.6; // los charms se ven mas grandes al salir de la caja
-const ACCESSORY_SCALE = PROP_SCALE * 0.9;
-const ACCESSORY_LIFT = 0.15; // flotan sobre las cajas para verse y agarrarse desde la altura de la vista
+const CHARM_SCALE = 1.6; // los charms se ven mas grandes (x escala del muñeco) al salir de la caja
 const SNAP = { head: 0.26, body: 0.28, feet: 0.24 }; // metros del objeto al lugar donde va
 const GROW_SECONDS = 0.35;
 const PAGE_COOLDOWN = 0.35;
-const CHEST_OPEN = 2.1; // radianes de la tapa abierta (pasa de la vertical: queda recostada atras)
-const STICKER_LIFT = 0.075; // los stickers flotan sobre la pagina: lejos de la tapa, para poder agarrarlos con la otra mano
-const CHARM_LIFT = 0.17; // el charm flota bien arriba de la caja abierta (lejos de la tapa) para sacarlo con la otra mano
+const STICKER_LIFT = 0.075; // los stickers flotan sobre la pagina para poder agarrarlos con la otra mano
+const CHEST_ICON_Y = 1.22; // alto del icono sobre la tapa, en unidades de la caja (la tapa cerrada llega a 1,19)
+const CHARM_LIFT = 3.0; // el charm flota sobre la caja abierta (unidades de la caja): lejos de las solapas
 
 /** Si alguna pieza sale al reves en el mueble, se corrige aqui: rotacion [x, y, z] en radianes por "clave/id". */
 const DISPLAY_FIX = {};
@@ -136,70 +133,6 @@ function makePart(group, id) {
   const fix = DISPLAY_FIX[`${group.apply}/${id}`];
   if (fix) pivot.rotation.set(fix[0], fix[1], fix[2]);
   return pivot;
-}
-
-/** Dibujo de un boton de camiseta / pantalon / zapato (trazo redondeado de la guia). */
-function drawGarment(ctx, kind, cx, cy, s, color) {
-  ctx.save();
-  ctx.translate(cx, cy);
-  ctx.strokeStyle = color;
-  ctx.fillStyle = color;
-  ctx.lineWidth = s * 0.07;
-  ctx.lineJoin = 'round';
-  ctx.lineCap = 'round';
-  ctx.beginPath();
-  if (kind === 0) {
-    ctx.moveTo(-s * 0.18, -s * 0.34);
-    ctx.lineTo(-s * 0.5, -s * 0.2);
-    ctx.lineTo(-s * 0.4, s * 0.02);
-    ctx.lineTo(-s * 0.26, -s * 0.04);
-    ctx.lineTo(-s * 0.26, s * 0.38);
-    ctx.lineTo(s * 0.26, s * 0.38);
-    ctx.lineTo(s * 0.26, -s * 0.04);
-    ctx.lineTo(s * 0.4, s * 0.02);
-    ctx.lineTo(s * 0.5, -s * 0.2);
-    ctx.lineTo(s * 0.18, -s * 0.34);
-    ctx.quadraticCurveTo(0, -s * 0.2, -s * 0.18, -s * 0.34);
-  } else if (kind === 1) {
-    ctx.moveTo(-s * 0.28, -s * 0.38);
-    ctx.lineTo(s * 0.28, -s * 0.38);
-    ctx.lineTo(s * 0.32, s * 0.42);
-    ctx.lineTo(s * 0.04, s * 0.42);
-    ctx.lineTo(0, -s * 0.06);
-    ctx.lineTo(-s * 0.04, s * 0.42);
-    ctx.lineTo(-s * 0.32, s * 0.42);
-  } else {
-    ctx.moveTo(-s * 0.42, -s * 0.16);
-    ctx.lineTo(-s * 0.1, -s * 0.16);
-    ctx.quadraticCurveTo(s * 0.0, s * 0.08, s * 0.34, s * 0.12);
-    ctx.quadraticCurveTo(s * 0.5, s * 0.16, s * 0.46, s * 0.32);
-    ctx.lineTo(-s * 0.42, s * 0.32);
-  }
-  ctx.closePath();
-  ctx.stroke();
-  ctx.restore();
-}
-
-/** Boton de pestana del armario: icono + nombre; el grupo activo lleva contorno rojo y chulo. */
-function drawClosetButton(kind, label) {
-  return (ctx, w, h, state) => {
-    ctx.clearRect(0, 0, w, h);
-    const pad = 8;
-    ctx.save();
-    ctx.shadowColor = 'rgba(94, 77, 71, 0.3)';
-    ctx.shadowBlur = 8;
-    ctx.shadowOffsetY = 4;
-    ctx.fillStyle = state.selected ? C.paper : C.yellow;
-    roundRectPath(ctx, pad, pad, w - pad * 2, h - pad * 2 - 4, h * 0.28);
-    ctx.fill();
-    ctx.restore();
-    ctx.lineWidth = state.selected ? 9 : 4;
-    ctx.strokeStyle = state.selected ? C.red : C.yellowSoft;
-    roundRectPath(ctx, pad, pad, w - pad * 2, h - pad * 2 - 4, h * 0.28);
-    ctx.stroke();
-    drawGarment(ctx, kind, w * 0.2, h * 0.5, h * 0.62, C.ink);
-    fitText(ctx, label, w * 0.6, h * 0.5, w * 0.56, { size: h * 0.24, color: C.ink });
-  };
 }
 
 export class CatalogStationSystem extends createSystem({
@@ -280,8 +213,8 @@ export class CatalogStationSystem extends createSystem({
     this.factory = factory;
     const l = layout.peek();
     this.buildBook(factory, l);
-    this.buildCloset(factory, l);
-    this.buildChests(factory, l);
+    this.buildCloset(factory);
+    this.buildChests(factory);
     for (const [station, catalog] of Object.entries(CATALOGS)) {
       // Zonas tocables sobre el personaje para retirar lo puesto
       for (const def of catalog.zones) {
@@ -347,72 +280,74 @@ export class CatalogStationSystem extends createSystem({
     this.refreshBookUi();
   }
 
-  /** Tres botones en los bloques tipo cajon que estan junto al armario. */
-  buildCloset(factory, l) {
+  /** Los cuatro botones del modelo (camisa, pantalon, zapatos, accesorios) cambian el grupo del armario. */
+  buildCloset(factory) {
     const catalog = CATALOGS[CLOTHES];
     catalog.groups.forEach((group, i) => {
-      const home = modelFrame(l, FURNITURE.closetButtons, 0, 0, (1 - i) * 0.094, SLOT_OF[CLOTHES]);
-      const parent = new Group();
-      parent.position.set(home.x, home.y, home.z);
-      parent.rotation.y = home.rotY;
-      const entity = this.world.createTransformEntity(parent, { parent: factory });
-      entity.addComponent(FactoryPart);
-      const item = addItem(this.world, entity, {
-        z: 0.012,
-        width: 0.15,
-        height: 0.08,
-        pxPerMeter: 1200,
-        name: `closet-button-${group.apply}`,
-        draw: drawClosetButton(i, group.label),
+      const button = addModelButton(this.world, factory, group.button, {
+        slot: SLOT_OF[CLOTHES],
+        depth: 0.007,
         onPress: () => {
           groupIndex.value = i;
         },
       });
-      item.mesh.userData.silent = true;
-      this.closetButtons.push({ item, parent, index: i });
+      if (button) this.closetButtons.push({ button, index: i });
     });
   }
 
-  /** Seis cajas cerradas: tres arriba (sobre la mesa) y tres abajo; cada una con el icono de su charm. */
-  buildChests(factory, l) {
-    const { x, yTop, yBottom, zTop, zBottom } = FURNITURE.boxes;
-    const group = CATALOGS[CHARMS].groups[0];
-    for (const [id, row, col] of CHEST_LAYOUT) {
-      const option = group.ids.includes(id) ? id : null;
-      if (!option) continue;
-      const label = this.charmName(id);
-      const chest = createChest(label);
-      const home = modelFrame(l, [x[col], row === 0 ? yTop : yBottom, row === 0 ? zTop : zBottom], 0, 0, 0, SLOT_OF[CHARMS]);
-      chest.position.set(home.x, home.y, home.z);
-      chest.rotation.y = home.rotY;
-      const entity = this.world.createTransformEntity(chest, { parent: factory });
+  /** Las seis cajas del modelo: cada una guarda un charm. Salen del modelo para poder agarrarse; las solapas estan
+      cerradas (forma base) y se abren al agarrarlas (morph target "abierta"). */
+  buildChests(factory) {
+    const root = factory.object3D;
+    const nodes = root.userData.parts.nodes;
+    for (const [nodeName, charm] of Object.entries(CHEST_NODES)) {
+      const node = nodes[nodeName];
+      if (!node) continue;
+      root.attach(node); // sale del modelo y queda en la fabrica, en el mismo sitio
+      const meshes = [];
+      node.traverse((object) => {
+        if (object.isMesh && object.morphTargetInfluences?.length) meshes.push(object);
+      });
+      // Icono del charm sobre la tapa (se ve cerrada; se oculta al abrirse)
+      const icon = canvasPlane(1.6, 1.6, 280, (ctx, w, h, state) => {
+        ctx.clearRect(0, 0, w, h);
+        ctx.fillStyle = C.panel;
+        ctx.beginPath();
+        ctx.arc(w / 2, h / 2, w * 0.48, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.lineWidth = 7;
+        ctx.strokeStyle = C.yellowSoft;
+        ctx.stroke();
+        if (state.image) ctx.drawImage(state.image, w * 0.12, h * 0.12, w * 0.76, h * 0.76);
+      });
+      icon.mesh.rotation.x = -Math.PI / 2;
+      icon.mesh.position.set(0, CHEST_ICON_Y, 0);
+      icon.mesh.renderOrder = 13;
+      node.add(icon.mesh);
+      node.userData.meshes = meshes;
+      node.userData.open = 0;
+      node.userData.icon = icon;
+      const entity = this.world.createTransformEntity(node, { parent: factory });
       entity.addComponent(FactoryPart);
-      entity.addComponent(ChestBox, { charm: id });
-      entity.addComponent(Carryable, { kind: 'chest', home: [home.x, home.y, home.z], homeYaw: home.rotY });
+      entity.addComponent(ChestBox, { charm });
+      entity.addComponent(Carryable, {
+        kind: 'chest',
+        home: [node.position.x, node.position.y, node.position.z],
+        homeYaw: node.rotation.y,
+      });
       entity.addComponent(OneHandGrabbable);
-      this.pendingIcons.push({ id, chest });
+      this.pendingIcons.push({ id: charm, node });
     }
-  }
-
-  charmName(id) {
-    return {
-      'bolsa-dinero': 'Bolsa de dinero',
-      guitarra: 'Guitarra',
-      moneda: 'Moneda',
-      tulipan: 'Tulipán',
-      'nota-musical': 'Nota musical',
-      regalo: 'Regalo',
-    }[id];
   }
 
   /** Dibuja el icono de un charm (una caja por cuadro: el render del modelo es lo que mas cuesta). */
   drawNextIcon() {
-    const { id, chest } = this.pendingIcons.shift();
+    const { id, node } = this.pendingIcons.shift();
     const model = makePart(CATALOGS[CHARMS].groups[0], id);
     if (!model) return;
     const url = renderObjectIcon(this.renderer, model, 256);
     const image = new Image();
-    image.onload = () => chest.userData.icon.redraw({ image });
+    image.onload = () => node.userData.icon?.redraw({ image });
     image.src = url;
   }
 
@@ -472,12 +407,13 @@ export class CatalogStationSystem extends createSystem({
       if (group.kind !== 'sticker') group = null;
     } else if (station === CLOTHES) {
       group = catalog.groups[Math.min(groupIndex.peek(), catalog.groups.length - 1)];
-    } else if (station === CHARMS) {
-      group = catalog.groups[1]; // accesorios (los charms salen de las cajas)
     }
     if (group) {
+      // Cada objeto tiene su sitio fijo en el mueble (su lugar en la lista); lo que se lleva puesto deja el hueco
       const ids = group.ids.filter((id) => group.kind === 'sticker' || config[group.apply] !== id);
-      ids.forEach((id, index) => wanted.set(`${group.apply}/${id}`, { group, index, count: ids.length }));
+      ids.forEach((id, index) =>
+        wanted.set(`${group.apply}/${id}`, { group, index: group.kind === 'sticker' ? index : group.ids.indexOf(id), count: ids.length }),
+      );
     }
     const have = new Set();
     for (const entity of Array.from(this.queries.items.entities)) {
@@ -499,10 +435,9 @@ export class CatalogStationSystem extends createSystem({
   refreshClosetButtons() {
     const show = this.activeStation() === CLOTHES;
     const active = Math.min(groupIndex.peek(), CATALOGS[CLOTHES].groups.length - 1);
-    for (const { item, parent, index } of this.closetButtons) {
-      parent.visible = show;
-      parent.scale.setScalar(show ? 1 : 0.0001);
-      item.redraw({ selected: index === active });
+    for (const { button, index } of this.closetButtons) {
+      button.setShown(show);
+      button.setSelected(show && index === active);
     }
   }
 
@@ -524,21 +459,10 @@ export class CatalogStationSystem extends createSystem({
       const model = makePart(group, id);
       if (!model) return;
       root.add(model);
-      if (station === CLOTHES) {
-        const s = modelScale(l);
-        const [t, r, u] = wardrobeSlot(index, 3 * s);
-        home = modelFrame(l, FURNITURE.wardrobe, t, r, u, SLOT_OF[CLOTHES]);
-        base = PROP_SCALE * 0.85;
-      } else {
-        // Dos filas escalonadas: pares delante, impares detras y corridos media casilla
-        const { x, y, z } = FURNITURE.accessories;
-        const row = index % 2;
-        const cols = Math.ceil(count / 2);
-        const pitch = (x[1] - x[0]) / Math.max(cols - 0.5, 1);
-        const mx = x[0] + pitch * (Math.floor(index / 2) + row * 0.5);
-        home = modelFrame(l, [mx, y[row], z], 0, 0, ACCESSORY_LIFT, SLOT_OF[CHARMS]);
-        base = ACCESSORY_SCALE;
-      }
+      // Armario: el sitio sale de las camisas de referencia del modelo; lo pequeño se apoya en la balda
+      const small = group.small || group.apply === 'shoes';
+      home = modelFrame(l, closetSlot(index, small), 0, 0, 0, SLOT_OF[CLOTHES]);
+      base = avatarScale();
     }
     root.userData.base = base;
     root.userData.grow = 0;
@@ -567,9 +491,9 @@ export class CatalogStationSystem extends createSystem({
     const root = new Group();
     root.name = `Item/companion/${id}`;
     root.add(model);
-    root.userData.base = CHARM_SCALE;
+    root.userData.base = avatarScale() * CHARM_SCALE;
     root.userData.grow = 0;
-    root.userData.anchor = { object: chestEntity.object3D, local: new Vector3(0, CHEST.height + CHARM_LIFT, CHEST.depth * 0.25), chest: chestEntity };
+    root.userData.anchor = { object: chestEntity.object3D, local: new Vector3(0, CHARM_LIFT, 0), chest: chestEntity };
     root.scale.setScalar(0.0001);
     const entity = this.world.createTransformEntity(root, { parent: this.factory });
     entity.addComponent(FactoryPart);
@@ -584,7 +508,7 @@ export class CatalogStationSystem extends createSystem({
   targetPoint(target, out) {
     if (target === 'head') return this.avatar.headGroup.getWorldPosition(out);
     this.avatar.root.getWorldPosition(out);
-    out.y += target === 'feet' ? 0.03 : AVATAR_HEIGHT * 0.5;
+    out.y += target === 'feet' ? 0.03 : avatarHeight() * 0.5;
     return out;
   }
 
@@ -660,7 +584,8 @@ export class CatalogStationSystem extends createSystem({
       const previous = data.open;
       data.open += (target - data.open) * Math.min(1, delta * 9);
       if (Math.abs(data.open - target) < 0.004) data.open = target;
-      data.lid.rotation.x = -data.open * CHEST_OPEN;
+      for (const mesh of data.meshes) mesh.morphTargetInfluences[0] = data.open; // 0 = solapas cerradas, 1 = abiertas
+      if (data.icon) data.icon.mesh.visible = data.open < 0.45;
       if (previous < 0.1 && data.open >= 0.1 && target === 1) sfx.thunk();
 
       const id = chestEntity.getValue(ChestBox, 'charm');
