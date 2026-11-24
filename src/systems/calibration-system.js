@@ -23,7 +23,7 @@ import {
 import { DEFAULT_LAYOUT, LIMITS, MODEL, clamp, modelPoint, modelScale } from '../core/layout.js';
 import { Factory } from '../components.js';
 import { createFactory } from '../factory/factory-model.js';
-import { heightOffset, hint, layout as layoutState, phase, Phase } from '../state.js';
+import { heightOffset, hint, instructionsSeen, layout as layoutState, phase, Phase } from '../state.js';
 
 const SPACE_TIMEOUT = 6; // segundos sin reconocer piso antes de permitir seguir
 const PINCH_GUARD = 0.7; // el pellizco que pulso "Comenzar" no cuenta
@@ -237,6 +237,7 @@ export class CalibrationSystem extends createSystem({
     const entity = this.world.createTransformEntity(factory);
     entity.addComponent(Factory);
     entity.addComponent(XRAnchor);
-    phase.value = Phase.Arriving;
+    // Primera vez: instrucciones antes de empezar; al recalibrar no se repiten
+    phase.value = instructionsSeen.peek() ? Phase.Arriving : Phase.Instructions;
   }
 }
