@@ -125,6 +125,9 @@ function svgTexture(url, width, height) {
   return texture;
 }
 
+/** Prendas inferiores que sustituyen al boxer base (la falda no: deja las piernas al aire y el boxer sigue debajo). */
+const COVERS_BASE_BOTTOM = new Set(['jean', 'short', 'overol']);
+
 const _q = new Quaternion();
 const _v = new Vector3();
 
@@ -183,7 +186,9 @@ export class Avatar {
       if (materials.some((m) => m?.userData?.baseClothes)) o.visible = true;
     });
     if (!this.parts.baseBottom) this._setBaseBottom();
-    if (this.parts.baseBottom) this.parts.baseBottom.visible = true;
+    // El boxer base va siempre que no haya otra prenda inferior que lo reemplace: un pantalon o un short elegidos ocupan
+    // su lugar (y su geometria se atravesaria con la del boxer); bajo una falda el boxer sigue puesto.
+    if (this.parts.baseBottom) this.parts.baseBottom.visible = !COVERS_BASE_BOTTOM.has(this.config.pants);
   }
 
   /** El boxer base: la pieza "short" lisa, con polygonOffset para quedar detras de cualquier prenda que se superponga. */
