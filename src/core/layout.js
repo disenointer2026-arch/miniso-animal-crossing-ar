@@ -144,6 +144,17 @@ export function pathHeading(s, forward = 1) {
   return Math.atan2(dx, -dy);
 }
 
+/** Direccion de la banda en un slot (plano local de la fabrica, unitaria): sirve para alinear con el borde lo que se coloca junto a ella. */
+export function beltTangent(slot, out = { x: 0, z: 0 }) {
+  const i = segmentAt(slotS(slot));
+  const dx = PATH[i][0] - PATH[i - 1][0];
+  const dy = PATH[i][1] - PATH[i - 1][1];
+  const length = Math.hypot(dx, dy) || 1;
+  out.x = dx / length; // este del modelo = +X local
+  out.z = -dy / length; // norte del modelo = -Z local
+  return out;
+}
+
 /** Interpola dos angulos por el camino mas corto. */
 export function lerpAngle(a, b, t) {
   const d = ((((b - a + Math.PI) % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI)) - Math.PI;

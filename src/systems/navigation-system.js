@@ -3,7 +3,8 @@
    estacion activa. Cada boton muestra el icono y el nombre de la estacion a la que
    lleva (mismos iconos de la pagina original); al pulsarlo, la banda lleva al
    personaje hasta alli. Se accionan con el dedo (PokeInteractable) o con rayo +
-   pellizco. */
+   pellizco. Quedan paralelos al borde de la banda (no girados hacia el usuario) y con el dedo hay que MANTENER
+   la presion un momento: un roce no cambia de estacion. */
 import {
   CanvasTexture,
   createSystem,
@@ -18,14 +19,20 @@ import {
   RayInteractable,
   Shape,
   SRGBColorSpace,
+  Vector3,
 } from '@iwsdk/core';
 import { Factory, FactoryPart, NavButton } from '../components.js';
-import { SLOT, STATION_COUNT, slotPose, stationSlot } from '../core/layout.js';
+import { SLOT, STATION_COUNT, beltTangent, slotPose, standPoint, stationSlot } from '../core/layout.js';
+import { interactionBusy } from '../interaction/carryable-system.js';
+import { jointWorld } from '../interaction/hand-joints.js';
 import { CATEGORIES } from '../data/categories.js';
 import { beltMoving, beltRequest, categoryIndex, layout, phase, Phase, stepCategory } from '../state.js';
 
 /** Posicion de los botones: hacia el usuario (radial < 0), separados a cada lado. */
-const NAV = { radial: -0.09, up: 0.01, offset: 0.095, tilt: 0.45 };
+const NAV = { inward: 0.09, up: 0.01, offset: 0.095, tilt: 0.45 };
+/** Con el dedo: se hunde y se mantiene este tiempo para activar. Con rayo + pellizco (o controles) basta un toque. */
+const POKE_HOLD = 0.4;
+const FINGER_NEAR = 0.09; // el dedo esta tan cerca del boton: es un toque con el dedo, no un rayo
 /** Despues de la ultima estacion, "siguiente" pasa a ser el boton de terminar. */
 const FINISH = { label: 'Terminar avatar', icon: 'boton-llavero.svg', tag: 'LISTO' };
 const targetFor = (direction) => CATEGORIES[categoryIndex.peek() + direction] ?? (direction > 0 ? FINISH : null);
@@ -35,7 +42,7 @@ const DEPTH = 0.055;
 const HEIGHT = 0.02;
 const TEX_W = 512;
 const TEX_H = 176;
-const COOLDOWN_SECONDS = 0.45;
+const COOLDOWN_SECONDS = 0.9;
 
 const THEME = {
   [-1]: { face: '#FFF6E6', cap: 0xfff6e6, tag: 'ANTERIOR' },
@@ -166,6 +173,9 @@ export class NavigationSystem extends createSystem({
 }) {
   init() {
     this.cooldown = 0;
+    this.held = new Map(); // boton -> segundos que lleva presionado con el dedo
+    this.tip = new Vector3();
+    this.center = new Vector3();
     this.capGeometry = keycapGeometry();
     this.faceGeometry = new PlaneGeometry(WIDTH * 0.94, WIDTH * 0.94 * (TEX_H / TEX_W)).rotateX(-Math.PI / 2);
 
@@ -179,6 +189,7 @@ export class NavigationSystem extends createSystem({
       }),
       beltMoving.subscribe(() => this.refresh()),
       this.queries.pressed.subscribe('qualify', (entity) => this.onPressed(entity)),
+      this.queries.pressed.subscribe('disqualify', (entity) => this.held.delete(entity)),
       categoryIndex.subscribe(() => this.refresh()),
       phase.subscribe(() => this.refresh()),
       () => {
@@ -189,18 +200,28 @@ export class NavigationSystem extends createSystem({
   }
 
   createButton(factory, station, direction) {
-    const pose = slotPose(layout.peek(), stationSlot(station), NAV.radial, NAV.up);
+    const l = layout.peek();
+    const slot = stationSlot(station);
+    const stop = slotPose(l, slot, 0, NAV.up); // la parada del personaje sobre la banda
+    const stand = standPoint(l, slot);
+    // El boton queda PARALELO al borde de la banda: su ancho va a lo largo de la banda y su frente, perpendicular a ella,
+    // hacia el lado del usuario (no girado hacia el punto de pie)
+    const t = beltTangent(slot, { x: 0, z: 0 });
+    let nx = -t.z;
+    let nz = t.x;
+    if (nx * (stand.x - stop.x) + nz * (stand.z - stop.z) < 0) {
+      nx = -nx;
+      nz = -nz;
+    }
+    const rotY = Math.atan2(nx, nz); // +Z del boton = hacia el usuario
+    const rx = Math.cos(rotY); // su derecha (mirando hacia afuera) = a lo largo de la banda
+    const rz = -Math.sin(rotY);
     const root = new Group();
     root.name = `${direction < 0 ? 'nav-prev' : 'nav-next'}-${station + 1}`;
-    // El desplazamiento va a lo largo de la tangente del arco (avance de la banda)
     const dx = direction * NAV.offset;
-    root.position.set(
-      pose.x + pose.tx * dx,
-      pose.y,
-      pose.z + pose.tz * dx,
-    );
+    root.position.set(stop.x + nx * NAV.inward + rx * dx, stop.y, stop.z + nz * NAV.inward + rz * dx);
     root.rotation.order = 'YXZ';
-    root.rotation.set(NAV.tilt, pose.rotY, 0);
+    root.rotation.set(NAV.tilt, rotY, 0);
 
     const cap = new Mesh(
       this.capGeometry,
@@ -247,10 +268,32 @@ export class NavigationSystem extends createSystem({
     }
   }
 
+  /** Verdadero si un dedo (seguimiento de manos) esta sobre el boton: es un toque con el dedo y exige mantener la presion. */
+  fingerOn(button) {
+    button.getWorldPosition(this.center);
+    for (const side of ['right', 'left']) {
+      if (jointWorld(this.renderer, this.player, side, 'index-finger-tip', this.tip) && this.tip.distanceTo(this.center) < FINGER_NEAR) {
+        return true;
+      }
+    }
+    return false;
+  }
+
   onPressed(entity) {
-    if (phase.peek() !== Phase.Customizing || this.cooldown > 0 || beltMoving.peek()) return;
-    const button = entity.object3D;
-    if (!button?.visible) return;
+    if (!this.canPress(entity)) return;
+    if (this.fingerOn(entity.object3D)) {
+      this.held.set(entity, 0); // con el dedo: se activa al mantener la presion (ver update)
+      return;
+    }
+    this.activate(entity); // rayo + pellizco o controles: un toque basta
+  }
+
+  canPress(entity) {
+    if (phase.peek() !== Phase.Customizing || this.cooldown > 0 || beltMoving.peek() || interactionBusy()) return false;
+    return !!entity.object3D?.visible;
+  }
+
+  activate(entity) {
     const direction = entity.getValue(NavButton, 'direction');
     if (stepCategory(direction)) {
       this.cooldown = COOLDOWN_SECONDS;
@@ -268,7 +311,20 @@ export class NavigationSystem extends createSystem({
     for (const entity of this.queries.buttons.entities) {
       const cap = entity.object3D?.userData.cap;
       if (!cap) continue;
-      const target = entity.hasComponent(Pressed) ? -0.007 : 0;
+      // Con el dedo se hunde poco a poco mientras se mantiene (progreso hacia POKE_HOLD)
+      let target = entity.hasComponent(Pressed) ? -0.007 : 0;
+      if (this.held.has(entity)) {
+        const time = this.held.get(entity) + delta;
+        if (!this.canPress(entity)) {
+          this.held.set(entity, 0);
+        } else if (time >= POKE_HOLD) {
+          this.held.delete(entity);
+          this.activate(entity);
+        } else {
+          this.held.set(entity, time);
+          target = -0.003 - 0.006 * (time / POKE_HOLD);
+        }
+      }
       cap.position.y += (target - cap.position.y) * Math.min(1, delta * 20);
     }
   }
