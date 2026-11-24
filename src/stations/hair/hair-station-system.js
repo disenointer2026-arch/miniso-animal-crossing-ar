@@ -51,7 +51,7 @@ import {
 } from '../../state.js';
 import { avatarScale } from '../../systems/belt-system.js';
 import { C } from '../../ui/theme.js';
-import { addItem, drawCheck, drawSwatch, fitText, roundRectPath } from '../../ui/world-ui.js';
+import { addItem, drawCheck, drawSwatch, roundRectPath } from '../../ui/world-ui.js';
 import { createBin } from './hair-props.scene-asset.js';
 
 const STATION = 1;
@@ -85,7 +85,7 @@ const HEAD_VIEW = { y: 1.5, z: 2.3 }; // encuadre del mini avatar: la cabeza
 const PORTRAIT_SIZE = 256;
 const HAIR_COLORS = CATEGORIES[1].groups[1].options;
 
-/** Tarjeta de un estilo: mini avatar con ese cabello y su nombre; la elegida lleva contorno rojo y chulo. */
+/** Tarjeta de un estilo: solo el mini avatar con ese cabello (sin texto); la elegida lleva contorno rojo y chulo. */
 function drawStyleCard(option) {
   return (ctx, w, h, state) => {
     ctx.clearRect(0, 0, w, h);
@@ -102,19 +102,20 @@ function drawStyleCard(option) {
     ctx.strokeStyle = state.selected ? C.red : C.yellowSoft;
     roundRectPath(ctx, pad, pad, w - pad * 2, h - pad * 2 - 4, 30);
     ctx.stroke();
-    const box = w * 0.8;
+    // Sin texto: el mini avatar se entiende solo y llena la tarjeta
+    const box = Math.min(w, h) - pad * 2 - 8;
+    const top = (h - box) / 2 - 2;
     if (state.image) {
-      ctx.drawImage(state.image, (w - box) / 2, pad + 6, box, box);
+      ctx.drawImage(state.image, (w - box) / 2, top, box, box);
     } else if (option.id === 'none') {
       ctx.strokeStyle = C.muted;
       ctx.lineWidth = 10;
       ctx.beginPath();
-      ctx.arc(w / 2, pad + 6 + box / 2, box * 0.3, 0, Math.PI * 2);
-      ctx.moveTo(w / 2 - box * 0.21, pad + 6 + box / 2 + box * 0.21);
-      ctx.lineTo(w / 2 + box * 0.21, pad + 6 + box / 2 - box * 0.21);
+      ctx.arc(w / 2, top + box / 2, box * 0.3, 0, Math.PI * 2);
+      ctx.moveTo(w / 2 - box * 0.21, top + box / 2 + box * 0.21);
+      ctx.lineTo(w / 2 + box * 0.21, top + box / 2 - box * 0.21);
       ctx.stroke();
     }
-    fitText(ctx, option.name, w / 2, h - pad - 28, w * 0.84, { size: h * 0.15, weight: 800, color: C.ink });
     if (state.selected) drawCheck(ctx, w - pad - 20, pad + 24, 20);
   };
 }
