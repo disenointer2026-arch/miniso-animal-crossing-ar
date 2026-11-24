@@ -84,6 +84,7 @@ const CHARM_FIT = { width: 1.55, height: 1.4, rest: 0.02 }; // espacio util (anc
 /** Si alguna pieza sale al reves en el mueble, se corrige aqui: rotacion [x, y, z] en radianes por "clave/id". */
 const DISPLAY_FIX = {};
 
+const noRaycast = () => {};
 const easeOutBack = (k) => 1 + 2.7 * (k - 1) ** 3 + 1.7 * (k - 1) ** 2;
 
 /** Pasa las mallas con huesos a mallas normales (con la pose de reposo ya aplicada): asi la caja de
@@ -589,6 +590,17 @@ export class CatalogStationSystem extends createSystem({
     }
   }
 
+  /** Activa o desactiva el apuntado (rayo, dedo y agarre cercano) sobre las mallas de la caja. */
+  setChestPickable(chest, pickable) {
+    if (chest.userData.pickable === pickable) return;
+    chest.userData.pickable = pickable;
+    chest.traverse((object) => {
+      if (!object.isMesh) return;
+      object.userData.rayCast ??= object.raycast;
+      object.raycast = pickable ? object.userData.rayCast : noRaycast;
+    });
+  }
+
   /** Las cajas se abren al agarrarlas (una mano) y se cierran al soltarlas; el charm sale de la caja abierta. */
   updateChests(delta) {
     const active = this.activeStation() === CHARMS;
@@ -598,8 +610,11 @@ export class CatalogStationSystem extends createSystem({
       const held = this.queries.heldChests.entities.has(chestEntity);
       // Colision con la balda: sostenida, la caja no baja de su altura de reposo (su fondo no atraviesa la balda)
       if (held && chest.position.y < chest.userData.homeY) chest.position.y = chest.userData.homeY;
-      const target = held && active ? 1 : 0;
       const data = chest.userData;
+      const target = held && active ? 1 : 0;
+      // Abierta y en la mano, la caja deja de ser un objetivo de agarre: su malla ocupa el mismo volumen que el charm de
+      // dentro y la otra mano "agarraba" la caja (ya sostenida) en lugar del charm. Al soltarla vuelve a ser agarrable.
+      this.setChestPickable(chest, !(held && data.open > 0.05));
       const previous = data.open;
       data.open += (target - data.open) * Math.min(1, delta * 9);
       if (Math.abs(data.open - target) < 0.004) data.open = target;
