@@ -36,7 +36,7 @@ import {
   FactoryPart,
   StickerBook,
 } from '../../components.js';
-import { modelFrame } from '../../core/layout.js';
+import { modelFrame, modelScale } from '../../core/layout.js';
 import { EYE_COLORS } from '../../data/categories.js';
 import { addModelButton } from '../../factory/model-nodes.js';
 import { interactionBusy, registerDropHandler } from '../../interaction/carryable-system.js';
