@@ -1,7 +1,6 @@
-/* Objetos de las estaciones 3 a 5 que se dibujan con lienzos: el libro de stickers (cerrado y abierto) y
-   la caja de charms (tapa con bisagra, icono del charm y etiqueta). Unidades en metros, +Z mira al
-   usuario, +Y arriba. */
-import { BoxGeometry, DoubleSide, Group, Mesh, MeshStandardMaterial, PlaneGeometry } from '@iwsdk/core';
+/* El libro de stickers de la estacion de rostro (cerrado y abierto), dibujado con lienzos. Las cajas de charms y el armario
+   son del modelo de la fabrica (ver catalog-station-system.js). Unidades en metros, +Z mira al usuario, +Y arriba. */
+import { BoxGeometry, Group, Mesh, MeshStandardMaterial } from '@iwsdk/core';
 import { C, num } from '../../ui/theme.js';
 import { canvasPlane, drawPanelBackground, fitText, roundRectPath, text } from '../../ui/world-ui.js';
 
@@ -86,60 +85,3 @@ export function createBook() {
   };
   return group;
 }
-
-// ---------- Caja de charms ----------
-export const CHEST = { width: 0.13, height: 0.075, depth: 0.1, lidThickness: 0.018 };
-
-/** Caja cerrada: cuerpo crema con franja amarilla, tapa roja con bisagra atras, icono del charm en la
-    tapa y su nombre al frente. userData.lid es la bisagra (rotation.x negativo = se abre);
-    userData.setIcon(imagen) pone el dibujo del charm. */
-export function createChest(name) {
-  const { width: W, height: H, depth: D, lidThickness: T } = CHEST;
-  const group = new Group();
-  group.name = `Chest/${name}`;
-  group.add(part('Body', new BoxGeometry(W, H, D), matte(num(C.paper)), 0, H / 2, 0));
-  group.add(part('Band', new BoxGeometry(W + 0.004, 0.014, D + 0.004), matte(num(C.yellow)), 0, H * 0.3, 0));
-  // Interior (se ve al abrir)
-  const inside = part('Inside', new PlaneGeometry(W - 0.012, D - 0.012).rotateX(-Math.PI / 2), matte(num(C.yellowSoft)), 0, H - 0.002, 0);
-  group.add(inside);
-
-  const lid = new Group();
-  lid.name = 'Lid';
-  lid.position.set(0, H, -D / 2); // bisagra: borde de atras, arriba
-  lid.add(part('LidTop', new BoxGeometry(W + 0.006, T, D + 0.006), matte(num(C.redBrand)), 0, T / 2, D / 2));
-  const icon = canvasPlane(0.088, 0.088, 900, (ctx, w, h, state) => {
-    ctx.clearRect(0, 0, w, h);
-    ctx.fillStyle = C.panel;
-    ctx.beginPath();
-    ctx.arc(w / 2, h / 2, w * 0.48, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.lineWidth = 7;
-    ctx.strokeStyle = C.yellowSoft;
-    ctx.stroke();
-    if (state.image) ctx.drawImage(state.image, w * 0.12, h * 0.12, w * 0.76, h * 0.76);
-  });
-  icon.mesh.rotation.x = -Math.PI / 2;
-  icon.mesh.position.set(0, T + 0.0012, D / 2);
-  lid.add(icon.mesh);
-  group.add(lid);
-
-  const label = canvasPlane(0.1, 0.034, 1100, (ctx, w, h) => {
-    ctx.clearRect(0, 0, w, h);
-    ctx.fillStyle = C.panel;
-    roundRectPath(ctx, 4, 4, w - 8, h - 8, h / 2);
-    ctx.fill();
-    ctx.lineWidth = 5;
-    ctx.strokeStyle = C.yellowSoft;
-    ctx.stroke();
-    fitText(ctx, name, w / 2, h / 2 + 2, w * 0.86, { size: h * 0.6, color: C.ink });
-  });
-  label.mesh.material.side = DoubleSide;
-  label.mesh.position.set(0, H * 0.36, D / 2 + 0.0015);
-  group.add(label.mesh);
-
-  group.userData.lid = lid;
-  group.userData.open = 0; // 0 cerrada, 1 abierta
-  group.userData.icon = icon;
-  return group;
-}
-

@@ -248,13 +248,14 @@ const LEGACY = [
 /** Las 5 estaciones de la fabrica, en el orden del recorrido. Reutilizan los grupos
     de opciones de la pagina original; solo cambia como se agrupan. */
 const byId = Object.fromEntries(LEGACY.map((c) => [c.id, c]));
+/** parts: [id de la categoria original, nombre nuevo del grupo (opcional), clave del grupo (opcional: solo ese)]. */
 const station = (id, label, icon, help, parts) => ({
   id,
   label,
   icon,
   help,
-  groups: parts.flatMap(([from, label]) =>
-    byId[from].groups.map((g, i) => ({ ...g, label: label ?? g.label })),
+  groups: parts.flatMap(([from, label, key]) =>
+    byId[from].groups.filter((g) => !key || g.key === key).map((g) => ({ ...g, label: label ?? g.label })),
   ),
 });
 
@@ -262,8 +263,13 @@ export const CATEGORIES = [
   station('skin', 'Color de piel', 'boton-tonodepiel.svg', 'Elige un tono para tu personaje', [['skin']]),
   station('hair', 'Cabello', 'boton-cabello.svg', 'Elige un estilo y su color', [['hair', 'Estilo'], ['hairColor', 'Color']]),
   station('face', 'Rostro', 'boton-ojos.svg', 'Elige ojos, boca y nariz', [['eyes'], ['mouth'], ['nose']]),
-  station('clothes', 'Ropa', 'boton-ropa.svg', 'Elige la ropa y los zapatos', [['clothes']]),
-  station('charms', 'Charms y accesorios', 'boton-llavero.svg', 'Elige un charm o un accesorio', [['charms']]),
+  // El armario del modelo trae cuatro botones: camisetas, pantalones, zapatos y accesorios
+  station('clothes', 'Ropa y accesorios', 'boton-ropa.svg', 'Elige la ropa, los zapatos y los accesorios', [
+    ['clothes'],
+    ['charms', 'Accesorios', 'accHead'],
+  ]),
+  // Las seis cajas del modelo: cada una guarda un charm
+  station('charms', 'Charms', 'boton-llavero.svg', 'Saca un charm de su caja', [['charms', 'Charms', 'companion']]),
 ];
 
 /** Maximo de opciones por grupo: el panel reserva esta cantidad de casillas. */

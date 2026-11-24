@@ -1,0 +1,225 @@
+{
+ "muneco": {
+  "caja": [
+   [
+    44.274,
+    27.025,
+    6.85
+   ],
+   [
+    47.28,
+    28.945,
+    11.056
+   ]
+  ],
+  "ubicacion": [
+   45.776,
+   27.95,
+   8.881
+  ]
+ },
+ "camisas": [
+  {
+   "nombre": "Camisa.001",
+   "caja": [
+    [
+     28.946,
+     -27.042,
+     16.155
+    ],
+    [
+     30.726,
+     -25.986,
+     17.433
+    ]
+   ],
+   "centro": [
+    29.836,
+    -26.226,
+    16.708
+   ]
+  },
+  {
+   "nombre": "Camisa.002",
+   "caja": [
+    [
+     26.212,
+     -27.042,
+     16.155
+    ],
+    [
+     27.992,
+     -25.986,
+     17.433
+    ]
+   ],
+   "centro": [
+    27.102,
+    -26.226,
+    16.708
+   ]
+  },
+  {
+   "nombre": "Camisa.003",
+   "caja": [
+    [
+     23.257,
+     -27.042,
+     16.155
+    ],
+    [
+     25.037,
+     -25.986,
+     17.433
+    ]
+   ],
+   "centro": [
+    24.147,
+    -26.226,
+    16.708
+   ]
+  },
+  {
+   "nombre": "Camisa.004",
+   "caja": [
+    [
+     28.946,
+     -27.042,
+     12.783
+    ],
+    [
+     30.726,
+     -25.986,
+     14.061
+    ]
+   ],
+   "centro": [
+    29.836,
+    -26.226,
+    13.337
+   ]
+  },
+  {
+   "nombre": "Camisa.005",
+   "caja": [
+    [
+     26.212,
+     -27.042,
+     12.783
+    ],
+    [
+     27.992,
+     -25.986,
+     14.061
+    ]
+   ],
+   "centro": [
+    27.102,
+    -26.226,
+    13.337
+   ]
+  },
+  {
+   "nombre": "Camisa.006",
+   "caja": [
+    [
+     23.257,
+     -27.042,
+     12.783
+    ],
+    [
+     25.037,
+     -25.986,
+     14.061
+    ]
+   ],
+   "centro": [
+    24.147,
+    -26.226,
+    13.337
+   ]
+  }
+ ],
+ "lata": {
+  "caja": [
+   [
+    7.433,
+    8.115,
+    7.085
+   ],
+   [
+    9.148,
+    9.831,
+    10.589
+   ]
+  ],
+  "ubicacion": [
+   8.29,
+   8.973,
+   7.626
+  ],
+  "giro_z_grados": 168.4
+ },
+ "nodos": [
+  "Camisa_B",
+  "Colores",
+  "Hoja_B",
+  "Logo_animal_crossing",
+  "Ojos",
+  "Ojos_2",
+  "Ojos_3",
+  "Ojos_4",
+  "Pantalon_B",
+  "Personaje_stikcer",
+  "Ventanita",
+  "Ventanita_3",
+  "Zapatos_B",
+  "btn_accesorios",
+  "btn_camisa",
+  "btn_pantalon",
+  "btn_piel_1",
+  "btn_piel_10",
+  "btn_piel_11",
+  "btn_piel_12",
+  "btn_piel_2",
+  "btn_piel_3",
+  "btn_piel_4",
+  "btn_piel_5",
+  "btn_piel_6",
+  "btn_piel_7",
+  "btn_piel_8",
+  "btn_piel_9",
+  "btn_zapatos",
+  "caja_1",
+  "caja_2",
+  "caja_3",
+  "caja_4",
+  "caja_5",
+  "caja_6",
+  "closet",
+  "dispensador",
+  "dispensador001",
+  "dispensador002",
+  "libro_ojos",
+  "maquina",
+  "maquinaojos",
+  "miniso",
+  "ojo",
+  "ojo001",
+  "pantalla",
+  "plataforma",
+  "puerta",
+  "puerta001",
+  "recorrido",
+  "recorrido001",
+  "reja",
+  "reja001",
+  "soporte",
+  "soporte001",
+  "soporte002",
+  "soporte003",
+  "tijeras",
+  "tuberias",
+  "ventana_lata"
+ ]
+}

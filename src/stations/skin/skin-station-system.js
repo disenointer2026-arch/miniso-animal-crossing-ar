@@ -1,7 +1,7 @@
 /* Estacion 1: color de piel.
-   1. Elegir un tono en la pantalla del modelo (muestras redondas sobre el nodo "pantalla") hace caer
-      una lata de ese color del dispensador.
-   2. La lata se agarra con una mano (OneHandGrabbable).
+   1. Los doce botones redondos de la pantalla del modelo (nodos btn_piel_1 .. btn_piel_12) son pulsables: elegir un
+      tono hace caer una lata de ese color junto al personaje.
+   2. La lata (modelo del equipo, con la textura del tono) se agarra con una mano (OneHandGrabbable).
    3. El aerosol se acciona PULSANDO LA VALVULA (el boton de arriba) con la punta del dedo indice:
       sale pintura (particulas + sonido) y, si la boquilla apunta al personaje, su color se mezcla
       poco a poco con el de la lata. Al llegar, queda guardado en avatarConfig; se puede repetir con
@@ -20,10 +20,10 @@ import {
 } from '@iwsdk/core';
 import { sfx } from '../../audio/sfx.js';
 import { AvatarFigure, Carryable, Factory, FactoryPart, SprayCan } from '../../components.js';
-import { modelFrame } from '../../core/layout.js';
+import { modelFrame, modelScale } from '../../core/layout.js';
 import { ANCHORS } from '../../factory/anchors.js';
 import { jointWorld } from '../../interaction/hand-joints.js';
-import { placeAtAnchor } from '../../scene-assets/lib/frame.js';
+import { addModelButton } from '../../factory/model-nodes.js';
 import {
   avatarConfig,
   beltMoving,
@@ -35,15 +35,12 @@ import {
   selection,
   setAvatar,
 } from '../../state.js';
-import { AVATAR_HEIGHT } from '../../systems/belt-system.js';
-import { C } from '../../ui/theme.js';
-import { addItem, createUiPanel, drawSwatch } from '../../ui/world-ui.js';
+import { avatarHeight } from '../../systems/belt-system.js';
 import { SKIN_TONES } from '../../data/categories.js';
-import { CAN, CAN_NOZZLE, CAN_VALVE, createSprayCan, createTray } from './skin-props.scene-asset.js';
+import { CAN_NOZZLE, CAN_VALVE, createSprayCan } from './skin-props.scene-asset.js';
 
 const STATION = 0;
 const SLOT = 1; // slot de la banda de esta estacion
-const HOME_UP = 0.008 + CAN.height / 2; // la lata descansa sobre la bandeja
 const DROP_HEIGHT = 0.25;
 const FALL_SECONDS = 0.5;
 const SPRAY_RANGE = 0.45; // metros de la boquilla al personaje
@@ -52,10 +49,6 @@ const PAINT_TIME = 0.8; // segundos para mezclar casi todo el color
 const PRESS_RADIUS = 0.06; // distancia de la punta del dedo a la valvula para pulsarla
 const PARTICLES = 60;
 const PARTICLE_LIFE = 0.45;
-
-/** Pantalla del modelo (nodo "pantalla", cara hacia el usuario): el panel crema se coloca sobre ella. */
-const SCREEN = { at: [-2, 11.7, 14.3], width: 0.3, height: 0.27 };
-const GRID = { cols: 4, pitch: 0.068, size: 0.066, top: 0.045, rowPitch: 0.07 };
 
 export class SkinStationSystem extends createSystem({
   factories: { required: [Factory] },
@@ -66,6 +59,7 @@ export class SkinStationSystem extends createSystem({
   init() {
     this.grab = this.world.getSystem(GrabSystem);
     this.factory = null;
+    this.buttons = [];
     this.avatar = null;
     this.nozzle = new Vector3();
     this.valve = new Vector3();
@@ -88,6 +82,7 @@ export class SkinStationSystem extends createSystem({
       this.queries.factories.subscribe('qualify', (factory) => this.build(factory)),
       this.queries.factories.subscribe('disqualify', () => {
         this.factory = null;
+        this.buttons = [];
       }),
       this.queries.avatars.subscribe('qualify', (entity) => {
         this.avatar = entity.object3D?.userData.avatar ?? null;
@@ -95,11 +90,11 @@ export class SkinStationSystem extends createSystem({
       this.queries.avatars.subscribe('disqualify', () => {
         this.avatar = null;
       }),
-      phase.subscribe(() => this.refreshScreen()),
-      beltMoving.subscribe(() => this.refreshScreen()),
-      categoryIndex.subscribe(() => this.refreshScreen()),
+      phase.subscribe(() => this.refreshButtons()),
+      beltMoving.subscribe(() => this.refreshButtons()),
+      categoryIndex.subscribe(() => this.refreshButtons()),
       selection.subscribe((value) => {
-        this.refreshScreen();
+        this.refreshButtons();
         if (value.skin === this.lastSkin) return;
         this.lastSkin = value.skin;
         if (phase.peek() === Phase.Customizing && categoryIndex.peek() === STATION) {
@@ -132,58 +127,31 @@ export class SkinStationSystem extends createSystem({
     this.world.createTransformEntity(this.points, { persistent: true });
   }
 
-  /** Pantalla crema sobre el nodo "pantalla": doce muestras redondas de tono de piel. */
-  buildScreen(factory) {
-    const l = layout.peek();
-    const panel = createUiPanel({
-      width: SCREEN.width,
-      height: SCREEN.height,
-      title: 'Tono de piel',
-      subtitle: 'Elige un tono: cae una lata del dispensador',
-    });
-    placeAtAnchor(panel, l, SCREEN.at, 0, 0, 0, SLOT);
-    const entity = this.world.createTransformEntity(panel, { parent: factory });
-    entity.addComponent(FactoryPart);
-    this.screen = panel;
-    this.swatches = SKIN_TONES.map((tone, i) => {
-      const col = i % GRID.cols;
-      const row = Math.floor(i / GRID.cols);
-      const item = addItem(this.world, entity, {
-        x: (col - (GRID.cols - 1) / 2) * GRID.pitch,
-        y: GRID.top - row * GRID.rowPitch,
-        width: GRID.size,
-        height: GRID.size,
-        pxPerMeter: 1300,
-        name: `swatch-${tone.id}`,
-        draw: (ctx, w, h, state) => drawSwatch(ctx, w, h, tone.id, !!state.selected),
-        onPress: () => select('skin', tone.id),
-      });
-      item.mesh.userData.silent = true;
-      return { item, id: tone.id };
-    });
-    this.refreshScreen();
-  }
-
-  refreshScreen() {
-    const panel = this.screen;
-    if (!panel) return;
-    const show = phase.peek() === Phase.Customizing && categoryIndex.peek() === STATION && !beltMoving.peek();
-    panel.visible = show;
-    panel.scale.setScalar(show ? 1 : 0.0001);
-    const chosen = selection.peek().skin;
-    for (const { item, id } of this.swatches) item.redraw({ selected: id === chosen });
-  }
-
   build(factory) {
     this.factory = factory;
-    const tray = createTray();
-    placeAtAnchor(tray, layout.peek(), ANCHORS.skinTray, 0, 0, 0, SLOT);
-    const entity = this.world.createTransformEntity(tray, { parent: factory });
-    entity.addComponent(FactoryPart);
-    this.buildScreen(factory);
+    // Los doce botones de la pantalla del modelo
+    this.buttons = SKIN_TONES.map((tone, i) => {
+      const button = addModelButton(this.world, factory, `btn_piel_${i + 1}`, {
+        slot: SLOT,
+        depth: 0.006,
+        onPress: () => select('skin', tone.id),
+      });
+      return { button, id: tone.id };
+    }).filter((entry) => entry.button);
+    this.refreshButtons();
   }
 
-  /** Cae una lata nueva del dispensador; la anterior (si habia) se retira. */
+  /** Los botones solo se pulsan cuando esta estacion esta activa; el elegido lleva la insignia roja. */
+  refreshButtons() {
+    const show = phase.peek() === Phase.Customizing && categoryIndex.peek() === STATION && !beltMoving.peek();
+    const chosen = selection.peek().skin;
+    for (const { button, id } of this.buttons) {
+      button.setShown(show);
+      button.setSelected(show && id === chosen);
+    }
+  }
+
+  /** Cae una lata nueva junto al personaje; la anterior (si habia) se retira. */
   spawnCan(hex) {
     if (!this.factory) return;
     for (const entity of Array.from(this.queries.cans.entities)) {
@@ -191,10 +159,11 @@ export class SkinStationSystem extends createSystem({
       entity.dispose();
     }
     const l = layout.peek();
-    const home = modelFrame(l, ANCHORS.skinTray, 0, 0, HOME_UP, SLOT);
-    const can = createSprayCan(hex);
+    const index = SKIN_TONES.findIndex((tone) => tone.id === hex) + 1;
+    const home = modelFrame(l, ANCHORS.canHome, 0, 0, 0, SLOT);
+    const can = createSprayCan(index || 1, modelScale(l));
     can.position.set(home.x, home.y + DROP_HEIGHT, home.z);
-    can.rotation.y = home.rotY + Math.PI; // la boquilla (+Z de la lata) apunta hacia el personaje, no hacia el usuario
+    can.rotation.y = home.rotY; // la boquilla (+Z de la lata) mira al usuario
     can.userData.fall = { t: 0, from: home.y + DROP_HEIGHT, to: home.y };
     const entity = this.world.createTransformEntity(can, { parent: this.factory });
     entity.addComponent(FactoryPart);
@@ -203,7 +172,7 @@ export class SkinStationSystem extends createSystem({
       kind: 'can',
       locked: true,
       home: [home.x, home.y, home.z],
-      homeYaw: home.rotY + Math.PI,
+      homeYaw: home.rotY,
     });
     entity.addComponent(OneHandGrabbable);
     sfx.select();
@@ -244,12 +213,12 @@ export class SkinStationSystem extends createSystem({
     return tracked ? false : this.input.xr.getSelectState(holder).active;
   }
 
-  /** Hunde la valvula mientras se pulsa y la devuelve suavemente al soltarla. */
+  /** El tope de la lata se hunde un poco mientras se pulsa la valvula y vuelve al soltarla. */
   moveValve(object, pressed, delta) {
-    const valve = object.userData.valve;
-    if (!valve) return;
-    const target = object.userData.valveRest - (pressed ? 0.009 : 0);
-    valve.position.y += (target - valve.position.y) * Math.min(1, delta * 25);
+    const model = object.userData.model;
+    if (!model) return;
+    const target = pressed ? 0.975 : 1;
+    model.scale.y += (target - model.scale.y) * Math.min(1, delta * 25);
   }
 
   /** Devuelve true si algun aerosol esta rociando (lata en una mano, valvula pulsada). */
@@ -292,7 +261,7 @@ export class SkinStationSystem extends createSystem({
     const avatar = this.avatar;
     if (!avatar || beltMoving.peek()) return;
     avatar.root.getWorldPosition(this.target);
-    this.target.y += AVATAR_HEIGHT * 0.5;
+    this.target.y += avatarHeight() * 0.5;
     this.toTarget.subVectors(this.target, this.nozzle);
     const distance = this.toTarget.length();
     if (import.meta.env.DEV && window.__miniso?.spray) {

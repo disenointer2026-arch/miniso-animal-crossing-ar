@@ -79,6 +79,15 @@ export class CalibrationSystem extends createSystem({
     this.preview = null;
     this.currentHint = '';
 
+    // Solo en desarrollo: crea la fabrica al instante (altura 0,95 m, alcance 0,55 m) sin recorrer el espacio y la calibracion
+    if (import.meta.env.DEV && window.__miniso) {
+      window.__miniso.quickStart = () => {
+        this.readHead();
+        this.floorY = 0;
+        this.confirm(0.95, 0.55);
+      };
+    }
+
     this.cleanupFuncs.push(
       phase.subscribe((value) => {
         this.elapsed = 0;

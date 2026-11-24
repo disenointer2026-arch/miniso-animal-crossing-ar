@@ -25,6 +25,7 @@ export function loadFonts() {
   const base = import.meta.env.BASE_URL;
   const faces = [
     ['400', 'Nunito_400Regular.ttf'],
+    ['500', 'Nunito_500Medium.ttf'],
     ['700', 'Nunito_700Bold.ttf'],
     ['800', 'Nunito_800ExtraBold.ttf'],
   ];
