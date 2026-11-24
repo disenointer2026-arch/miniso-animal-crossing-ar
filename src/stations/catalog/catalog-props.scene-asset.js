@@ -1,42 +1,54 @@
-/* El sticker de las estaciones: papel crema con el dibujo encima (el libro y las cajas estan en
-   catalog-objects.js; el armario y el estante son del modelo). Unidades en metros. */
-import {
-  AssetManager,
-  DoubleSide,
-  Group,
-  Mesh,
-  MeshBasicMaterial,
-  PlaneGeometry,
-  SRGBColorSpace,
-} from '@iwsdk/core';
+/* El sticker de las estaciones: un adhesivo impreso (papel crema redondeado con el dibujo, sin recuadros de mas) que se apoya
+   sobre las paginas del libro del modelo. Unidades en metros. */
+import { AssetManager, CanvasTexture, DoubleSide, Group, Mesh, MeshBasicMaterial, PlaneGeometry, SRGBColorSpace } from '@iwsdk/core';
 
-function part(name, geometry, material, x = 0, y = 0, z = 0) {
-  const mesh = new Mesh(geometry, material);
-  mesh.name = name;
-  mesh.position.set(x, y, z);
-  return mesh;
+export const STICKER = { paper: 0.058, picture: 0.044 };
+const PX = 256;
+const geometry = new PlaneGeometry(STICKER.paper, STICKER.paper).rotateX(-Math.PI / 2);
+
+function roundRect(ctx, x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.roundRect(x, y, w, h, r);
 }
 
-const STICKER = { size: 0.05, paper: 0.058 };
-const paperGeometry = new PlaneGeometry(STICKER.paper, STICKER.paper).rotateX(-Math.PI / 2);
-const faceGeometry = new PlaneGeometry(STICKER.size, STICKER.size).rotateX(-Math.PI / 2);
-const paperMaterial = new MeshBasicMaterial({ color: 0xfff6e6, side: DoubleSide });
-
-/** Sticker plano: papel crema con el dibujo encima. Su origen esta en el centro. */
+/** Sticker plano (normal +Y), con su origen en el centro: papel crema con borde fino y el dibujo con su proporcion. */
 export function createSticker(textureKey) {
   const group = new Group();
   group.name = 'Sticker';
-  group.add(part('Paper', paperGeometry, paperMaterial));
-  const texture = AssetManager.getTexture(textureKey);
-  if (texture) texture.colorSpace = SRGBColorSpace;
-  const face = part(
-    'Picture',
-    faceGeometry,
-    new MeshBasicMaterial({ map: texture ?? null, transparent: true, alphaTest: 0.05, side: DoubleSide }),
-    0,
-    0.0008,
-    0,
+  const canvas = document.createElement('canvas');
+  canvas.width = canvas.height = PX;
+  const ctx = canvas.getContext('2d');
+  roundRect(ctx, 6, 6, PX - 12, PX - 12, 52);
+  ctx.fillStyle = '#FFF6E6';
+  ctx.fill();
+  ctx.lineWidth = 6;
+  ctx.strokeStyle = '#EBDDB8';
+  ctx.stroke();
+  const image = AssetManager.getTexture(textureKey)?.image;
+  if (image?.width) {
+    const box = (PX * STICKER.picture) / STICKER.paper;
+    const scale = box / Math.max(image.width, image.height);
+    const w = image.width * scale;
+    const h = image.height * scale;
+    ctx.drawImage(image, (PX - w) / 2, (PX - h) / 2, w, h);
+  }
+  const texture = new CanvasTexture(canvas);
+  texture.colorSpace = SRGBColorSpace;
+  texture.anisotropy = 4;
+  const mesh = new Mesh(
+    geometry,
+    new MeshBasicMaterial({
+      map: texture,
+      transparent: true,
+      alphaTest: 0.05,
+      side: DoubleSide,
+      toneMapped: false,
+      polygonOffset: true,
+      polygonOffsetFactor: -2,
+      polygonOffsetUnits: -2,
+    }),
   );
-  group.add(face);
+  mesh.name = 'Paper';
+  group.add(mesh);
   return group;
 }

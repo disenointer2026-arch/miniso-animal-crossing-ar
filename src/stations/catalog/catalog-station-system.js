@@ -54,8 +54,8 @@ import {
 } from '../../state.js';
 import { avatarHeight, avatarScale } from '../../systems/belt-system.js';
 import { C } from '../../ui/theme.js';
-import { addItem, canvasPlane, drawPill, drawSwatch } from '../../ui/world-ui.js';
-import { BOOK, createBook } from './catalog-objects.js';
+import { addItem, canvasPlane, drawPill, drawSwatch, text } from '../../ui/world-ui.js';
+import { pageSurface } from './book-surface.js';
 import { createSticker } from './catalog-props.scene-asset.js';
 import {
   CATALOGS,
@@ -74,7 +74,10 @@ const CHARM_SCALE = 1.6; // los charms se ven mas grandes (x escala del muñeco)
 const SNAP = { head: 0.26, body: 0.28, feet: 0.24 }; // metros del objeto al lugar donde va
 const GROW_SECONDS = 0.35;
 const PAGE_COOLDOWN = 0.35;
-const STICKER_LIFT = 0.075; // los stickers flotan sobre la pagina para poder agarrarlos con la otra mano
+const STICKER_LIFT = 0.003; // los stickers van pegados a la pagina (apenas separados para que no se crucen con la hoja)
+const BOOK_EXTRA = 1.7; // el libro del modelo se agranda para que las paginas alberguen los stickers (queda de ~0,32 x 0,24 m)
+const Z_AXIS = new Vector3(0, 0, 1);
+const Y_AXIS = new Vector3(0, 1, 0);
 const CHEST_ICON_Y = 1.22; // alto del icono sobre la tapa, en unidades de la caja (la tapa cerrada llega a 1,19)
 // Interior de la caja (unidades de la caja; el modelo mide 2 de ancho): el suelo interior esta en -0,43 y las paredes
 // llegan a 1,08. El charm se ajusta para caber con holgura, apoyado sobre el suelo, sin tocar paredes ni solapas.
@@ -155,7 +158,9 @@ export class CatalogStationSystem extends createSystem({
     this.avatar = null;
     this.zones = [];
     this.cooldown = 0;
-    this.bookUi = null; // { prev, next, swatches[] }
+    this.bookUi = null; // { prev, next, swatches[], label }
+    this.bookUnit = 0.1; // metros por unidad local del libro del modelo
+    this.bookNode = null;
     this.closetButtons = [];
     this.pendingIcons = [];
     this.frame = 0;
@@ -175,6 +180,7 @@ export class CatalogStationSystem extends createSystem({
         this.factory = null;
         this.zones = [];
         this.bookUi = null;
+        this.bookNode = null;
         this.closetButtons = [];
         this.pendingIcons = [];
       }),
@@ -235,9 +241,27 @@ export class CatalogStationSystem extends createSystem({
     this.refresh();
   }
 
-  /** Libro de stickers sobre el mueble del modelo: se agarra con una mano y se abre. */
+  /** El libro de stickers es el libro "libro_ojos" del modelo: se saca del modelo, se pone de frente al usuario (el lomo queda
+      vertical, con una hoja a cada lado) y se agranda un poco. Se agarra con una mano. Sus paginas llevan los stickers pegados,
+      las muestras de color y las flechas, todo apoyado sobre la superficie de la hoja (ver book-surface.js). */
   buildBook(factory, l) {
-    const book = createBook();
+    const node = factory.object3D.userData.parts?.nodes?.libro_ojos;
+    if (!node) {
+      console.warn('[libro] No hay un nodo "libro_ojos" en la fabrica');
+      return;
+    }
+    const unit = node.scale.x * BOOK_EXTRA * modelScale(l); // metros por unidad local del nodo
+    this.bookUnit = unit;
+    const book = new Group();
+    book.name = 'StickerBook';
+    node.removeFromParent();
+    node.visible = true;
+    node.quaternion.identity();
+    node.rotation.set(0, Math.PI / 2, 0); // el lomo del modelo va a lo largo de x: gira 90 grados para que quede vertical
+    node.scale.setScalar(unit);
+    node.position.set(0, 0.265 * unit, 0); // el fondo de la cubierta queda en y = 0
+    book.add(node);
+    this.bookNode = node;
     const home = modelFrame(l, FURNITURE.book, 0, 0, 0, SLOT_OF[FACE]);
     book.position.set(home.x, home.y, home.z);
     book.rotation.y = home.rotY;
@@ -247,40 +271,62 @@ export class CatalogStationSystem extends createSystem({
     entity.addComponent(Carryable, { kind: 'book', home: [home.x, home.y, home.z], homeYaw: home.rotY });
     entity.addComponent(OneHandGrabbable);
 
-    // Flechas y muestras de color: hijas del libro, planas sobre las paginas
-    const flat = (item, x, z) => {
-      item.mesh.rotation.x = -Math.PI / 2;
-      item.mesh.position.set(x, 0.014, z);
+    // Titulo de la pagina, flechas y muestras de color: pegados a las hojas (inclinados con ellas)
+    const onPage = (item, x, z, lift = 0.003) => {
+      const surface = pageSurface(unit, x, z);
+      item.mesh.position.set(x, surface.y + lift, z);
+      item.mesh.quaternion.setFromUnitVectors(Z_AXIS, surface.normal); // la imagen mira hacia arriba y su "arriba" queda hacia el lomo de atras
       item.mesh.userData.silent = false;
       return item;
     };
     const arrow = (direction) =>
-      flat(
+      onPage(
         addItem(this.world, entity, {
-          width: 0.05,
-          height: 0.032,
+          width: 0.045,
+          height: 0.028,
           pxPerMeter: 1400,
           name: direction < 0 ? 'page-prev' : 'page-next',
           draw: (ctx, w, h, state) => drawPill(ctx, w, h, direction < 0 ? '‹' : '›', { hovered: !!state.hovered, size: h * 0.62 }),
           onPress: () => this.turnPage(direction),
         }),
-        direction * 0.1,
-        BOOK.open[1] / 2 - 0.028,
+        direction * 0.12,
+        0.088,
       );
     const swatches = EYE_COLORS.map((color, i) => {
       const [x, z] = bookSlot({ kind: 'swatch' }, i, EYE_COLORS.length);
       const item = addItem(this.world, entity, {
-        width: 0.044,
-        height: 0.044,
+        width: 0.04,
+        height: 0.04,
         pxPerMeter: 1400,
         name: `eye-color-${color.id}`,
         draw: (ctx, w, h, state) => drawSwatch(ctx, w, h, color.id, !!state.selected),
         onPress: () => select('eyeColor', color.id),
       });
       item.mesh.userData.silent = true;
-      return { item: flat(item, x, z), id: color.id };
+      return { item: onPage(item, x, z), id: color.id };
     });
-    this.bookUi = { entity, prev: arrow(-1), next: arrow(1), swatches };
+    const label = addItem(this.world, entity, {
+      width: 0.2,
+      height: 0.03,
+      pxPerMeter: 1400,
+      name: 'page-title',
+      draw: (ctx, w, h, state) => {
+        ctx.clearRect(0, 0, w, h);
+        text(ctx, state.title ?? '', w / 2, h * 0.42, { size: h * 0.62, weight: 800, color: C.ink });
+        if (state.dots) {
+          for (let i = 0; i < state.dots.total; i++) {
+            ctx.fillStyle = i === state.dots.current ? C.red : C.yellowSoft;
+            ctx.beginPath();
+            ctx.arc(w / 2 + (i - (state.dots.total - 1) / 2) * h * 0.34, h * 0.9, h * 0.1, 0, Math.PI * 2);
+            ctx.fill();
+          }
+        }
+      },
+    });
+    label.mesh.userData.silent = true;
+    label.mesh.userData.noPress = true; // solo es una rotulacion
+    onPage(label, 0, -0.088);
+    this.bookUi = { entity, prev: arrow(-1), next: arrow(1), swatches, label };
     this.refreshBookUi();
   }
 
@@ -358,16 +404,20 @@ export class CatalogStationSystem extends createSystem({
   }
 
   // ---------- Libro ----------
-  onBookHeld(open) {
-    const book = this.queries.books.entities.values().next().value?.object3D;
-    book?.userData.setOpen(open);
-    if (open) sfx.select();
-    this.refreshBookUi();
-    this.refresh();
+  onBookHeld(held) {
+    if (held) sfx.select();
+    // En la mano, el libro deja de ser un objetivo de agarre (como las cajas abiertas): la otra mano alcanza los stickers de
+    // sus paginas en vez de "agarrar" el libro, que ya esta sostenido
+    this.bookNode?.traverse((object) => {
+      if (!object.isMesh) return;
+      object.userData.rayCast ??= object.raycast;
+      object.raycast = held ? noRaycast : object.userData.rayCast;
+    });
   }
 
+  /** El libro del modelo esta siempre abierto: sus paginas se ven (con los stickers) mientras la estacion esta activa. */
   bookOpen() {
-    return this.queries.heldBooks.entities.size > 0 && this.activeStation() === FACE;
+    return this.activeStation() === FACE && this.bookUi !== null;
   }
 
   turnPage(direction) {
@@ -391,12 +441,8 @@ export class CatalogStationSystem extends createSystem({
       item.setShown(open && group.kind === 'swatch');
       item.redraw({ selected: id === chosen });
     }
-    const book = this.queries.books.entities.values().next().value?.object3D;
-    book?.userData.spread.redraw({
-      title: group.label,
-      hint: group.kind === 'sticker' ? 'Saca un sticker con la otra mano y llevalo a la cara' : 'Toca un color',
-      dots: { total: CATALOGS[FACE].groups.length, current: page },
-    });
+    ui.label.setShown(open);
+    ui.label.redraw({ title: group.label, dots: { total: CATALOGS[FACE].groups.length, current: page } });
   }
 
   // ---------- Objetos del mueble ----------
@@ -457,10 +503,18 @@ export class CatalogStationSystem extends createSystem({
     let home = { x: 0, y: 0, z: 0, rotY: 0 };
     let anchor = null;
     if (group.kind === 'sticker') {
-      root.add(createSticker(stickerTexture[group.apply](id)));
       const book = this.queries.books.entities.values().next().value?.object3D;
+      if (!book) return;
+      root.add(createSticker(stickerTexture[group.apply](id)));
+      // Pegado a la hoja: sobre su superficie en ese punto y con su inclinacion
       const [bx, bz] = bookSlot(group, index, count);
-      anchor = { object: book, local: new Vector3(bx, STICKER_LIFT, bz), keep: true };
+      const surface = pageSurface(this.bookUnit, bx, bz);
+      anchor = {
+        object: book,
+        local: new Vector3(bx, surface.y + STICKER_LIFT, bz),
+        tilt: new Quaternion().setFromUnitVectors(Y_AXIS, surface.normal),
+        keep: true,
+      };
     } else {
       const model = makePart(group, id);
       if (!model) return;
@@ -585,6 +639,7 @@ export class CatalogStationSystem extends createSystem({
         factoryObject.worldToLocal(this.point);
         object.position.copy(this.point);
         anchor.object.getWorldQuaternion(this.quaternion).premultiply(this.factoryQuaternion);
+        if (anchor.tilt) this.quaternion.multiply(anchor.tilt); // la inclinacion de la hoja en ese punto
         object.quaternion.copy(this.quaternion);
       }
     }
