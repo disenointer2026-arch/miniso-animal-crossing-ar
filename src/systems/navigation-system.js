@@ -37,11 +37,12 @@ const NAV = { inward: 0.09, up: 0.01, offset: 0.095, tilt: 0.45 };
     boton mide 4,7 de ancho, asi que su centro queda en x 7,8 para no pasar del final del tramo recto. */
 const NAV_SPOTS = {
   0: { next: { at: [7.8, 6.3, 7.12], facing: 0 } },
-  // Estacion 2: sobre el borde de la plataforma del cabello (cara superior z 7,12, borde en x 26,55), mirando al este (el
-  // usuario esta al este de la estacion); "siguiente" a su derecha (norte) y "anterior" a su izquierda (sur)
+  // Estacion 2: sobre el borde de la plataforma del cabello (cara superior z 7,12, borde en x 26,55; la plataforma va de y 23,85 a
+  // 38,2), CENTRADOS en ella (y = 31) y separados 6,2 unidades (los botones miden 4,7: quedan 5 cm entre uno y otro), mirando al
+  // este (el usuario esta al este de la estacion); "siguiente" a su derecha (norte) y "anterior" a su izquierda (sur)
   1: {
-    next: { at: [25.75, 30.9, 7.12], facing: Math.PI / 2 },
-    prev: { at: [25.75, 25.9, 7.12], facing: Math.PI / 2 },
+    next: { at: [25.75, 34.1, 7.12], facing: Math.PI / 2 },
+    prev: { at: [25.75, 27.9, 7.12], facing: Math.PI / 2 },
   },
   // Estacion 3: sobre el borde del lado del usuario de la banda recta de la derecha (x 46; el borde esta a unos 2,6 unidades de
   // su centro, cara superior z 7,12), mirando al oeste. El usuario esta justo al oeste de la parada, asi que le quedan de frente;
@@ -66,7 +67,7 @@ const NAV_SPOTS = {
 };
 /** La reja (malla negra) del borde de la plataforma queda entre el usuario y los botones: se le abre una ventana donde van,
     para que ninguna barra de la malla tape las caras. Caja en coordenadas del modelo [[x, y, z] minimo, [x, y, z] maximo]. */
-const NAV_WINDOWS = [{ node: 'reja', box: [[24.9, 22.6, 7.05], [27.0, 33.6, 8.8]] }];
+const NAV_WINDOWS = [{ node: 'reja', box: [[24.9, 25.2, 7.05], [27.0, 36.8, 8.8]] }];
 /** Con el dedo: se hunde y se mantiene este tiempo para activar. Con rayo + pellizco (o controles) basta un toque. */
 const POKE_HOLD = 0.4;
 const FINGER_NEAR = 0.09; // el dedo esta tan cerca del boton: es un toque con el dedo, no un rayo
