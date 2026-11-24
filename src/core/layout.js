@@ -32,6 +32,23 @@ export const MODEL = {
   stands: [[2, -1.5], [2, -1.5], [38, 27], [36, 8], [32, -13], [3, -13], [-8, -13]],
 };
 
+/** Los puntos de pie nunca quedan a mas de SAFE_STAND_RADIUS metros del punto donde el usuario calibro (su espacio
+    libre verificado, el centro de la fabrica): mas lejos, la fabrica se sale del campo de visual o el usuario se
+    acerca al limite de su area de juego. Un punto que lo supera se acerca al centro por la misma recta, y la
+    estacion sigue a alcance de la mano. La fabrica no se mueve ni se reduce. */
+export const SAFE_STAND_RADIUS = 0.72;
+{
+  const limit = SAFE_STAND_RADIUS / MODEL.scale; // en unidades del modelo
+  MODEL.stands = MODEL.stands.map(([x, y]) => {
+    const dx = x - MODEL.user[0];
+    const dy = y - MODEL.user[1];
+    const distance = Math.hypot(dx, dy);
+    if (distance <= limit) return [x, y];
+    const k = limit / distance;
+    return [MODEL.user[0] + dx * k, MODEL.user[1] + dy * k];
+  });
+}
+
 /** Alto del muñeco de referencia que trae el modelo (unidades del modelo): es el avatar base, sin cabello. */
 export const AVATAR_UNITS = 4.3;
 
