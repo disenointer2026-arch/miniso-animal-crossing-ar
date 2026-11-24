@@ -29,7 +29,7 @@ export const MODEL = {
   giftBox: [-15.5, -21.6],
   /** Donde se para el usuario en cada slot: del lado de adentro de la banda, de frente a la
       estacion y a ~0.45 m de la banda (alcance comodo de la mano). El slot 0 usa el de la estacion 1. */
-  stands: [[2, -1.5], [2, -1.5], [32, 27], [35, 15], [32, -13], [3, -13], [-8, -13]],
+  stands: [[2, -1.5], [2, -1.5], [32, 27], [35, 15], [30, -13], [3, -13], [-8, -13]],
 };
 
 /** Los puntos de pie nunca quedan a mas de SAFE_STAND_RADIUS metros del punto donde el usuario calibro (su espacio
