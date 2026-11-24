@@ -1,5 +1,5 @@
 /* Estacion 2: cabello.
-   1. Elegir un estilo en el panel de la maquina (tablero gris con borde rojo, como el de la piel; tarjetas con
+   1. Elegir un estilo en el panel de la propia maquina (el gris con borde rojo del modelo, como la pantalla de la piel; tarjetas con
       mini avatar) pone a trabajar la maquina (animacion y sonido); al terminar, el cabello sale en la bandeja.
    2. Se agarra con un pellizco y se suelta sobre la cabeza: si queda cerca, se coloca
       solo (ajuste automatico). Mientras se acerca, la cabeza se ilumina.
@@ -12,11 +12,9 @@ import {
   createSystem,
   GrabSystem,
   Grabbed,
-  CylinderGeometry,
   Group,
   Mesh,
   MeshBasicMaterial,
-  MeshStandardMaterial,
   OneHandGrabbable,
   PokeInteractable,
   Pressed,
@@ -37,7 +35,7 @@ import {
 import { interactionBusy, registerDropHandler } from '../../interaction/carryable-system.js';
 import { renderPortrait } from '../../checkout/portrait.js';
 import { CATEGORIES } from '../../data/categories.js';
-import { modelFrame, modelScale } from '../../core/layout.js';
+import { modelFrame, modelPoint, modelScale } from '../../core/layout.js';
 import { ANCHORS } from '../../factory/anchors.js';
 import { placeAtAnchor } from '../../scene-assets/lib/frame.js';
 import {
@@ -53,7 +51,7 @@ import {
 } from '../../state.js';
 import { avatarScale } from '../../systems/belt-system.js';
 import { C } from '../../ui/theme.js';
-import { addItem, canvasPlane, drawCheck, drawSwatch, fitText, roundRectPath, text } from '../../ui/world-ui.js';
+import { addItem, drawCheck, drawSwatch, fitText, roundRectPath } from '../../ui/world-ui.js';
 import { createBin } from './hair-props.scene-asset.js';
 
 const STATION = 1;
@@ -67,20 +65,20 @@ const ZONE_RADIUS = 0.1;
 
 const easeOutBack = (k) => 1 + 2.7 * (k - 1) ** 3 + 1.7 * (k - 1) ** 2;
 
-/** Tablero de la maquina: gris con borde rojo, junto al tambor y de frente al usuario (punto del modelo [x, y, altura del centro]). */
-const BOARD_AT = [23.5, 32, 14.5];
-const BOARD = {
-  width: 0.44,
-  height: 0.42,
-  titleY: 0.18,
+/** Panel de la propia maquina de cabello (gris con borde rojo, en la malla "maquina" del modelo, como la pantalla de la piel).
+    Medidas del modelo, en unidades del modelo: centro de su cara gris [x, y, z] (y apenas por delante de la cara), giro
+    de la cara y espacio gris disponible. Las opciones se dibujan encima, de frente al usuario. */
+const PANEL = { at: [28.5, 35.22, 18.62], yaw: 0.0357, width: 6.72, height: 4.86 };
+// Reparto sobre el panel, en unidades del modelo (se multiplica por la escala de la fabrica)
+const GRID = {
+  card: [1.45, 1.3],
+  pitch: [1.6, 1.35],
   cols: 4,
-  card: [0.09, 0.108],
-  pitch: [0.097, 0.115],
-  top: 0.095,
-  swatch: 0.046,
-  swatchPitch: 0.049,
+  rowsY: [1.555, 0.205],
+  swatch: 0.75,
+  swatchPitch: 0.8,
   swatchPerRow: 8,
-  swatchTop: -0.115,
+  swatchRowsY: [-0.99, -1.79],
 };
 const STYLES = CATEGORIES[1].groups[0].options; // sin cabello + 7 estilos
 const HEAD_VIEW = { y: 1.5, z: 2.3 }; // encuadre del mini avatar: la cabeza
@@ -116,7 +114,7 @@ function drawStyleCard(option) {
       ctx.lineTo(w / 2 + box * 0.21, pad + 6 + box / 2 - box * 0.21);
       ctx.stroke();
     }
-    fitText(ctx, option.name, w / 2, h - pad - 28, w * 0.84, { size: h * 0.12, weight: 800, color: C.ink });
+    fitText(ctx, option.name, w / 2, h - pad - 28, w * 0.84, { size: h * 0.15, weight: 800, color: C.ink });
     if (state.selected) drawCheck(ctx, w - pad - 20, pad + 24, 20);
   };
 }
@@ -208,59 +206,28 @@ export class HairStationSystem extends createSystem({
     this.zone = zone;
   }
 
-  /** Tablero de la maquina (gris con borde rojo, como el de la piel): estilos con mini avatar y colores en un solo panel. */
+  /** Opciones sobre el panel de la maquina (el gris con borde rojo del modelo): estilos con mini avatar y colores. */
   buildPanels(factory) {
     const l = layout.peek();
+    const u = modelScale(l); // metros por unidad del modelo
     const group = new Group();
-    group.name = 'HairBoard';
-    const frame = canvasPlane(BOARD.width, BOARD.height, 1300, (ctx, w, h) => {
-      ctx.clearRect(0, 0, w, h);
-      const pad = 8;
-      ctx.save();
-      ctx.shadowColor = 'rgba(40, 30, 30, 0.35)';
-      ctx.shadowBlur = 14;
-      ctx.shadowOffsetY = 6;
-      ctx.fillStyle = '#C9CBD0';
-      roundRectPath(ctx, pad, pad, w - pad * 2, h - pad * 2 - 4, 34);
-      ctx.fill();
-      ctx.restore();
-      ctx.lineWidth = 16;
-      ctx.strokeStyle = '#D8031A'; // Rojo miniso
-      roundRectPath(ctx, pad + 8, pad + 8, w - pad * 2 - 16, h - pad * 2 - 20, 28);
-      ctx.stroke();
-      text(ctx, 'Estilo y color de cabello', w / 2, h * (0.5 - BOARD.titleY / BOARD.height), {
-        size: h * 0.052,
-        weight: 800,
-        color: '#2B2B30',
-      });
-    });
-    frame.mesh.name = 'ui-back';
-    group.add(frame.mesh);
-    placeAtAnchor(group, l, BOARD_AT, 0, 0, 0, SLOT);
-
-    // Poste que sujeta el tablero a la base de la maquina
-    const postHeight = (BOARD_AT[2] - 8.4) * modelScale(l) - BOARD.height / 2;
-    if (postHeight > 0.01) {
-      const post = new Mesh(
-        new CylinderGeometry(0.012, 0.012, postHeight, 12),
-        new MeshStandardMaterial({ color: 0xf2f2f2, roughness: 0.5, metalness: 0 }),
-      );
-      post.position.set(0, -BOARD.height / 2 - postHeight / 2, -0.012);
-      post.name = 'HairBoardPost';
-      group.add(post);
-    }
-
+    group.name = 'HairPanel';
+    const at = modelPoint(l, PANEL.at[0], PANEL.at[1], PANEL.at[2]);
+    group.position.set(at.x, at.y, at.z);
+    group.rotation.y = PANEL.yaw;
     const entity = this.world.createTransformEntity(group, { parent: factory });
     entity.addComponent(FactoryPart);
+
     const cards = STYLES.map((option, i) => {
-      const col = i % BOARD.cols;
-      const row = Math.floor(i / BOARD.cols);
+      const col = i % GRID.cols;
+      const row = Math.floor(i / GRID.cols);
       const item = addItem(this.world, entity, {
-        x: (col - (BOARD.cols - 1) / 2) * BOARD.pitch[0],
-        y: BOARD.top - row * BOARD.pitch[1],
-        width: BOARD.card[0],
-        height: BOARD.card[1],
-        pxPerMeter: 1300,
+        x: (col - (GRID.cols - 1) / 2) * GRID.pitch[0] * u,
+        y: GRID.rowsY[row] * u,
+        z: 0.002,
+        width: GRID.card[0] * u,
+        height: GRID.card[1] * u,
+        pxPerMeter: 2600,
         name: `style-${option.id}`,
         draw: drawStyleCard(option),
         onPress: () => select('hair', option.id),
@@ -269,14 +236,15 @@ export class HairStationSystem extends createSystem({
       return { item, id: option.id };
     });
     const swatches = HAIR_COLORS.map((color, i) => {
-      const col = i % BOARD.swatchPerRow;
-      const row = Math.floor(i / BOARD.swatchPerRow);
+      const col = i % GRID.swatchPerRow;
+      const row = Math.floor(i / GRID.swatchPerRow);
       const item = addItem(this.world, entity, {
-        x: (col - (BOARD.swatchPerRow - 1) / 2) * BOARD.swatchPitch,
-        y: BOARD.swatchTop - row * BOARD.swatchPitch,
-        width: BOARD.swatch,
-        height: BOARD.swatch,
-        pxPerMeter: 1300,
+        x: (col - (GRID.swatchPerRow - 1) / 2) * GRID.swatchPitch * u,
+        y: GRID.swatchRowsY[row] * u,
+        z: 0.002,
+        width: GRID.swatch * u,
+        height: GRID.swatch * u,
+        pxPerMeter: 2600,
         name: `hair-color-${color.id}`,
         draw: (ctx, w, h, state) => drawSwatch(ctx, w, h, color.id, !!state.selected),
         onPress: () => select('hairColor', color.id),
