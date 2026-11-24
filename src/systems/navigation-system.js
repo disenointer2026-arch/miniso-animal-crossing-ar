@@ -43,6 +43,13 @@ const NAV_SPOTS = {
     next: { at: [25.75, 30.9, 7.12], facing: Math.PI / 2 },
     prev: { at: [25.75, 25.9, 7.12], facing: Math.PI / 2 },
   },
+  // Estacion 3: sobre el borde del lado del usuario de la banda recta de la derecha (x 46; el borde esta a unos 2,6 unidades de
+  // su centro, cara superior z 7,12), mirando al oeste. El usuario esta justo al oeste de la parada, asi que le quedan de frente;
+  // viendo hacia el este, "siguiente" queda a su derecha (sur) y "anterior" a su izquierda (norte).
+  2: {
+    next: { at: [43.4, 12.2, 7.12], facing: -Math.PI / 2 },
+    prev: { at: [43.4, 17.8, 7.12], facing: -Math.PI / 2 },
+  },
 };
 /** La reja (malla negra) del borde de la plataforma queda entre el usuario y los botones: se le abre una ventana donde van,
     para que ninguna barra de la malla tape las caras. Caja en coordenadas del modelo [[x, y, z] minimo, [x, y, z] maximo]. */
