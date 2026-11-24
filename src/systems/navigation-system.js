@@ -22,7 +22,7 @@ import {
   Vector3,
 } from '@iwsdk/core';
 import { Factory, FactoryPart, NavButton } from '../components.js';
-import { SLOT, STATION_COUNT, beltTangent, slotPose, standPoint, stationSlot } from '../core/layout.js';
+import { SLOT, STATION_COUNT, beltTangent, modelPoint, slotPose, standPoint, stationSlot } from '../core/layout.js';
 import { interactionBusy } from '../interaction/carryable-system.js';
 import { jointWorld } from '../interaction/hand-joints.js';
 import { CATEGORIES } from '../data/categories.js';
@@ -30,6 +30,13 @@ import { beltMoving, beltRequest, categoryIndex, layout, phase, Phase, stepCateg
 
 /** Posicion de los botones: hacia el usuario (radial < 0), separados a cada lado. */
 const NAV = { inward: 0.09, up: 0.01, offset: 0.095, tilt: 0.45 };
+/** Botones ya colocados a mano sobre el borde del modelo, uno a uno. `at` = centro del boton en coordenadas del modelo
+    [x, y, z]; `facing` = giro en Y (0 = el frente mira al sur del modelo, hacia el usuario); sin inclinacion.
+    Estacion 1: sobre el borde del frente de la banda recta (x 1,7 a 10,1; y 5,6 a 7,0; cara superior en z 7,12); el
+    boton mide 4,7 de ancho, asi que su centro queda en x 7,8 para no pasar del final del tramo recto. */
+const NAV_SPOTS = {
+  0: { next: { at: [7.8, 6.3, 7.12], facing: 0 } },
+};
 /** Con el dedo: se hunde y se mantiene este tiempo para activar. Con rayo + pellizco (o controles) basta un toque. */
 const POKE_HOLD = 0.4;
 const FINGER_NEAR = 0.09; // el dedo esta tan cerca del boton: es un toque con el dedo, no un rayo
@@ -201,6 +208,11 @@ export class NavigationSystem extends createSystem({
 
   createButton(factory, station, direction) {
     const l = layout.peek();
+    const spot = NAV_SPOTS[station]?.[direction > 0 ? 'next' : 'prev'];
+    if (spot) {
+      this.createButtonAt(factory, station, direction, spot);
+      return;
+    }
     const slot = stationSlot(station);
     const stop = slotPose(l, slot, 0, NAV.up); // la parada del personaje sobre la banda
     const stand = standPoint(l, slot);
@@ -216,12 +228,28 @@ export class NavigationSystem extends createSystem({
     const rotY = Math.atan2(nx, nz); // +Z del boton = hacia el usuario
     const rx = Math.cos(rotY); // su derecha (mirando hacia afuera) = a lo largo de la banda
     const rz = -Math.sin(rotY);
+    const dx = direction * NAV.offset;
+    this.buildButton(factory, station, direction, {
+      x: stop.x + nx * NAV.inward + rx * dx,
+      y: stop.y,
+      z: stop.z + nz * NAV.inward + rz * dx,
+      rotY,
+      tilt: NAV.tilt,
+    });
+  }
+
+  /** Boton colocado a mano sobre el borde del modelo (ver NAV_SPOTS): plano, paralelo al borde y de frente al usuario. */
+  createButtonAt(factory, station, direction, spot) {
+    const p = modelPoint(layout.peek(), spot.at[0], spot.at[1], spot.at[2]);
+    this.buildButton(factory, station, direction, { x: p.x, y: p.y, z: p.z, rotY: spot.facing, tilt: 0 });
+  }
+
+  buildButton(factory, station, direction, pose) {
     const root = new Group();
     root.name = `${direction < 0 ? 'nav-prev' : 'nav-next'}-${station + 1}`;
-    const dx = direction * NAV.offset;
-    root.position.set(stop.x + nx * NAV.inward + rx * dx, stop.y, stop.z + nz * NAV.inward + rz * dx);
+    root.position.set(pose.x, pose.y, pose.z);
     root.rotation.order = 'YXZ';
-    root.rotation.set(NAV.tilt, rotY, 0);
+    root.rotation.set(pose.tilt, pose.rotY, 0);
 
     const cap = new Mesh(
       this.capGeometry,
