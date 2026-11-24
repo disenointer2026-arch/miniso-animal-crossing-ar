@@ -26,7 +26,6 @@ import {
   beltRequest,
   categoryIndex,
   hint,
-  instructionsSeen,
   layout,
   phase,
   Phase,
@@ -127,6 +126,7 @@ export class BeltSystem extends createSystem({
   }
 
   update(delta, time) {
+    if (phase.peek() === Phase.Instructions) return; // la experiencia no empieza hasta cerrar las instrucciones
     for (const entity of this.queries.avatars.entities) {
       const figure = entity.object3D;
       if (!figure || !entity.getValue(AvatarFigure, 'moving')) continue;
@@ -167,7 +167,7 @@ export class BeltSystem extends createSystem({
     beltMoving.value = false;
     if (phase.peek() === Phase.Arriving) {
       hint.value = '';
-      phase.value = instructionsSeen.peek() ? Phase.Customizing : Phase.Instructions;
+      phase.value = Phase.Customizing;
     }
   }
 }
