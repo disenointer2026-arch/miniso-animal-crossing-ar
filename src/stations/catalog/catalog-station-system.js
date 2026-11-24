@@ -76,7 +76,10 @@ const GROW_SECONDS = 0.35;
 const PAGE_COOLDOWN = 0.35;
 const STICKER_LIFT = 0.075; // los stickers flotan sobre la pagina para poder agarrarlos con la otra mano
 const CHEST_ICON_Y = 1.22; // alto del icono sobre la tapa, en unidades de la caja (la tapa cerrada llega a 1,19)
-const CHARM_LIFT = 3.0; // el charm flota sobre la caja abierta (unidades de la caja): lejos de las solapas
+// Interior de la caja (unidades de la caja; el modelo mide 2 de ancho): el suelo interior esta en -0,43 y las paredes
+// llegan a 1,08. El charm se ajusta para caber con holgura, apoyado sobre el suelo, sin tocar paredes ni solapas.
+const CHEST_FLOOR = -0.43;
+const CHARM_FIT = { width: 1.3, height: 1.15, rest: 0.05 }; // espacio util (ancho x fondo, alto) y separacion del suelo
 
 /** Si alguna pieza sale al reves en el mueble, se corrige aqui: rotacion [x, y, z] en radianes por "clave/id". */
 const DISPLAY_FIX = {};
@@ -482,18 +485,31 @@ export class CatalogStationSystem extends createSystem({
     entity.addComponent(OneHandGrabbable);
   }
 
-  /** El charm de una caja abierta: flota sobre ella y se saca con la otra mano. */
+  /** El charm de una caja abierta: se queda DENTRO, apoyado en el fondo y a la vista por la boca abierta; se saca con la otra mano.
+      Su tamano se ajusta al interior de la caja para que no toque las paredes ni se salga. */
   spawnCharm(chestEntity) {
     const id = chestEntity.getValue(ChestBox, 'charm');
     const group = CATALOGS[CHARMS].groups[0];
     const model = makePart(group, id);
     if (!model) return null;
+    const chest = chestEntity.object3D;
     const root = new Group();
     root.name = `Item/companion/${id}`;
     root.add(model);
-    root.userData.base = avatarScale() * CHARM_SCALE;
+
+    // Medidas del charm (el modelo ya viene centrado en el origen) y de la caja, en metros de la fabrica
+    const size = new Box3().setFromObject(root).getSize(new Vector3());
+    const unit = chest.scale.x; // metros por unidad de la caja
+    const fit = unit * Math.min(CHARM_FIT.width / size.x, CHARM_FIT.width / size.z, CHARM_FIT.height / size.y);
+    const base = Math.min(fit, avatarScale() * CHARM_SCALE);
+    const halfHeight = (size.y * base) / unit / 2; // en unidades de la caja
+    root.userData.base = base;
     root.userData.grow = 0;
-    root.userData.anchor = { object: chestEntity.object3D, local: new Vector3(0, CHARM_LIFT, 0), chest: chestEntity };
+    root.userData.anchor = {
+      object: chest,
+      local: new Vector3(0, CHEST_FLOOR + CHARM_FIT.rest + halfHeight, 0),
+      chest: chestEntity,
+    };
     root.scale.setScalar(0.0001);
     const entity = this.world.createTransformEntity(root, { parent: this.factory });
     entity.addComponent(FactoryPart);
@@ -563,7 +579,6 @@ export class CatalogStationSystem extends createSystem({
       if (anchor?.object && !this.queries.held.entities.has(entity)) {
         this.point.copy(anchor.local);
         anchor.object.localToWorld(this.point);
-        if (anchor.chest) this.point.y += Math.sin(time * 2.4) * 0.006;
         factoryObject.worldToLocal(this.point);
         object.position.copy(this.point);
         anchor.object.getWorldQuaternion(this.quaternion).premultiply(this.factoryQuaternion);
