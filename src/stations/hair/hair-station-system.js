@@ -1,20 +1,22 @@
 /* Estacion 2: cabello.
-   1. Elegir un estilo en el panel crema que cuelga sobre la maquina (tarjetas con mini avatar) pone
-      a trabajar la maquina (animacion y sonido); al terminar, el cabello sale en la bandeja.
+   1. Elegir un estilo en el panel de la maquina (tablero gris con borde rojo, como el de la piel; tarjetas con
+      mini avatar) pone a trabajar la maquina (animacion y sonido); al terminar, el cabello sale en la bandeja.
    2. Se agarra con un pellizco y se suelta sobre la cabeza: si queda cerca, se coloca
       solo (ajuste automatico). Mientras se acerca, la cabeza se ilumina.
    3. Tocar el cabello puesto lo retira y queda suelto en la mano; soltarlo sobre el
       bote lo descarta. Si se suelta en otro sitio, vuelve a la bandeja.
-   El color del cabello (segundo panel, muestras redondas) repinta el puesto y el que esta en la bandeja.
+   El color del cabello (muestras redondas, en el mismo tablero) repinta el puesto y el que esta en la bandeja.
    Retirar lo puesto no funciona mientras se sostiene otro objeto (ver interactionBusy). */
 import {
   Color,
   createSystem,
   GrabSystem,
   Grabbed,
+  CylinderGeometry,
   Group,
   Mesh,
   MeshBasicMaterial,
+  MeshStandardMaterial,
   OneHandGrabbable,
   PokeInteractable,
   Pressed,
@@ -35,7 +37,7 @@ import {
 import { interactionBusy, registerDropHandler } from '../../interaction/carryable-system.js';
 import { renderPortrait } from '../../checkout/portrait.js';
 import { CATEGORIES } from '../../data/categories.js';
-import { modelFrame } from '../../core/layout.js';
+import { modelFrame, modelScale } from '../../core/layout.js';
 import { ANCHORS } from '../../factory/anchors.js';
 import { placeAtAnchor } from '../../scene-assets/lib/frame.js';
 import {
@@ -51,7 +53,7 @@ import {
 } from '../../state.js';
 import { avatarScale } from '../../systems/belt-system.js';
 import { C } from '../../ui/theme.js';
-import { addItem, createUiPanel, drawCheck, drawSwatch, fitText, roundRectPath, text } from '../../ui/world-ui.js';
+import { addItem, canvasPlane, drawCheck, drawSwatch, fitText, roundRectPath, text } from '../../ui/world-ui.js';
 import { createBin } from './hair-props.scene-asset.js';
 
 const STATION = 1;
@@ -65,11 +67,22 @@ const ZONE_RADIUS = 0.1;
 
 const easeOutBack = (k) => 1 + 2.7 * (k - 1) ** 3 + 1.7 * (k - 1) ** 2;
 
-/** Los dos paneles crema cuelgan sobre la maquina (punto del modelo [x, y, altura]), de frente al usuario. */
-const PANELS_AT = [23.5, 27, 19.6];
+/** Tablero de la maquina: gris con borde rojo, junto al tambor y de frente al usuario (punto del modelo [x, y, altura del centro]). */
+const BOARD_AT = [23.5, 32, 14.5];
+const BOARD = {
+  width: 0.44,
+  height: 0.42,
+  titleY: 0.18,
+  cols: 4,
+  card: [0.09, 0.108],
+  pitch: [0.097, 0.115],
+  top: 0.095,
+  swatch: 0.046,
+  swatchPitch: 0.049,
+  swatchPerRow: 8,
+  swatchTop: -0.115,
+};
 const STYLES = CATEGORIES[1].groups[0].options; // sin cabello + 7 estilos
-const STYLE_PANEL = { width: 0.38, height: 0.33, tangent: -0.2, cols: 4, card: [0.085, 0.112], pitch: [0.09, 0.118], top: 0.045 };
-const COLOR_PANEL = { width: 0.31, height: 0.34, tangent: 0.2, cols: 4, size: 0.064, pitch: 0.068, top: 0.077 };
 const HEAD_VIEW = { y: 1.5, z: 2.3 }; // encuadre del mini avatar: la cabeza
 const PORTRAIT_SIZE = 256;
 const HAIR_COLORS = CATEGORIES[1].groups[1].options;
@@ -124,7 +137,7 @@ export class HairStationSystem extends createSystem({
     this.zoneMaterial = null;
     this.bin = null;
     this.color = new Color();
-    this.panels = null; // { styles, colors, cards[], swatches[] }
+    this.panels = null; // { board, cards[], swatches[] }
     this.queue = []; // estilos cuyo mini avatar falta por dibujar (uno por cuadro)
     this.portraitColor = '';
     this.frame = 0;
@@ -195,26 +208,58 @@ export class HairStationSystem extends createSystem({
     this.zone = zone;
   }
 
-  /** Dos paneles crema sobre la maquina: estilos (con mini avatar) y colores. */
+  /** Tablero de la maquina (gris con borde rojo, como el de la piel): estilos con mini avatar y colores en un solo panel. */
   buildPanels(factory) {
     const l = layout.peek();
-    const make = (spec, title) => {
-      const group = createUiPanel({ width: spec.width, height: spec.height, title });
-      placeAtAnchor(group, l, PANELS_AT, spec.tangent, 0, 0, SLOT);
-      const entity = this.world.createTransformEntity(group, { parent: factory });
-      entity.addComponent(FactoryPart);
-      return { group, entity };
-    };
-    const styles = make(STYLE_PANEL, 'Estilo de cabello');
-    const colors = make(COLOR_PANEL, 'Color de cabello');
+    const group = new Group();
+    group.name = 'HairBoard';
+    const frame = canvasPlane(BOARD.width, BOARD.height, 1300, (ctx, w, h) => {
+      ctx.clearRect(0, 0, w, h);
+      const pad = 8;
+      ctx.save();
+      ctx.shadowColor = 'rgba(40, 30, 30, 0.35)';
+      ctx.shadowBlur = 14;
+      ctx.shadowOffsetY = 6;
+      ctx.fillStyle = '#C9CBD0';
+      roundRectPath(ctx, pad, pad, w - pad * 2, h - pad * 2 - 4, 34);
+      ctx.fill();
+      ctx.restore();
+      ctx.lineWidth = 16;
+      ctx.strokeStyle = '#D8031A'; // Rojo miniso
+      roundRectPath(ctx, pad + 8, pad + 8, w - pad * 2 - 16, h - pad * 2 - 20, 28);
+      ctx.stroke();
+      text(ctx, 'Estilo y color de cabello', w / 2, h * (0.5 - BOARD.titleY / BOARD.height), {
+        size: h * 0.052,
+        weight: 800,
+        color: '#2B2B30',
+      });
+    });
+    frame.mesh.name = 'ui-back';
+    group.add(frame.mesh);
+    placeAtAnchor(group, l, BOARD_AT, 0, 0, 0, SLOT);
+
+    // Poste que sujeta el tablero a la base de la maquina
+    const postHeight = (BOARD_AT[2] - 8.4) * modelScale(l) - BOARD.height / 2;
+    if (postHeight > 0.01) {
+      const post = new Mesh(
+        new CylinderGeometry(0.012, 0.012, postHeight, 12),
+        new MeshStandardMaterial({ color: 0xf2f2f2, roughness: 0.5, metalness: 0 }),
+      );
+      post.position.set(0, -BOARD.height / 2 - postHeight / 2, -0.012);
+      post.name = 'HairBoardPost';
+      group.add(post);
+    }
+
+    const entity = this.world.createTransformEntity(group, { parent: factory });
+    entity.addComponent(FactoryPart);
     const cards = STYLES.map((option, i) => {
-      const col = i % STYLE_PANEL.cols;
-      const row = Math.floor(i / STYLE_PANEL.cols);
-      const item = addItem(this.world, styles.entity, {
-        x: (col - (STYLE_PANEL.cols - 1) / 2) * STYLE_PANEL.pitch[0],
-        y: STYLE_PANEL.top - row * STYLE_PANEL.pitch[1],
-        width: STYLE_PANEL.card[0],
-        height: STYLE_PANEL.card[1],
+      const col = i % BOARD.cols;
+      const row = Math.floor(i / BOARD.cols);
+      const item = addItem(this.world, entity, {
+        x: (col - (BOARD.cols - 1) / 2) * BOARD.pitch[0],
+        y: BOARD.top - row * BOARD.pitch[1],
+        width: BOARD.card[0],
+        height: BOARD.card[1],
         pxPerMeter: 1300,
         name: `style-${option.id}`,
         draw: drawStyleCard(option),
@@ -224,13 +269,13 @@ export class HairStationSystem extends createSystem({
       return { item, id: option.id };
     });
     const swatches = HAIR_COLORS.map((color, i) => {
-      const col = i % COLOR_PANEL.cols;
-      const row = Math.floor(i / COLOR_PANEL.cols);
-      const item = addItem(this.world, colors.entity, {
-        x: (col - (COLOR_PANEL.cols - 1) / 2) * COLOR_PANEL.pitch,
-        y: COLOR_PANEL.top - row * COLOR_PANEL.pitch,
-        width: COLOR_PANEL.size,
-        height: COLOR_PANEL.size,
+      const col = i % BOARD.swatchPerRow;
+      const row = Math.floor(i / BOARD.swatchPerRow);
+      const item = addItem(this.world, entity, {
+        x: (col - (BOARD.swatchPerRow - 1) / 2) * BOARD.swatchPitch,
+        y: BOARD.swatchTop - row * BOARD.swatchPitch,
+        width: BOARD.swatch,
+        height: BOARD.swatch,
         pxPerMeter: 1300,
         name: `hair-color-${color.id}`,
         draw: (ctx, w, h, state) => drawSwatch(ctx, w, h, color.id, !!state.selected),
@@ -239,7 +284,7 @@ export class HairStationSystem extends createSystem({
       item.mesh.userData.silent = true;
       return { item, id: color.id };
     });
-    this.panels = { styles: styles.group, colors: colors.group, cards, swatches };
+    this.panels = { board: group, cards, swatches };
     this.queuePortraits();
     this.refreshPanels();
   }
@@ -264,10 +309,9 @@ export class HairStationSystem extends createSystem({
   refreshPanels() {
     if (!this.panels) return;
     const show = this.active();
-    for (const group of [this.panels.styles, this.panels.colors]) {
-      group.visible = show;
-      group.scale.setScalar(show ? 1 : 0.0001);
-    }
+    const board = this.panels.board;
+    board.visible = show;
+    board.scale.setScalar(show ? 1 : 0.0001);
     const chosen = selection.peek();
     for (const { item, id } of this.panels.cards) item.redraw({ selected: id === chosen.hair });
     for (const { item, id } of this.panels.swatches) item.redraw({ selected: id === chosen.hairColor });
