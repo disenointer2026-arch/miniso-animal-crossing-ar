@@ -19,6 +19,7 @@ import {
   RayInteractable,
   Shape,
   SRGBColorSpace,
+  Plane,
   Vector3,
 } from '@iwsdk/core';
 import { Factory, FactoryPart, NavButton } from '../components.js';
@@ -36,7 +37,16 @@ const NAV = { inward: 0.09, up: 0.01, offset: 0.095, tilt: 0.45 };
     boton mide 4,7 de ancho, asi que su centro queda en x 7,8 para no pasar del final del tramo recto. */
 const NAV_SPOTS = {
   0: { next: { at: [7.8, 6.3, 7.12], facing: 0 } },
+  // Estacion 2: sobre el borde de la plataforma del cabello (cara superior z 7,12, borde en x 26,55), mirando al este (el
+  // usuario esta al este de la estacion); "siguiente" a su derecha (norte) y "anterior" a su izquierda (sur)
+  1: {
+    next: { at: [25.75, 30.9, 7.12], facing: Math.PI / 2 },
+    prev: { at: [25.75, 25.9, 7.12], facing: Math.PI / 2 },
+  },
 };
+/** La reja (malla negra) del borde de la plataforma queda entre el usuario y los botones: se le abre una ventana donde van,
+    para que ninguna barra de la malla tape las caras. Caja en coordenadas del modelo [[x, y, z] minimo, [x, y, z] maximo]. */
+const NAV_WINDOWS = [{ node: 'reja', box: [[24.9, 22.6, 7.05], [27.0, 33.6, 8.8]] }];
 /** Con el dedo: se hunde y se mantiene este tiempo para activar. Con rayo + pellizco (o controles) basta un toque. */
 const POKE_HOLD = 0.4;
 const FINGER_NEAR = 0.09; // el dedo esta tan cerca del boton: es un toque con el dedo, no un rayo
@@ -180,6 +190,8 @@ export class NavigationSystem extends createSystem({
 }) {
   init() {
     this.cooldown = 0;
+    this.windows = []; // ventanas abiertas en mallas del modelo: { local: Plane[], world: Plane[] }
+    this.renderer.localClippingEnabled = true;
     this.held = new Map(); // boton -> segundos que lleva presionado con el dedo
     this.tip = new Vector3();
     this.center = new Vector3();
@@ -192,6 +204,7 @@ export class NavigationSystem extends createSystem({
           this.createButton(factory, station, -1);
           this.createButton(factory, station, 1);
         }
+        this.openWindows(factory);
         this.refresh();
       }),
       beltMoving.subscribe(() => this.refresh()),
@@ -236,6 +249,43 @@ export class NavigationSystem extends createSystem({
       rotY,
       tilt: NAV.tilt,
     });
+  }
+
+  /** Abre las ventanas (NAV_WINDOWS): el material del nodo recorta, con planos que miran hacia afuera y clipIntersection,
+      solo lo que queda DENTRO de la caja. Los planos locales se llevan al mundo cada cuadro (ver update). */
+  openWindows(factory) {
+    this.windows.length = 0;
+    const l = layout.peek();
+    const nodes = factory.object3D.userData.parts?.nodes ?? {};
+    for (const { node, box } of NAV_WINDOWS) {
+      const lo = modelPoint(l, box[0][0], box[0][1], box[0][2]);
+      const hi = modelPoint(l, box[1][0], box[1][1], box[1][2]);
+      // En el plano local de la fabrica: x = este, z = -norte, y = arriba (el modelo no tiene giro propio)
+      const minX = Math.min(lo.x, hi.x);
+      const maxX = Math.max(lo.x, hi.x);
+      const minY = Math.min(lo.y, hi.y);
+      const maxY = Math.max(lo.y, hi.y);
+      const minZ = Math.min(lo.z, hi.z);
+      const maxZ = Math.max(lo.z, hi.z);
+      const local = [
+        new Plane().setFromNormalAndCoplanarPoint(new Vector3(1, 0, 0), new Vector3(maxX, 0, 0)),
+        new Plane().setFromNormalAndCoplanarPoint(new Vector3(-1, 0, 0), new Vector3(minX, 0, 0)),
+        new Plane().setFromNormalAndCoplanarPoint(new Vector3(0, 1, 0), new Vector3(0, maxY, 0)),
+        new Plane().setFromNormalAndCoplanarPoint(new Vector3(0, -1, 0), new Vector3(0, minY, 0)),
+        new Plane().setFromNormalAndCoplanarPoint(new Vector3(0, 0, 1), new Vector3(0, 0, maxZ)),
+        new Plane().setFromNormalAndCoplanarPoint(new Vector3(0, 0, -1), new Vector3(0, 0, minZ)),
+      ];
+      const world = local.map((plane) => plane.clone());
+      this.windows.push({ local, world, factory });
+      nodes[node]?.traverse((object) => {
+        if (!object.isMesh) return;
+        for (const material of [].concat(object.material)) {
+          material.clippingPlanes = world;
+          material.clipIntersection = true;
+          material.needsUpdate = true;
+        }
+      });
+    }
   }
 
   /** Boton colocado a mano sobre el borde del modelo (ver NAV_SPOTS): plano, paralelo al borde y de frente al usuario. */
@@ -335,6 +385,11 @@ export class NavigationSystem extends createSystem({
 
   update(delta) {
     if (this.cooldown > 0) this.cooldown -= delta;
+    for (const { local, world, factory } of this.windows) {
+      const object = factory.object3D;
+      if (!object) continue;
+      for (let i = 0; i < local.length; i++) world[i].copy(local[i]).applyMatrix4(object.matrixWorld);
+    }
     // El boton se hunde mientras esta presionado
     for (const entity of this.queries.buttons.entities) {
       const cap = entity.object3D?.userData.cap;
