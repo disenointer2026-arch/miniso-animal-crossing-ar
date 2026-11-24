@@ -100,19 +100,20 @@ export const CHEST_NODES = {
   caja_3: 'regalo',
 };
 
-/** Posicion de un sticker o muestra en las paginas del libro (metros, en el sistema del libro: x a la derecha, z hacia el usuario;
-    el lomo queda en x = 0). Los stickers van en una cuadricula de 4 columnas (el lomo cae entre la segunda y la tercera) y las
-    muestras en 6 columnas, dejando libre el borde de arriba (titulo) y el de abajo (flechas). */
-export function bookSlot(group, index, count) {
+/** Pestañas del libro de stickers: cada una muestra su grupo de stickers (y, en "Ojos", tambien las muestras de color). */
+export const FACE_TABS = [
+  { label: 'Ojos', group: 0, color: '#F9C623' },
+  { label: 'Boca', group: 2, color: '#8CC37A' },
+  { label: 'Nariz', group: 3, color: '#F48FB1' },
+];
+
+/** Posicion [x, z] (metros, sistema del libro: x a la derecha, z hacia el usuario; el lomo en x = 0) de un sticker o una muestra.
+    Los stickers van en una cuadricula alineada de 4 columnas (x = -0,108 / -0,036 / 0,036 / 0,108: ninguna cae sobre el lomo ni
+    se acerca a los bordes de las hojas, que llegan a x = ±0,16 y z = ±0,117), en filas desde arriba. Las muestras de color de
+    ojos (12) van debajo, en 2 filas de 6. */
+export function bookSlot(group, index) {
   if (group.kind === 'swatch') {
-    const cols = 6;
-    const col = index % cols;
-    const row = Math.floor(index / cols);
-    return [(col - (cols - 1) / 2) * 0.047, (row - 0.5) * 0.047 + 0.012];
+    return [((index % 6) - 2.5) * 0.045, 0.045 + Math.floor(index / 6) * 0.04];
   }
-  const cols = count > 4 ? 4 : count;
-  const col = index % cols;
-  const row = Math.floor(index / cols);
-  const rows = Math.ceil(count / cols);
-  return [(col - (cols - 1) / 2) * 0.07, (row - (rows - 1) / 2) * 0.075 + 0.012];
+  return [((index % 4) - 1.5) * 0.072, -0.075 + Math.floor(index / 4) * 0.06];
 }

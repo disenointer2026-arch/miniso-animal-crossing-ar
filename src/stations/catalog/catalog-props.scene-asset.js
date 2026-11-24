@@ -1,10 +1,14 @@
 /* El sticker de las estaciones: un adhesivo impreso (papel crema redondeado con el dibujo, sin recuadros de mas) que se apoya
    sobre las paginas del libro del modelo. Unidades en metros. */
-import { AssetManager, CanvasTexture, DoubleSide, Group, Mesh, MeshBasicMaterial, PlaneGeometry, SRGBColorSpace } from '@iwsdk/core';
+import { AssetManager, BoxGeometry, CanvasTexture, DoubleSide, Group, Mesh, MeshBasicMaterial, PlaneGeometry, SRGBColorSpace } from '@iwsdk/core';
 
-export const STICKER = { paper: 0.058, picture: 0.044 };
+export const STICKER = { paper: 0.056, picture: 0.043, grab: 0.09 };
 const PX = 256;
 const geometry = new PlaneGeometry(STICKER.paper, STICKER.paper).rotateX(-Math.PI / 2);
+// Zona de agarre: un bloque invisible mas grande que el papel (9 cm de lado y 4 cm de alto) para que el pellizco o la mano cerca lo
+// alcancen sin precision; la malla del papel, finisima, era dificil de acertar.
+const grabGeometry = new BoxGeometry(STICKER.grab, 0.04, STICKER.grab);
+const grabMaterial = new MeshBasicMaterial({ transparent: true, opacity: 0, depthWrite: false });
 
 function roundRect(ctx, x, y, w, h, r) {
   ctx.beginPath();
@@ -50,5 +54,9 @@ export function createSticker(textureKey) {
   );
   mesh.name = 'Paper';
   group.add(mesh);
+  const grab = new Mesh(grabGeometry, grabMaterial);
+  grab.name = 'GrabZone';
+  grab.position.y = 0.012;
+  group.add(grab);
   return group;
 }
