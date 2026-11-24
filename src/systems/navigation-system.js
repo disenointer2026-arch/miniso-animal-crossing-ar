@@ -19,7 +19,7 @@ import {
   RayInteractable,
   Shape,
   SRGBColorSpace,
-  Plane,
+  Matrix4,
   Vector3,
 } from '@iwsdk/core';
 import { Factory, FactoryPart, NavButton } from '../components.js';
@@ -210,8 +210,6 @@ export class NavigationSystem extends createSystem({
 }) {
   init() {
     this.cooldown = 0;
-    this.windows = []; // ventanas abiertas en mallas del modelo: { local: Plane[], world: Plane[] }
-    this.renderer.localClippingEnabled = true;
     this.held = new Map(); // boton -> segundos que lleva presionado con el dedo
     this.tip = new Vector3();
     this.center = new Vector3();
@@ -271,39 +269,42 @@ export class NavigationSystem extends createSystem({
     });
   }
 
-  /** Abre las ventanas (NAV_WINDOWS): el material del nodo recorta, con planos que miran hacia afuera y clipIntersection,
-      solo lo que queda DENTRO de la caja. Los planos locales se llevan al mundo cada cuadro (ver update). */
+  /** Abre las ventanas (NAV_WINDOWS): quita de la malla del nodo los triangulos cuyo centro cae DENTRO de la caja (en el plano
+      local de la fabrica), de modo que ninguna barra quede entre el usuario y los botones. Se recorta una copia de la geometria
+      (la del modelo es compartida) y no depende de planos de recorte del renderizador. */
   openWindows(factory) {
-    this.windows.length = 0;
     const l = layout.peek();
-    const nodes = factory.object3D.userData.parts?.nodes ?? {};
+    const root = factory.object3D;
+    const nodes = root.userData.parts?.nodes ?? {};
+    root.updateWorldMatrix(true, true);
+    const toRoot = new Matrix4().copy(root.matrixWorld).invert();
+    const matrix = new Matrix4();
+    const a = new Vector3();
+    const b = new Vector3();
+    const c = new Vector3();
     for (const { node, box } of NAV_WINDOWS) {
       const lo = modelPoint(l, box[0][0], box[0][1], box[0][2]);
       const hi = modelPoint(l, box[1][0], box[1][1], box[1][2]);
       // En el plano local de la fabrica: x = este, z = -norte, y = arriba (el modelo no tiene giro propio)
-      const minX = Math.min(lo.x, hi.x);
-      const maxX = Math.max(lo.x, hi.x);
-      const minY = Math.min(lo.y, hi.y);
-      const maxY = Math.max(lo.y, hi.y);
-      const minZ = Math.min(lo.z, hi.z);
-      const maxZ = Math.max(lo.z, hi.z);
-      const local = [
-        new Plane().setFromNormalAndCoplanarPoint(new Vector3(1, 0, 0), new Vector3(maxX, 0, 0)),
-        new Plane().setFromNormalAndCoplanarPoint(new Vector3(-1, 0, 0), new Vector3(minX, 0, 0)),
-        new Plane().setFromNormalAndCoplanarPoint(new Vector3(0, 1, 0), new Vector3(0, maxY, 0)),
-        new Plane().setFromNormalAndCoplanarPoint(new Vector3(0, -1, 0), new Vector3(0, minY, 0)),
-        new Plane().setFromNormalAndCoplanarPoint(new Vector3(0, 0, 1), new Vector3(0, 0, maxZ)),
-        new Plane().setFromNormalAndCoplanarPoint(new Vector3(0, 0, -1), new Vector3(0, 0, minZ)),
-      ];
-      const world = local.map((plane) => plane.clone());
-      this.windows.push({ local, world, factory });
+      const min = new Vector3(Math.min(lo.x, hi.x), Math.min(lo.y, hi.y), Math.min(lo.z, hi.z));
+      const max = new Vector3(Math.max(lo.x, hi.x), Math.max(lo.y, hi.y), Math.max(lo.z, hi.z));
       nodes[node]?.traverse((object) => {
-        if (!object.isMesh) return;
-        for (const material of [].concat(object.material)) {
-          material.clippingPlanes = world;
-          material.clipIntersection = true;
-          material.needsUpdate = true;
+        if (!object.isMesh || !object.geometry?.attributes?.position) return;
+        matrix.multiplyMatrices(toRoot, object.matrixWorld);
+        const geometry = object.geometry.clone();
+        const position = geometry.attributes.position;
+        const index = geometry.index ? Array.from(geometry.index.array) : Array.from({ length: position.count }, (_, i) => i);
+        const kept = [];
+        for (let i = 0; i + 2 < index.length; i += 3) {
+          a.fromBufferAttribute(position, index[i]).applyMatrix4(matrix);
+          b.fromBufferAttribute(position, index[i + 1]).applyMatrix4(matrix);
+          c.fromBufferAttribute(position, index[i + 2]).applyMatrix4(matrix);
+          a.add(b).add(c).multiplyScalar(1 / 3); // centro del triangulo
+          const inside = a.x > min.x && a.x < max.x && a.y > min.y && a.y < max.y && a.z > min.z && a.z < max.z;
+          if (!inside) kept.push(index[i], index[i + 1], index[i + 2]);
         }
+        geometry.setIndex(kept);
+        object.geometry = geometry;
       });
     }
   }
@@ -405,11 +406,6 @@ export class NavigationSystem extends createSystem({
 
   update(delta) {
     if (this.cooldown > 0) this.cooldown -= delta;
-    for (const { local, world, factory } of this.windows) {
-      const object = factory.object3D;
-      if (!object) continue;
-      for (let i = 0; i < local.length; i++) world[i].copy(local[i]).applyMatrix4(object.matrixWorld);
-    }
     // El boton se hunde mientras esta presionado
     for (const entity of this.queries.buttons.entities) {
       const cap = entity.object3D?.userData.cap;
