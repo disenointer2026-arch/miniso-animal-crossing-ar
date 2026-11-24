@@ -163,8 +163,10 @@ export class Avatar {
     return this;
   }
 
-  /** La camisa y el boxer base vienen en el cuerpo (material "ropa"). Son permanentes: aqui se garantiza que
-      siempre esten visibles y con su color, pase lo que pase con las prendas que se pongan encima. */
+  /** Ropa base permanente: la camisa viene en el cuerpo (material "ropa") y el boxer es la pieza "short" en un color liso
+      (el cuerpo no tiene malla entre las piernas y el torso, y sin el boxer esa zona queda vacia). Ninguna de las dos se
+      oculta ni se quita nunca; las prendas que se pongan van encima. Aqui se garantiza que existan, esten visibles y con su
+      color, al construir y tras cada cambio de prendas. */
   _keepBaseClothes() {
     const body = this.parts.body;
     if (!body) return;
@@ -179,6 +181,29 @@ export class Avatar {
         material.userData.baseClothes = true;
       }
       if (materials.some((m) => m?.userData?.baseClothes)) o.visible = true;
+    });
+    if (!this.parts.baseBottom) this._setBaseBottom();
+    if (this.parts.baseBottom) this.parts.baseBottom.visible = true;
+  }
+
+  /** El boxer base: la pieza "short" lisa, con polygonOffset para quedar detras de cualquier prenda que se superponga. */
+  _setBaseBottom() {
+    this._setModelPart('baseBottom', 'ropa-short', this.root);
+    const part = this.parts.baseBottom;
+    if (!part) return;
+    part.name = 'baseBottom';
+    part.traverse((o) => {
+      if (!o.isMesh) return;
+      const materials = Array.isArray(o.material) ? o.material : [o.material];
+      for (const material of materials) {
+        material.map = null;
+        material.color.set(BASE_CLOTHES_COLOR);
+        material.polygonOffset = true;
+        material.polygonOffsetFactor = 2;
+        material.polygonOffsetUnits = 2;
+        material.userData.baseClothes = true;
+        material.needsUpdate = true;
+      }
     });
   }
 
