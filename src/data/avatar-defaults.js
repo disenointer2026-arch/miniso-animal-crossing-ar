@@ -34,6 +34,11 @@ export const BASE_AVATAR = {
   companion: 'none',
 };
 
+/** Ropa base del avatar (camisa y calzoncillo tipo boxer, material "ropa" del cuerpo). Es parte permanente del
+    modelo: nunca se oculta ni se quita. Su color es fijo y distinto de la piel (el tono "Nube" casi blanco la
+    haria invisible si fuera blanca) y no cambia al rociar la piel. */
+export const BASE_CLOTHES_COLOR = '#C7D3E6';
+
 /** Las narices son naranjas, como en sus botones; no cambian con el tono de piel. */
 export const NOSE_ORANGE = '#EC713F';
 
