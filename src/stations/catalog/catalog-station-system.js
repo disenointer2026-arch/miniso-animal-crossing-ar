@@ -91,9 +91,10 @@ const DISPLAY_FIX = {};
 const noRaycast = () => {};
 // Agarre propio del charm de una caja abierta (seguimiento de manos): pellizco = pulgar e indice a menos de PINCH_CLOSE; se suelta al
 // separarlos mas de PINCH_OPEN. El charm se toma si el punto de pellizco esta a menos de CHARM_REACH de su centro.
-const PINCH_CLOSE = 0.028;
+const PINCH_CLOSE = 0.036; // generoso: basta con acercar pulgar e indice, sin apretar con precision
 const PINCH_OPEN = 0.045;
-const CHARM_REACH = 0.08;
+const CHARM_REACH = 0.14; // del punto de pellizco al centro del charm
+const CHARM_EDGE = 0.05; // o a su zona de agarre (la caja que lo envuelve): cualquiera de las dos basta
 const charmGrabGeometry = new BoxGeometry(1, 1, 1);
 const charmGrabMaterial = new MeshBasicMaterial({ transparent: true, opacity: 0, depthWrite: false });
 
@@ -194,6 +195,7 @@ export class CatalogStationSystem extends createSystem({
     this.bookGrab = [];
     this.grab = this.world.getSystem(GrabSystem);
     this.handsTracked = false;
+    this.graspBox = new Box3();
     this.charmHold = null; // { entity, side }: charm tomado con el agarre propio
     this.pinchA = new Vector3();
     this.pinchB = new Vector3();
@@ -622,7 +624,7 @@ export class CatalogStationSystem extends createSystem({
     root.scale.setScalar(0.0001);
     // Zona de agarre invisible un poco mayor que el charm (al menos 6 cm de lado en el mundo): se alcanza sin precision y la
     // caja, que ya no se puede apuntar mientras esta abierta, no la tapa
-    const reach = Math.max(1.4, 0.06 / (Math.max(size.x, size.y, size.z) * base));
+    const reach = Math.max(1.8, 0.09 / (Math.max(size.x, size.y, size.z) * base));
     const grab = new Mesh(charmGrabGeometry, charmGrabMaterial);
     grab.name = 'GrabZone';
     grab.scale.set(size.x * reach, size.y * reach, size.z * reach);
@@ -778,7 +780,8 @@ export class CatalogStationSystem extends createSystem({
         const distance = this.readPinch(side);
         if (distance === null || distance > PINCH_CLOSE) continue;
         charm.object3D.getWorldPosition(this.point);
-        if (this.pinchPoint.distanceTo(this.point) > CHARM_REACH) continue;
+        this.graspBox.setFromObject(charm.object3D);
+        if (this.pinchPoint.distanceTo(this.point) > CHARM_REACH && this.graspBox.distanceToPoint(this.pinchPoint) > CHARM_EDGE) continue;
         this.charmHold = { entity: charm, side };
         beginExternalHold();
         sfx.select();
@@ -811,8 +814,7 @@ export class CatalogStationSystem extends createSystem({
         this.grab.forceRelease(chestEntity);
         held = false;
       }
-      // Colision con la balda: sostenida, la caja no baja de su altura de reposo (su fondo no atraviesa la balda)
-      if (held && chest.position.y < chest.userData.homeY) chest.position.y = chest.userData.homeY;
+      // Sin limite de altura: la caja sostenida sigue a la mano libremente en cualquier direccion
       const data = chest.userData;
       const target = held && active ? 1 : 0;
       // Abierta y en la mano, la caja deja de ser un objetivo de agarre: su malla ocupa el mismo volumen que el charm de
