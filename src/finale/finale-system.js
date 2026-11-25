@@ -25,7 +25,7 @@ import { sfx } from '../audio/sfx.js';
 import { AvatarFigure, Factory, FactoryPart } from '../components.js';
 import { MODEL as FACTORY_MODEL, SLOT, modelPoint, pathPoint, slotPose, slotS, stationSlot } from '../core/layout.js';
 import { beltMoving, beltRequest, layout, phase, Phase } from '../state.js';
-import { captureFrame, frameYaw, framePoint } from './frame.js';
+import { captureFrame, framePoint } from './frame.js';
 import { avatarHeight } from '../systems/belt-system.js';
 import { createBag } from './bag.scene-asset.js';
 
@@ -66,6 +66,7 @@ export class FinaleSystem extends createSystem({
     this.avatarGoal = new Vector3(); // personaje en la presentacion
     this.avatarCurrent = new Vector3();
     this.tmp = new Vector3();
+    this.headPos = new Vector3();
     this.boxYaw = 0;
     this.targetYaw = 0;
     this.cursor = 0;
@@ -176,7 +177,7 @@ export class FinaleSystem extends createSystem({
       this.goal.copy(factoryObject.worldToLocal(framePoint(this.tmp, s.right, s.forward + BAG_BACK * s.scale, SHOWCASE_DROP)));
       this.avatarGoal.copy(factoryObject.worldToLocal(framePoint(this.tmp, s.right, s.forward, SHOWCASE_DROP + AVATAR_FLOAT)));
       this.current.copy(this.boxStart);
-      this.targetYaw = frameYaw() - factoryObject.rotation.y;
+      this.targetYaw = this.yawToUser(framePoint(this.tmp, s.right, s.forward + BAG_BACK * s.scale, SHOWCASE_DROP));
       // La fabrica se desvanece en destellos; solo quedan la caja y el personaje
       const keep = [this.box?.object3D, this.avatarEntity?.object3D];
       this.hidden.length = 0;
@@ -250,7 +251,10 @@ export class FinaleSystem extends createSystem({
       gift.position.y += 0.3 * Math.sin(Math.PI * k);
       const g = 1 + (BOX_SCALE * showcase.peek().scale - 1) * e;
       gift.scale.setScalar(g);
-      gift.rotation.y = this.boxYaw + (this.targetYaw - this.boxYaw) * e + Math.PI * 2 * e;
+      // Gira una vuelta completa mientras viaja y termina exactamente de frente al usuario (por el camino mas corto, sin sobrar media vuelta)
+      this.targetYaw = this.yawToUser(framePoint(this.tmp, showcase.peek().right, showcase.peek().forward + BAG_BACK * showcase.peek().scale, SHOWCASE_DROP));
+      const turn = Math.atan2(Math.sin(this.targetYaw - this.boxYaw), Math.cos(this.targetYaw - this.boxYaw));
+      gift.rotation.y = this.boxYaw + turn * e + Math.PI * 2 * e;
       // El personaje va dentro de la bolsa: se mueve, gira y crece con ella
       figure.position.set(gift.position.x, gift.position.y + floor * g, gift.position.z);
       figure.scale.setScalar(base * INSIDE_SCALE * g);
@@ -293,6 +297,13 @@ export class FinaleSystem extends createSystem({
     return FINAL_HEIGHT / avatarHeight(layout.peek());
   }
 
+  /** Giro (en el espacio de la fabrica) para que el frente (+Z) de un objeto situado en el punto del mundo `world` mire a la cabeza del usuario. */
+  yawToUser(world) {
+    this.player.head.getWorldPosition(this.headPos);
+    const yaw = Math.atan2(this.headPos.x - world.x, this.headPos.z - world.z);
+    return yaw - (this.factory?.object3D.rotation.y ?? 0);
+  }
+
   /** La bolsa (de fondo) y el personaje (delante, flotando) siguen la posicion que piden los paneles (senal "showcase"). */
   follow(delta, figure, gift, base, time) {
     const factoryObject = this.factory.object3D;
@@ -302,6 +313,8 @@ export class FinaleSystem extends createSystem({
     this.current.lerp(factoryObject.worldToLocal(this.tmp), k);
     gift.position.copy(this.current);
     gift.scale.setScalar(BOX_SCALE * s.scale);
+    // El frente (logo) mira siempre a la cabeza del usuario, dondequiera que este la fabrica o el usuario
+    this.targetYaw = this.yawToUser(framePoint(this.tmp, s.right, s.forward + BAG_BACK * s.scale, SHOWCASE_DROP));
     gift.rotation.y = this.targetYaw;
     framePoint(this.tmp, s.right, s.forward, SHOWCASE_DROP + AVATAR_FLOAT);
     this.avatarCurrent.lerp(factoryObject.worldToLocal(this.tmp), k);
