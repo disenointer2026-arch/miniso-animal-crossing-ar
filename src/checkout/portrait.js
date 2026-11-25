@@ -20,6 +20,9 @@ export async function renderPortrait(renderer, config, size = 640, view = { y: 0
   const avatar = new Avatar(config).build();
   scene.add(avatar.root);
   await texturesReady(); // la boca (SVG) carga aparte: sin esperarla el retrato salia sin boca
+  avatar.root.traverse((object) => {
+    if (object.material?.map?.isCanvasTexture) object.material.map.needsUpdate = true; // se sube de nuevo a la GPU ya con el dibujo
+  });
   const camera = new PerspectiveCamera(24, 1, 0.1, 30);
   camera.position.set(0, view.y, view.z);
   camera.lookAt(0, view.y, 0);

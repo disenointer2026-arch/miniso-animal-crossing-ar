@@ -21,6 +21,7 @@
    StandSystem        circulo en el piso que guia al usuario hasta la estacion activa */
 import './ui/uikit-fonts.js';
 import { World } from '@iwsdk/core';
+import { preloadMouths } from './avatar/avatar.js';
 import * as state from './state.js';
 import projectOptions from 'virtual:iwsdk-project';
 import { AvatarSystem } from './systems/avatar-system.js';
@@ -40,6 +41,7 @@ import { HairStationSystem } from './stations/hair/hair-station-system.js';
 import { SkinStationSystem } from './stations/skin/skin-station-system.js';
 import { UiSystem } from './ui/ui-system.js';
 
+preloadMouths();
 World.create(document.getElementById('scene-container'), projectOptions).then(
   (world) => {
     world.registerSystem(WelcomeSystem);
