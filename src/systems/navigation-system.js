@@ -70,7 +70,7 @@ const NAV_SPOTS = {
     para que ninguna barra de la malla tape las caras. Caja en coordenadas del modelo [[x, y, z] minimo, [x, y, z] maximo]. */
 const NAV_WINDOWS = [{ node: 'reja', box: [[24.9, 25.2, 7.05], [27.0, 36.8, 8.8]] }];
 /** Con el dedo: se hunde y se mantiene este tiempo para activar. Con rayo + pellizco (o controles) basta un toque. */
-const POKE_HOLD = 1.0; // segundos que hay que mantener el dedo presionado para cambiar de estacion
+const POKE_HOLD = 0.5; // segundos que hay que mantener el dedo presionado para cambiar de estacion
 const FINGER_NEAR = 0.03; // el dedo esta tan cerca del boton: es un toque con el dedo, no un rayo
 /** Despues de la ultima estacion, "siguiente" pasa a ser el boton de terminar. */
 const FINISH = { label: 'Terminar avatar', icon: 'boton-llavero.svg', tag: 'LISTO' };

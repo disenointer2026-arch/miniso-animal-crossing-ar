@@ -26,11 +26,15 @@
     </div>
     <div class="step">
       <div class="number">4</div>
-      <div class="text">Cambia de estacion presionando con el indice, durante 2 segundos, los botones del borde de la banda</div>
+      <div class="text">Cambia de estacion presionando con el indice, durante 3 segundos, los botones del borde de la banda</div>
     </div>
     <div class="step">
       <div class="number">5</div>
       <div class="text">Al final del recorrido podras terminar tu personaje</div>
+    </div>
+    <div class="step">
+      <div class="number">6</div>
+      <div class="text">En Ajustes (arriba, frente a ti) puedes reubicar la fabrica cuando quieras, sin perder tu personaje</div>
     </div>
   </div>
   <Button id="close-button" class="button">
