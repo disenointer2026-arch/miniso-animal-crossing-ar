@@ -738,6 +738,7 @@ export class CatalogStationSystem extends createSystem({
   /** Las cajas se abren al agarrarlas (una mano) y se cierran al soltarlas; el charm sale de la caja abierta. */
   updateChests(delta) {
     const active = this.activeStation() === CHARMS;
+    const anyHeld = this.queries.heldChests.entities.size > 0; // con una caja en la mano, las demas no se pueden tomar por error
     for (const chestEntity of this.queries.chests.entities) {
       const chest = chestEntity.object3D;
       if (!chest) continue;
@@ -748,7 +749,7 @@ export class CatalogStationSystem extends createSystem({
       const target = held && active ? 1 : 0;
       // Abierta y en la mano, la caja deja de ser un objetivo de agarre: su malla ocupa el mismo volumen que el charm de
       // dentro y la otra mano "agarraba" la caja (ya sostenida) en lugar del charm. Al soltarla vuelve a ser agarrable.
-      this.setChestPickable(chest, !(data.open > 0.05 || data.charm));
+      this.setChestPickable(chest, !(data.open > 0.05 || data.charm || (anyHeld && !held)));
       const previous = data.open;
       data.open += (target - data.open) * Math.min(1, delta * 9);
       if (Math.abs(data.open - target) < 0.004) data.open = target;
