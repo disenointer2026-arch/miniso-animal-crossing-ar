@@ -18,9 +18,10 @@ import { touchOnly } from '../interaction/finger.js';
 import { FactoryPart, InstructionsPanel } from '../components.js';
 import { instructionsSeen, phase, Phase } from '../state.js';
 
-const PANEL_DISTANCE = 0.95; // metros desde los ojos
-const PANEL_SCALE = 0.1;
+const PANEL_DISTANCE = 0.6; // metros desde los ojos: al alcance de la mano, para presionar el boton con el indice
+const PANEL_SCALE = 0.063; // se ve del mismo tamano que a 0,95 m
 const MAX_PITCH = 0.45; // limite de la componente vertical de la mirada (el panel no sube ni baja de mas)
+const FOLLOW_ANGLE = 0.7; // radianes (unos 40 grados) que puede apartar la vista antes de que el panel la siga
 const FOLLOW = 5; // rapidez con que el panel alcanza la mirada (1/s)
 const DIM_OPACITY = 0.55; // oscurecimiento: negro con baja opacidad, nunca opaco
 const DIM_FADE = 5; // rapidez del fundido (1/s)
@@ -34,6 +35,8 @@ export class PanelsSystem extends createSystem({
     this.eye = new Vector3();
     this.look = new Vector3();
     this.target = new Vector3();
+    this.off = new Vector3();
+    this.following = false;
     this.raiseTimer = 0;
     // El panel se dibuja sobre la capa oscura: por encima en el orden y sin prueba de profundidad.
     // UIKit crea y reordena sus mallas poco a poco, asi que se repite mientras esta abierto.
@@ -97,7 +100,7 @@ export class PanelsSystem extends createSystem({
     entity.addComponent(InstructionsPanel);
     this.panel = panel;
     panel.getElementById('close-button')?.addEventListener(
-      'click',
+      'pointerdown',
       touchOnly(() => panel, () => {
         if (phase.peek() === Phase.Instructions) {
           sfx.ding();
@@ -141,8 +144,14 @@ export class PanelsSystem extends createSystem({
     if (this.snap) {
       this.panel.position.copy(this.target);
       this.snap = false;
+      this.following = false;
     } else {
-      this.panel.position.lerp(this.target, Math.min(1, delta * FOLLOW));
+      // Queda quieto (para poder presionar su boton con el dedo) y solo sigue a la mirada si el usuario se voltea lejos de el
+      this.off.copy(this.panel.position).sub(this.eye).normalize();
+      const angle = this.off.angleTo(this.look);
+      if (angle > FOLLOW_ANGLE) this.following = true;
+      else if (angle < 0.12) this.following = false;
+      if (this.following) this.panel.position.lerp(this.target, Math.min(1, delta * FOLLOW));
     }
     this.panel.lookAt(this.eye);
   }

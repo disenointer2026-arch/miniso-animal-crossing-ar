@@ -64,11 +64,15 @@ export function pokeAllowedOnPanel(panel, depth = 0.1) {
   return false;
 }
 
-/** Envuelve un manejador de clic de un panel: con manos solo responde si el dedo esta presionando el panel. */
+/** Envuelve un manejador de pulsacion (pointerdown: el dedo no siempre llega a generar un clic) de un panel: con manos solo responde si el dedo esta presionando el panel. */
 export function touchOnly(getPanel, handler) {
+  let last = 0;
   return (...args) => {
+    const now = performance.now();
+    if (now - last < 300) return; // un dedo que roza el panel puede repetir el evento
     const panel = getPanel();
     if (panel && !pokeAllowedOnPanel(panel)) return;
+    last = now;
     handler(...args);
   };
 }

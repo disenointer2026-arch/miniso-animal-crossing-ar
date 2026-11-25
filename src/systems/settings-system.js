@@ -67,7 +67,7 @@ export class SettingsSystem extends createSystem({
 
   bind() {
     const on = (id, handler) =>
-      this.panel.getElementById(id)?.addEventListener('click', touchOnly(() => this.panel, () => {
+      this.panel.getElementById(id)?.addEventListener('pointerdown', touchOnly(() => this.panel, () => {
         sfx.select();
         handler();
       }));

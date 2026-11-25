@@ -31,7 +31,7 @@ export class KeyboardUI {
 
   on(id, handler) {
     this.el(id)?.addEventListener(
-      'click',
+      'pointerdown',
       touchOnly(() => this.panel, () => {
         sfx.select();
         handler();

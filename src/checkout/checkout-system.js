@@ -312,7 +312,7 @@ export class CheckoutSystem extends createSystem({}) {
     const card = this.panels.card;
     const on = (id, fn) =>
       card.getElementById(id)?.addEventListener(
-        'click',
+        'pointerdown',
         touchOnly(() => card, () => {
           sfx.select();
           fn();

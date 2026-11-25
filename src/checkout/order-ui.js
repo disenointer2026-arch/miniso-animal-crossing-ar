@@ -48,7 +48,7 @@ export class OrderUI {
 
   on(id, handler) {
     this.el(this.order, id)?.addEventListener(
-      'click',
+      'pointerdown',
       touchOnly(() => this.order, () => {
         sfx.select();
         handler();

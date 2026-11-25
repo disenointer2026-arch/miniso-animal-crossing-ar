@@ -30,9 +30,15 @@ export class WelcomeSystem extends createSystem({
       else if (phase.peek() === Phase.Welcome) phase.value = Phase.Calibrating; // sin reconocimiento de suelo: se ubica la fabrica con las manos
     };
     const onTouch = touchOnly(() => panel, onClick);
+    // pointerdown: el dedo en el visor; click: el raton en el navegador (solo el clic cuenta como gesto para abrir la sesion XR)
+    const onDown = () => {
+      if (this.world.visibilityState.peek() !== VisibilityState.NonImmersive) onTouch();
+    };
+    button.addEventListener('pointerdown', onDown);
     button.addEventListener('click', onTouch);
 
     this.cleanupFuncs.push(
+      () => button.removeEventListener('pointerdown', onDown),
       () => button.removeEventListener('click', onTouch),
       this.world.visibilityState.subscribe((state) => {
         const is2D = state === VisibilityState.NonImmersive;
