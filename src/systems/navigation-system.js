@@ -81,6 +81,7 @@ const HEIGHT = 0.02;
 const TEX_W = 512;
 const TEX_H = 176;
 const COOLDOWN_SECONDS = 0.9;
+const CLICK_MAX = 0.7; // un pellizco mas largo que esto ya no es un clic
 
 const THEME = {
   [-1]: { face: '#FFF6E6', cap: 0xfff6e6, tag: 'ANTERIOR' },
@@ -213,6 +214,7 @@ export class NavigationSystem extends createSystem({
     this.cooldown = 0;
     if (import.meta.env.DEV && window.__miniso) window.__miniso.nav = this; // solo desarrollo: para comprobar los botones en el emulador
     this.held = new Map(); // boton -> segundos que lleva presionado con el dedo
+    this.clicks = new Map(); // boton -> { t, cancelled }: clic de rayo + pellizco en curso
     this.tip = new Vector3();
     this.center = new Vector3();
     this.capGeometry = keycapGeometry();
@@ -229,7 +231,7 @@ export class NavigationSystem extends createSystem({
       }),
       beltMoving.subscribe(() => this.refresh()),
       this.queries.pressed.subscribe('qualify', (entity) => this.onPressed(entity)),
-      this.queries.pressed.subscribe('disqualify', (entity) => this.held.delete(entity)),
+      this.queries.pressed.subscribe('disqualify', (entity) => this.onReleased(entity)),
       categoryIndex.subscribe(() => this.refresh()),
       phase.subscribe(() => this.refresh()),
       () => {
@@ -386,7 +388,17 @@ export class NavigationSystem extends createSystem({
       this.held.set(entity, 0); // con el dedo: se activa al mantener la presion (ver update)
       return;
     }
-    this.activate(entity); // rayo + pellizco o controles: un toque basta
+    // Rayo + pellizco o controles: es un CLIC, se activa al SOLTAR si fue un toque corto y el pellizco no agarro nada. Asi el pellizco con
+    // el que se agarra un objeto, aunque el rayo apunte a un boton, nunca cambia de estacion.
+    this.clicks.set(entity, { t: 0, cancelled: false });
+  }
+
+  onReleased(entity) {
+    this.held.delete(entity);
+    const click = this.clicks.get(entity);
+    if (!click) return;
+    this.clicks.delete(entity);
+    if (!click.cancelled && click.t < CLICK_MAX && this.canPress(entity)) this.activate(entity);
   }
 
   canPress(entity) {
@@ -408,6 +420,10 @@ export class NavigationSystem extends createSystem({
 
   update(delta) {
     if (this.cooldown > 0) this.cooldown -= delta;
+    for (const click of this.clicks.values()) {
+      click.t += delta;
+      if (interactionBusy()) click.cancelled = true; // el pellizco agarro algo (o ya habia algo en la mano): no es un clic
+    }
     // El boton se hunde mientras esta presionado
     for (const entity of this.queries.buttons.entities) {
       const cap = entity.object3D?.userData.cap;
