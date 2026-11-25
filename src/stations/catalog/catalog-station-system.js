@@ -57,7 +57,7 @@ import {
 import { avatarHeight, avatarScale } from '../../systems/belt-system.js';
 import { C } from '../../ui/theme.js';
 import { addItem, canvasPlane, drawPill, drawSwatch, text } from '../../ui/world-ui.js';
-import { BOOK_COVER_WIDTH, pageTop } from './book-surface.js';
+import { BOOK_COVER_WIDTH, flattenPages, pageTop } from './book-surface.js';
 import { createSticker } from './catalog-props.scene-asset.js';
 import {
   CATALOGS,
@@ -184,6 +184,8 @@ export class CatalogStationSystem extends createSystem({
     this.bookUi = null; // { prev, next, swatches[], label }
     this.bookUnit = 0.1; // metros por unidad local del libro del modelo
     this.bookNode = null;
+    this.bookGrab = [];
+    if (import.meta.env.DEV && window.__miniso) window.__miniso.catalog = this; // solo desarrollo: para comprobar el libro en el emulador
     this.closetButtons = [];
     this.pendingIcons = [];
     this.frame = 0;
@@ -283,6 +285,7 @@ export class CatalogStationSystem extends createSystem({
     book.name = 'StickerBook';
     node.removeFromParent();
     node.visible = true;
+    flattenPages(node); // hojas planas: el contenido queda derecho y asentado
     node.position.set(0, 0, 0);
     node.quaternion.identity();
     node.scale.set(1, 1, 1);
@@ -296,6 +299,22 @@ export class CatalogStationSystem extends createSystem({
     node.position.set(0, -box.min.y * scale, 0); // el fondo de la cubierta queda en y = 0
     book.add(node);
     this.bookNode = node;
+    // Zonas de agarre invisibles en el MARCO exterior del libro (fuera de las hojas, donde estan los stickers): el libro es una cascara
+    // delgada y con el pellizco costaba acertarla. Cuatro tiras de 6 cm de alto alrededor de las hojas (que miden 0,32 x 0,235 m).
+    this.bookGrab = [];
+    for (const [w, d, x, z] of [
+      [0.07, 0.34, -0.2, 0], // izquierda
+      [0.07, 0.34, 0.2, 0], // derecha
+      [0.46, 0.07, 0, -0.16], // arriba (lejos)
+      [0.46, 0.07, 0, 0.16], // abajo (cerca)
+    ]) {
+      const zone = new Mesh(charmGrabGeometry, charmGrabMaterial);
+      zone.name = 'BookGrabZone';
+      zone.scale.set(w, 0.06, d);
+      zone.position.set(x, 0.03, z);
+      book.add(zone);
+      this.bookGrab.push(zone);
+    }
     const home = modelFrame(l, FURNITURE.book, 0, 0, 0, SLOT_OF[FACE]);
     book.position.set(home.x, home.y, home.z);
     book.rotation.y = home.rotY;
@@ -303,7 +322,9 @@ export class CatalogStationSystem extends createSystem({
     entity.addComponent(FactoryPart);
     entity.addComponent(StickerBook);
     entity.addComponent(Carryable, { kind: 'book', home: [home.x, home.y, home.z], homeYaw: home.rotY });
-    entity.addComponent(OneHandGrabbable);
+    // rotate: false -> el sistema de agarre solo traslada el libro; su orientacion la fija updateHeldBook (derecho y de frente a la cabeza)
+    // sin que el giro de la muñeca la pise
+    entity.addComponent(OneHandGrabbable, { rotate: false });
 
     // Todo lo impreso va plano sobre la hoja (paralelo a ella), a la altura de su superficie en ese punto
     const onPage = (item, x, z, half, lift = 0.002) => {
@@ -431,11 +452,12 @@ export class CatalogStationSystem extends createSystem({
     if (held) sfx.select();
     // En la mano, el libro deja de ser un objetivo de agarre (como las cajas abiertas): la otra mano alcanza los stickers de
     // sus paginas en vez de "agarrar" el libro, que ya esta sostenido
-    this.bookNode?.traverse((object) => {
-      if (!object.isMesh) return;
+    const parts = [];
+    this.bookNode?.traverse((object) => object.isMesh && parts.push(object));
+    for (const object of [...parts, ...(this.bookGrab ?? [])]) {
       object.userData.rayCast ??= object.raycast;
       object.raycast = held ? noRaycast : object.userData.rayCast;
-    });
+    }
   }
 
   /** El libro del modelo esta siempre abierto: sus paginas se ven (con los stickers) mientras la estacion esta activa. */
@@ -529,7 +551,7 @@ export class CatalogStationSystem extends createSystem({
       if (!book) return;
       root.add(createSticker(stickerTexture[group.apply](id)));
       // Pegado a la hoja: sobre su superficie en ese punto y con su inclinacion
-      const [bx, bz] = bookSlot(group, index);
+      const [bx, bz] = bookSlot(group, index, count);
       // Plano y alineado con el libro, a la altura de la hoja en ese punto
       anchor = { object: book, local: new Vector3(bx, pageTop(bx, bz, 0.03) + STICKER_LIFT, bz), keep: true };
     } else {

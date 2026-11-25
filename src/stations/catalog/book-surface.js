@@ -32,16 +32,34 @@ export const BOOK_COVER = { z: 3.363, x: 2.476 };
 export const BOOK_COVER_WIDTH = 0.36;
 export const BOOK_UNIT = BOOK_COVER_WIDTH / BOOK_COVER.z;
 
+/** Altura (unidades del glb) a la que quedan las hojas una vez aplanadas. */
+export const PAGE_FLAT = 0.1;
+
+/** Aplana las hojas del libro (malla "Blanco P"): resta a cada vertice la ondulacion de su borde (EDGE_LEFT / EDGE_RIGHT segun el lado)
+    para que la cara de arriba quede plana a PAGE_FLAT. Asi los stickers, las muestras y el texto quedan derechos y bien asentados sobre
+    la hoja, en vez de seguir su curva. Se recorta una copia de la geometria (la del modelo es compartida). */
+export function flattenPages(node) {
+  node.traverse((object) => {
+    if (!object.isMesh) return;
+    const name = String(object.material?.name ?? '').replace(/[ _]/g, '').toLowerCase();
+    if (name !== 'blancop') return;
+    const geometry = object.geometry.clone();
+    const position = geometry.attributes.position;
+    for (let i = 0; i < position.count; i++) {
+      const edge = position.getX(i) < 0 ? EDGE_LEFT : EDGE_RIGHT;
+      position.setY(i, position.getY(i) - (along(edge, position.getZ(i)) - PAGE_FLAT));
+    }
+    position.needsUpdate = true;
+    geometry.computeVertexNormals();
+    geometry.computeBoundingBox();
+    geometry.computeBoundingSphere();
+    object.geometry = geometry;
+  });
+}
+
 /** Altura (y, con el fondo de la cubierta en 0) de la superficie de la pagina en (rigX, rigZ) del libro, en metros: el mayor valor
     en un cuadrado de medio lado `half` alrededor del punto, para que lo que se apoya ahi (stickers, muestras) no quede hundido.
     Esas piezas van planas y paralelas a las paginas: asi quedan alineadas, no torcidas por la curva de las hojas. */
 export function pageTop(rigX, rigZ, half = 0.03, unit = BOOK_UNIT) {
-  let top = -Infinity;
-  for (const dx of [-half, 0, half]) {
-    for (const dz of [-half, 0, half]) {
-      top = Math.max(top, pageHeight(-(rigZ + dz) / unit, (rigX + dx) / unit));
-    }
-  }
-  return (top - BOOK_BOTTOM) * unit;
+  return (PAGE_FLAT - BOOK_BOTTOM) * unit; // hojas planas: misma altura en todas partes
 }
-
