@@ -45,14 +45,6 @@ export const EYE_COLORS = [
   { id: '#9C7657', name: 'Café' },
   { id: '#49ACB2', name: 'Turquesa' },
   { id: '#8FA17B', name: 'Musgo' },
-  { id: '#527EDA', name: 'Azul' },
-  { id: '#9B97A2', name: 'Gris' },
-  { id: '#E8508A', name: 'Fucsia' },
-  { id: '#F08A4B', name: 'Mandarina' },
-  { id: '#F5C24B', name: 'Dorado' },
-  { id: '#E98CE6', name: 'Orquídea' },
-  { id: '#C9C3DE', name: 'Perla' },
-  { id: '#5CC2A8', name: 'Menta' },
 ];
 
 const LEGACY = [
@@ -109,13 +101,8 @@ const LEGACY = [
         type: 'options',
         options: [
           { id: 'lashes', name: 'Con pestaña' },
-          { id: 'classic', name: 'Clásicos' },
-          { id: 'lashesTop', name: 'Pestañas arriba' },
-          { id: 'sleepy', name: 'Soñolientos' },
           { id: 'soft', name: 'Suaves' },
           { id: 'brow', name: 'Con ceja' },
-          { id: 'lashesBottom', name: 'Pestañas abajo' },
-          { id: 'happy', name: 'Sonrientes' },
         ],
       },
       { key: 'eyeColor', label: 'Color', type: 'colors', options: EYE_COLORS },

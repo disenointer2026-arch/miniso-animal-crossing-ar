@@ -347,7 +347,7 @@ export class CatalogStationSystem extends createSystem({
       return item;
     };
     const swatches = EYE_COLORS.map((color, i) => {
-      const [x, z] = bookSlot({ kind: 'swatch' }, i);
+      const [x, z] = bookSlot({ kind: 'swatch' }, i, EYE_COLORS.length);
       const item = addItem(this.world, entity, {
         width: 0.036,
         height: 0.036,

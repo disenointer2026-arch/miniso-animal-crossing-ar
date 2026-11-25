@@ -117,7 +117,8 @@ export const FACE_TABS = [
     dos filas de 4. Las muestras de color de ojos (12) van debajo, en 2 filas de 6. */
 export function bookSlot(group, index, count) {
   if (group.kind === 'swatch') {
-    return [((index % 6) - 2.5) * 0.045, 0.045 + Math.floor(index / 6) * 0.04];
+    const perRow = Math.min(count ?? 6, 6); // una sola linea centrada cuando son pocas
+    return [((index % perRow) - (perRow - 1) / 2) * 0.045, 0.045 + Math.floor(index / perRow) * 0.04];
   }
   const cols = Math.min(count, 4);
   const rows = Math.ceil(count / cols);
