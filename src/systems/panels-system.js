@@ -107,7 +107,7 @@ export class PanelsSystem extends createSystem({
           instructionsSeen.value = true;
           phase.value = Phase.Arriving; // la experiencia empieza aqui
         }
-      }),
+      }, { remote: true }), // seleccion a distancia: rayo + pellizco
     );
   }
 
