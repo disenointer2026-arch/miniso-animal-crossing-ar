@@ -26,6 +26,7 @@ import {
   beltRequest,
   categoryIndex,
   hint,
+  instructionsSeen,
   layout,
   phase,
   Phase,
@@ -68,6 +69,13 @@ export class BeltSystem extends createSystem({
       beltRequest.subscribe((request) => {
         if (request) this.moveTo(request.slot);
       }),
+      // Si la fase llega a Arriving DESPUES de crear el avatar reposicionado, se pasa directo a personalizar
+      phase.subscribe((value) => {
+        if (value === Phase.Arriving && instructionsSeen.peek() && this.queries.avatars.entities.size > 0) {
+          const moving = [...this.queries.avatars.entities].some((e) => e.getValue(AvatarFigure, 'moving'));
+          if (!moving) phase.value = Phase.Customizing;
+        }
+      }),
       categoryIndex.subscribe((index) => {
         if (phase.peek() === Phase.Customizing) this.moveTo(stationSlot(index));
       }),
@@ -85,7 +93,21 @@ export class BeltSystem extends createSystem({
     avatar.root.userData.avatar = avatar;
     avatar.root.userData.baseScale = avatarScale();
     avatar.root.scale.setScalar(0.0001);
-    const slot = stationSlot(categoryIndex.peek()); // al recalibrar vuelve a la estacion donde estaba
+    const slot = stationSlot(categoryIndex.peek()); // al reposicionar la fabrica el avatar sigue en la estacion donde estaba
+    // Reposicionar (las instrucciones ya se vieron): el avatar queda directamente en su estacion, sin recorrido ni aparicion
+    if (instructionsSeen.peek()) {
+      const here = slotS(slot);
+      this.facing = slotPose(layout.peek(), slot).rotY;
+      avatar.root.scale.setScalar(avatar.root.userData.baseScale);
+      this.place(avatar.root, here, 0);
+      avatar.root.rotation.y = this.facing;
+      const entity = this.world.createTransformEntity(avatar.root, { parent: factory });
+      entity.addComponent(FactoryPart);
+      entity.addComponent(AvatarFigure, { angle: here, from: here, to: here, duration: 1, moving: false, entering: false });
+      beltMoving.value = false;
+      if (phase.peek() === Phase.Arriving) phase.value = Phase.Customizing;
+      return;
+    }
     const start = slotS(SLOT.portal);
     const to = slotS(slot);
     this.facing = slotPose(layout.peek(), slot).rotY;
