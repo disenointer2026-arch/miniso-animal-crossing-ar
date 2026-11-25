@@ -115,27 +115,60 @@ export function texturesReady() {
   return Promise.all([...loading]);
 }
 
+const rasters = new Map(); // url -> lienzo ya dibujado: la boca se pinta al instante en cualquier avatar nuevo (tarjeta, retratos)
+
+function rasterize(url, width, height) {
+  const key = `${url}|${width}x${height}`;
+  const cached = rasters.get(key);
+  if (cached) return cached;
+  const entry = { canvas: document.createElement('canvas'), ready: null, loaded: false };
+  entry.canvas.width = width;
+  entry.canvas.height = height;
+  const image = new Image();
+  entry.ready = new Promise((resolve) => {
+    image.onload = () => {
+      entry.canvas.getContext('2d').drawImage(image, 0, 0, width, height);
+      entry.loaded = true;
+      resolve();
+    };
+    image.onerror = () => {
+      console.warn(`[avatar] No se pudo cargar ${url}`);
+      rasters.delete(key); // se reintenta en el siguiente avatar
+      resolve();
+    };
+  });
+  image.src = url;
+  rasters.set(key, entry);
+  return entry;
+}
+
+/** Descarga y dibuja todas las bocas desde el inicio, para que ningun avatar nuevo dependa de una carga pendiente. */
+export function preloadMouths() {
+  for (const file of Object.values(MOUTH.files)) {
+    if (file) rasterize(publicAssetUrl(`images/bocas/${file}.svg`), 512, 220);
+  }
+}
+
 function svgTexture(url, width, height) {
+  const entry = rasterize(url, width, height);
   const canvas = document.createElement('canvas');
   canvas.width = width;
   canvas.height = height;
   const texture = new CanvasTexture(canvas);
   texture.colorSpace = SRGBColorSpace;
-  const image = new Image();
-  const done = new Promise((resolve) => {
-    image.onload = () => {
-      canvas.getContext('2d').drawImage(image, 0, 0, width, height);
-      texture.needsUpdate = true;
-      resolve();
-    };
-    image.onerror = () => {
-      console.warn(`[avatar] No se pudo cargar ${url}`);
-      resolve();
-    };
+  const paint = () => {
+    canvas.getContext('2d').drawImage(entry.canvas, 0, 0);
+    texture.needsUpdate = true;
+  };
+  if (entry.loaded) {
+    paint();
+    return texture;
+  }
+  const done = entry.ready.then(() => {
+    if (entry.loaded) paint();
   });
   loading.add(done);
   done.then(() => loading.delete(done));
-  image.src = url;
   return texture;
 }
 

@@ -108,6 +108,7 @@ export class SkinStationSystem extends createSystem({
     this.toTarget = new Vector3();
     this.current = new Color(avatarConfig.peek().skin);
     this.goal = new Color();
+    this.scratchColor = new Color();
     this.goalHex = '';
     this.spraying = false;
     this.lastSkin = selection.peek().skin;
@@ -411,9 +412,20 @@ export class SkinStationSystem extends createSystem({
       this.paint(delta);
     }
     if (active && !this.spraying) sfx.sprayStart();
-    if (!active && this.spraying) sfx.sprayStop();
+    if (!active && this.spraying) {
+      sfx.sprayStop();
+      this.commitSkin(); // el tono que se ve en el personaje es el que queda guardado (tarjeta, pedido), aunque no haya llegado al color exacto
+    }
     this.spraying = active;
     return active;
+  }
+
+  /** Guarda en avatarConfig el color de piel que tiene ahora el personaje (el mezclado al rociar). */
+  commitSkin() {
+    const saved = this.scratchColor.set(avatarConfig.peek().skin);
+    const c = this.current;
+    if (Math.abs(c.r - saved.r) + Math.abs(c.g - saved.g) + Math.abs(c.b - saved.b) < 0.01) return; // ya esta guardado
+    setAvatar({ skin: `#${c.getHexString()}`.toUpperCase() });
   }
 
   /** Mezcla el color del personaje con el de la lata si la boquilla lo apunta. */
