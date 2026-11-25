@@ -25,7 +25,8 @@ import {
 import { Factory, FactoryPart, NavButton } from '../components.js';
 import { SLOT, STATION_COUNT, beltTangent, modelPoint, slotPose, standPoint, stationSlot } from '../core/layout.js';
 import { interactionBusy } from '../interaction/carryable-system.js';
-import { jointWorld } from '../interaction/hand-joints.js';
+import { fingerDistanceToObject, handsTracked } from '../interaction/finger.js';
+import { sfx } from '../audio/sfx.js';
 import { CATEGORIES } from '../data/categories.js';
 import { beltMoving, beltRequest, categoryIndex, layout, phase, Phase, stepCategory } from '../state.js';
 
@@ -69,8 +70,8 @@ const NAV_SPOTS = {
     para que ninguna barra de la malla tape las caras. Caja en coordenadas del modelo [[x, y, z] minimo, [x, y, z] maximo]. */
 const NAV_WINDOWS = [{ node: 'reja', box: [[24.9, 25.2, 7.05], [27.0, 36.8, 8.8]] }];
 /** Con el dedo: se hunde y se mantiene este tiempo para activar. Con rayo + pellizco (o controles) basta un toque. */
-const POKE_HOLD = 0.4;
-const FINGER_NEAR = 0.09; // el dedo esta tan cerca del boton: es un toque con el dedo, no un rayo
+const POKE_HOLD = 2.0; // segundos que hay que mantener el dedo presionado para cambiar de estacion
+const FINGER_NEAR = 0.04; // el dedo esta tan cerca del boton: es un toque con el dedo, no un rayo
 /** Despues de la ultima estacion, "siguiente" pasa a ser el boton de terminar. */
 const FINISH = { label: 'Terminar avatar', icon: 'boton-llavero.svg', tag: 'LISTO' };
 const targetFor = (direction) => CATEGORIES[categoryIndex.peek() + direction] ?? (direction > 0 ? FINISH : null);
@@ -81,6 +82,7 @@ const HEIGHT = 0.02;
 const TEX_W = 512;
 const TEX_H = 176;
 const COOLDOWN_SECONDS = 0.9;
+const CLICK_MAX = 0.7; // un pellizco mas largo que esto ya no es un clic
 
 const THEME = {
   [-1]: { face: '#FFF6E6', cap: 0xfff6e6, tag: 'ANTERIOR' },
@@ -211,8 +213,9 @@ export class NavigationSystem extends createSystem({
 }) {
   init() {
     this.cooldown = 0;
+    if (import.meta.env.DEV && window.__miniso) window.__miniso.nav = this; // solo desarrollo: para comprobar los botones en el emulador
     this.held = new Map(); // boton -> segundos que lleva presionado con el dedo
-    this.tip = new Vector3();
+    this.clicks = new Map(); // boton -> { t, cancelled }: clic de rayo + pellizco en curso
     this.center = new Vector3();
     this.capGeometry = keycapGeometry();
     this.faceGeometry = new PlaneGeometry(WIDTH * 0.94, WIDTH * 0.94 * (TEX_H / TEX_W)).rotateX(-Math.PI / 2);
@@ -228,7 +231,7 @@ export class NavigationSystem extends createSystem({
       }),
       beltMoving.subscribe(() => this.refresh()),
       this.queries.pressed.subscribe('qualify', (entity) => this.onPressed(entity)),
-      this.queries.pressed.subscribe('disqualify', (entity) => this.held.delete(entity)),
+      this.queries.pressed.subscribe('disqualify', (entity) => this.onReleased(entity)),
       categoryIndex.subscribe(() => this.refresh()),
       phase.subscribe(() => this.refresh()),
       () => {
@@ -368,24 +371,28 @@ export class NavigationSystem extends createSystem({
     }
   }
 
-  /** Verdadero si un dedo (seguimiento de manos) esta sobre el boton: es un toque con el dedo y exige mantener la presion. */
+  /** Verdadero si la punta de un indice esta sobre el boton (lectura de UiSystem de este cuadro). */
   fingerOn(button) {
-    button.getWorldPosition(this.center);
-    for (const side of ['right', 'left']) {
-      if (jointWorld(this.renderer, this.player, side, 'index-finger-tip', this.tip) && this.tip.distanceTo(this.center) < FINGER_NEAR) {
-        return true;
-      }
-    }
-    return false;
+    return fingerDistanceToObject(button) < FINGER_NEAR;
   }
 
   onPressed(entity) {
     if (!this.canPress(entity)) return;
-    if (this.fingerOn(entity.object3D)) {
-      this.held.set(entity, 0); // con el dedo: se activa al mantener la presion (ver update)
+    if (handsTracked()) {
+      // Con manos solo cuenta presionar con el dedo y mantener: apuntar desde lejos y pellizcar no hace nada
+      if (this.fingerOn(entity.object3D)) this.held.set(entity, 0);
       return;
     }
-    this.activate(entity); // rayo + pellizco o controles: un toque basta
+    // Controles: es un CLIC, se activa al SOLTAR si fue un toque corto y no agarro nada
+    this.clicks.set(entity, { t: 0, cancelled: false });
+  }
+
+  onReleased(entity) {
+    this.held.delete(entity);
+    const click = this.clicks.get(entity);
+    if (!click) return;
+    this.clicks.delete(entity);
+    if (!click.cancelled && click.t < CLICK_MAX && this.canPress(entity)) this.activate(entity);
   }
 
   canPress(entity) {
@@ -394,6 +401,7 @@ export class NavigationSystem extends createSystem({
   }
 
   activate(entity) {
+    sfx.ding();
     const direction = entity.getValue(NavButton, 'direction');
     if (stepCategory(direction)) {
       this.cooldown = COOLDOWN_SECONDS;
@@ -407,6 +415,10 @@ export class NavigationSystem extends createSystem({
 
   update(delta) {
     if (this.cooldown > 0) this.cooldown -= delta;
+    for (const click of this.clicks.values()) {
+      click.t += delta;
+      if (interactionBusy()) click.cancelled = true; // el pellizco agarro algo (o ya habia algo en la mano): no es un clic
+    }
     // El boton se hunde mientras esta presionado
     for (const entity of this.queries.buttons.entities) {
       const cap = entity.object3D?.userData.cap;

@@ -3,6 +3,7 @@
      correo, telefono, direccion, datos de pago) recibe lo que se escribe en el teclado completo.
    - Nada se envia a ningun servidor. Al finalizar queda guardado en lastOrder. */
 import { sfx } from '../audio/sfx.js';
+import { touchOnly } from '../interaction/finger.js';
 import {
   BANKS,
   CITIES,
@@ -46,10 +47,13 @@ export class OrderUI {
   }
 
   on(id, handler) {
-    this.el(this.order, id)?.addEventListener('click', () => {
-      sfx.select();
-      handler();
-    });
+    this.el(this.order, id)?.addEventListener(
+      'pointerdown',
+      touchOnly(() => this.order, () => {
+        sfx.select();
+        handler();
+      }),
+    );
   }
 
   totals(qty) {

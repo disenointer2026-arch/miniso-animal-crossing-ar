@@ -4,6 +4,7 @@
      (colocarlos en el avatar, tirarlos al bote).
    - Si se sueltan lejos de todo, vuelven solos a su sitio: nunca se pierden. */
 import { createSystem, Grabbed, Quaternion, Vector3 } from '@iwsdk/core';
+import { sfx } from '../audio/sfx.js';
 import { Carryable } from '../components.js';
 
 const RETURN_DELAY = 1.4; // segundos quieto antes de volver
@@ -20,6 +21,15 @@ const RELEASE_GRACE = 0.9; // despues de soltar, todavia no se puede retirar nad
 /** Verdadero mientras se sostiene un objeto (o acaba de soltarse): en ese momento no se debe quitar
     nada de lo ya puesto, para que al colocar una pieza el dedo no retire otra por accidente. */
 export const interactionBusy = () => heldCount > 0 || performance.now() / 1000 - lastRelease < RELEASE_GRACE;
+
+/** Agarres propios (con el seguimiento de manos, sin el sistema de agarre del SDK): cuentan como "mano ocupada" igual que los del SDK. */
+export function beginExternalHold() {
+  heldCount++;
+}
+export function endExternalHold() {
+  heldCount = Math.max(0, heldCount - 1);
+  lastRelease = performance.now() / 1000;
+}
 
 /** Registra que hacer al soltar un objeto de este tipo. Devuelve como quitarlo. */
 export function registerDropHandler(kind, handler) {
@@ -40,6 +50,7 @@ export class CarryableSystem extends createSystem({
     this.cleanupFuncs.push(
       this.queries.held.subscribe('qualify', (entity) => {
         heldCount++;
+        sfx.select(); // respuesta sonora al agarrar
         entity.setValue(Carryable, 'idle', 0);
       }),
       this.queries.held.subscribe('disqualify', (entity) => {

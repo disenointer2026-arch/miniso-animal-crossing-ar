@@ -3,8 +3,9 @@
    - Musica y efectos: volumenes independientes.
    - Recalibrar con la mano: vuelve a medir altura y alcance; la fabrica se rehace y el
      personaje conserva todo lo elegido (avatarConfig) y regresa a su estacion. */
-import { createSystem, FollowBehavior, Follower, RayInteractable } from '@iwsdk/core';
+import { createSystem, FollowBehavior, Follower, PokeInteractable, RayInteractable } from '@iwsdk/core';
 import { sfx } from '../audio/sfx.js';
+import { touchOnly } from '../interaction/finger.js';
 import { Factory, FactoryPart } from '../components.js';
 import { heightOffset, layout, phase, Phase } from '../state.js';
 
@@ -35,6 +36,7 @@ export class SettingsSystem extends createSystem({
       panel.visible = false;
       this.entity = this.world.createTransformEntity(panel, { persistent: true });
       this.entity.addComponent(RayInteractable);
+      this.entity.addComponent(PokeInteractable);
       this.entity.addComponent(Follower, {
         target: this.player.head,
         offsetPosition: [0, 0.26, -0.7],
@@ -65,10 +67,10 @@ export class SettingsSystem extends createSystem({
 
   bind() {
     const on = (id, handler) =>
-      this.panel.getElementById(id)?.addEventListener('click', () => {
+      this.panel.getElementById(id)?.addEventListener('pointerdown', touchOnly(() => this.panel, () => {
         sfx.select();
         handler();
-      });
+      }));
     on('toggle', () => {
       this.open = !this.open;
       this.refresh();

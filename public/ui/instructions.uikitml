@@ -18,7 +18,7 @@
     </div>
     <div class="step">
       <div class="number">2</div>
-      <div class="text">Acerca la mano a un objeto y pellizca para agarrarlo</div>
+      <div class="text">Acerca la mano a un objeto y pellizca para agarrarlo; al abrir los dedos lo sueltas</div>
     </div>
     <div class="step">
       <div class="number">3</div>
@@ -26,7 +26,7 @@
     </div>
     <div class="step">
       <div class="number">4</div>
-      <div class="text">Cambia de estacion con los botones del borde de la banda</div>
+      <div class="text">Cambia de estacion presionando con el indice, unos 3 segundos, los botones del borde de la banda</div>
     </div>
     <div class="step">
       <div class="number">5</div>

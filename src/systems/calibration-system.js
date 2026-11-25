@@ -1,8 +1,6 @@
-/* Reconocimiento del espacio y calibracion ergonomica. Reemplaza la colocacion
-   sobre mesa: la fabrica rodea al usuario y se mide desde el PISO.
+/* Ubicacion manual de la fabrica (calibracion ergonomica). La fabrica rodea al usuario y se mide desde el
+   PISO, que es el nivel del visor (sin reconocimiento de suelo: fallaba).
 
-   Fase Space:       Scene Understanding (XRPlane) busca el piso y avisa si hay un
-                     mueble cerca. Con el piso reconocido, un pellizco continua.
    Fase Calibrating: el usuario pone la mano donde trabajaria comodo (codo a ~90
                      grados) y pellizca. La altura se mide desde el piso y el
                      alcance desde la cabeza; no se supone ninguna estatura.
@@ -17,7 +15,6 @@ import {
   Quaternion,
   Vector3,
   XRAnchor,
-  XRPlane,
   createSystem,
 } from '@iwsdk/core';
 import { DEFAULT_LAYOUT, LIMITS, MODEL, clamp, modelPoint, modelScale } from '../core/layout.js';
@@ -25,10 +22,8 @@ import { Factory } from '../components.js';
 import { createFactory } from '../factory/factory-model.js';
 import { heightOffset, hint, instructionsSeen, layout as layoutState, phase, Phase } from '../state.js';
 
-const SPACE_TIMEOUT = 6; // segundos sin reconocer piso antes de permitir seguir
 const PINCH_GUARD = 0.7; // el pellizco que pulso "Comenzar" no cuenta
 const REACH_MARGIN = 0.08; // la banda queda un poco mas alla de la mano en reposo
-const OBSTACLE_RADIUS = 1.0;
 const PREVIEW_WIDTH = 0.09; // ancho de la cinta que muestra el recorrido de la banda
 
 /** Cinta plana (cara hacia arriba) a lo largo del recorrido de la banda, en metros locales. */
@@ -55,16 +50,10 @@ function pathRibbon(width) {
 }
 
 const HINTS = {
-  searching: 'Mira a tu alrededor para que el visor reconozca el piso',
-  floor: 'Piso reconocido. Pellizca para continuar',
-  obstacle: 'Hay un mueble cerca. Despeja unos 2 metros y pellizca para continuar',
-  timeout: 'No pude reconocer el piso: usare el nivel del visor. Pellizca para continuar',
-  calibrate: 'Pon la mano a la altura donde trabajarias comodo, con el codo a 90 grados, y pellizca',
+  calibrate: 'Pon la mano a la altura donde trabajarias comodo, con el codo a 90 grados, y pellizca para ubicar la fabrica',
 };
 
-export class CalibrationSystem extends createSystem({
-  planes: { required: [XRPlane] },
-}) {
+export class CalibrationSystem extends createSystem({}) {
   init() {
     this.head = new Vector3();
     this.hand = new Vector3();
@@ -91,9 +80,12 @@ export class CalibrationSystem extends createSystem({
     this.cleanupFuncs.push(
       phase.subscribe((value) => {
         this.elapsed = 0;
-        if (value === Phase.Calibrating) this.startPreview();
+        if (value === Phase.Calibrating) {
+          this.floorY = 0; // sin reconocimiento de suelo: el piso es el nivel del visor (espacio de referencia local-floor)
+          this.startPreview();
+        }
         else this.stopPreview();
-        if (value !== Phase.Space && value !== Phase.Calibrating) this.setHint('');
+        if (value !== Phase.Calibrating) this.setHint('');
       }),
     );
   }
@@ -142,49 +134,12 @@ export class CalibrationSystem extends createSystem({
     }
   }
 
-  /** Busca el piso entre los planos horizontales y los muebles cercanos. */
-  scanPlanes() {
-    let floor = null;
-    let obstacle = false;
-    for (const entity of this.queries.planes.entities) {
-      const plane = entity.getValue(XRPlane, '_plane');
-      const object = entity.object3D;
-      if (!plane || !object || plane.orientation !== 'horizontal') continue;
-      object.getWorldPosition(this.point);
-      const y = this.point.y;
-      const isFloor =
-        plane.semanticLabel === 'floor' || (!plane.semanticLabel && y < 0.25);
-      if (isFloor) {
-        if (floor === null || y < floor) floor = y;
-      } else if (y > 0.25 && y < 1.5) {
-        const dx = this.point.x - this.head.x;
-        const dz = this.point.z - this.head.z;
-        if (Math.hypot(dx, dz) < OBSTACLE_RADIUS) obstacle = true;
-      }
-    }
-    return { floor, obstacle };
-  }
-
   update(delta) {
     const value = phase.peek();
-    if (value !== Phase.Space && value !== Phase.Calibrating) return;
+    if (value !== Phase.Calibrating) return;
     this.elapsed += delta;
     this.readHead();
     const pinch = this.elapsed > PINCH_GUARD ? this.pinchHand() : null;
-
-    if (value === Phase.Space) {
-      const { floor, obstacle } = this.scanPlanes();
-      const found = floor !== null;
-      const ready = found || this.elapsed > SPACE_TIMEOUT;
-      this.setHint(
-        !ready ? HINTS.searching : !found ? HINTS.timeout : obstacle ? HINTS.obstacle : HINTS.floor,
-      );
-      if (pinch && ready) {
-        this.floorY = found ? floor : 0;
-        phase.value = Phase.Calibrating;
-      }
-      return;
-    }
 
     // Calibrating: la vista previa sigue a la mano derecha (o a la izquierda)
     const hand = pinch ?? (this.hasHand('right') ? 'right' : 'left');

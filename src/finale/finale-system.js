@@ -309,7 +309,15 @@ export class FinaleSystem extends createSystem({
     figure.scale.setScalar(base * this.finalScale() * s.scale);
     gift.visible = s.visible;
     figure.visible = s.visible;
-    if (this.queries.held.entities.size === 0) figure.rotation.y += delta * 0.7; // mesa giratoria
+    if (this.queries.held.entities.size === 0) {
+      // Al soltarlo (aunque lo hayan girado en cualquier eje) vuelve al instante a la vertical y sigue girando como mesa giratoria
+      if (figure.rotation.x !== 0 || figure.rotation.z !== 0) {
+        this.tmp.set(0, 0, 1).applyQuaternion(figure.quaternion);
+        const yaw = Math.hypot(this.tmp.x, this.tmp.z) > 0.2 ? Math.atan2(this.tmp.x, this.tmp.z) : figure.rotation.y;
+        figure.rotation.set(0, yaw, 0);
+      }
+      figure.rotation.y += delta * 0.7;
+    }
   }
 
   /** "Seguir editando": vuelve la fabrica y el personaje regresa a la ultima estacion. */

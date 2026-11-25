@@ -1,8 +1,9 @@
 /* Bienvenida: en el navegador el boton entra a la realidad aumentada;
-   dentro del visor ("COMENZAR") inicia el reconocimiento del piso.
+   dentro del visor ("COMENZAR") pasa a ubicar la fabrica con la mano.
    Tambien reinicia el recorrido cuando se sale de la sesion. */
 import { createSystem, VisibilityState } from '@iwsdk/core';
 import { sfx } from '../audio/sfx.js';
+import { touchOnly } from '../interaction/finger.js';
 import { Factory, FactoryPart } from '../components.js';
 import { phase, Phase, resetExperience } from '../state.js';
 
@@ -21,16 +22,24 @@ export class WelcomeSystem extends createSystem({
 
     const onClick = () => {
       sfx.unlock(); // el navegador exige un gesto antes de reproducir audio
+      sfx.select();
       sfx.playMusic();
       const immersive =
         this.world.visibilityState.peek() !== VisibilityState.NonImmersive;
       if (!immersive) this.world.launchXR();
-      else if (phase.peek() === Phase.Welcome) phase.value = Phase.Space;
+      else if (phase.peek() === Phase.Welcome) phase.value = Phase.Calibrating; // sin reconocimiento de suelo: se ubica la fabrica con las manos
     };
-    button.addEventListener('click', onClick);
+    const onTouch = touchOnly(() => panel, onClick);
+    // pointerdown: el dedo en el visor; click: el raton en el navegador (solo el clic cuenta como gesto para abrir la sesion XR)
+    const onDown = () => {
+      if (this.world.visibilityState.peek() !== VisibilityState.NonImmersive) onTouch();
+    };
+    button.addEventListener('pointerdown', onDown);
+    button.addEventListener('click', onTouch);
 
     this.cleanupFuncs.push(
-      () => button.removeEventListener('click', onClick),
+      () => button.removeEventListener('pointerdown', onDown),
+      () => button.removeEventListener('click', onTouch),
       this.world.visibilityState.subscribe((state) => {
         const is2D = state === VisibilityState.NonImmersive;
         label?.setProperties({ text: is2D ? 'Entrar en RA' : 'COMENZAR' });

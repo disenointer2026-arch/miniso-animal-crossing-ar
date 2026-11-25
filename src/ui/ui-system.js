@@ -4,7 +4,9 @@
 import { createSystem, Hovered, Pressed } from '@iwsdk/core';
 import { sfx } from '../audio/sfx.js';
 import { UiItem } from '../components.js';
+import { pokeAllowedOnObject, sampleFingers } from '../interaction/finger.js';
 
+const FINGER_REACH = 0.04; // metros del borde del elemento a la punta del indice para contar como presion
 const PRESS_COOLDOWN = 0.22; // segundos entre dos pulsaciones del mismo elemento
 
 export class UiSystem extends createSystem({
@@ -17,6 +19,8 @@ export class UiSystem extends createSystem({
         const object = entity.object3D;
         const data = object?.userData;
         if (!data?.shown || data.cooldown > 0) return;
+        // Con manos solo cuenta presionar con el indice; apuntar desde lejos y pellizcar no acciona el boton
+        if (!pokeAllowedOnObject(object, FINGER_REACH)) return;
         data.cooldown = PRESS_COOLDOWN;
         if (!data.silent) sfx.select();
         data.onPress?.(entity);
@@ -25,6 +29,7 @@ export class UiSystem extends createSystem({
   }
 
   update(delta) {
+    sampleFingers(this.renderer, this.player);
     for (const entity of this.queries.items.entities) {
       const object = entity.object3D;
       if (!object) continue;

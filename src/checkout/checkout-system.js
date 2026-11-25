@@ -8,8 +8,9 @@
    Thanks   cierre y posibilidad de crear otro avatar
    Los paneles se colocan respecto al marco del usuario (src/finale/frame.js) y la caja con la
    figura se aparta a un lado con la senal "showcase". */
-import { createSystem, RayInteractable } from '@iwsdk/core';
+import { createSystem, PokeInteractable, RayInteractable } from '@iwsdk/core';
 import { sfx } from '../audio/sfx.js';
+import { touchOnly } from '../interaction/finger.js';
 import { FactoryPart } from '../components.js';
 import { CARD, formatField } from '../data/shop.js';
 import { framePoint, frameYaw } from '../finale/frame.js';
@@ -107,6 +108,7 @@ export class CheckoutSystem extends createSystem({}) {
       panel.visible = false;
       const entity = this.world.createTransformEntity(panel);
       entity.addComponent(RayInteractable);
+      entity.addComponent(PokeInteractable);
       entity.addComponent(FactoryPart);
       return panel;
     };
@@ -155,13 +157,14 @@ export class CheckoutSystem extends createSystem({}) {
     this.cardMesh = mesh;
   }
 
-  makePortrait() {
+  async makePortrait() {
     try {
-      this.portrait = renderPortrait(this.world.renderer, avatarConfig.peek());
+      this.portrait = await renderPortrait(this.world.renderer, avatarConfig.peek());
     } catch (error) {
       console.warn('[tarjeta] No se pudo dibujar el retrato del avatar:', error);
       this.portrait = null;
     }
+    if (phase.peek() === Phase.Card) this.refresh(); // ya con el retrato (y su boca) completo
   }
 
   // ---------- Cierre ----------
@@ -308,10 +311,13 @@ export class CheckoutSystem extends createSystem({}) {
   bindCardEditor() {
     const card = this.panels.card;
     const on = (id, fn) =>
-      card.getElementById(id)?.addEventListener('click', () => {
-        sfx.select();
-        fn();
-      });
+      card.getElementById(id)?.addEventListener(
+        'pointerdown',
+        touchOnly(() => card, () => {
+          sfx.select();
+          fn();
+        }),
+      );
     const profile = () => cardProfile.peek();
     const mod = (n, m) => ((n % m) + m) % m;
     // El nombre se escribe con el teclado: tocar el campo lo abre
