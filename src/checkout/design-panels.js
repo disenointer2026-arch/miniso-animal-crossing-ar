@@ -184,6 +184,7 @@ function createDesignPanel(world, { name, spec, meters, drawContent, buttons, li
     const [bx, by, bw, bh] = itemBox;
     const [px, py] = toMeters(bx + bw / 2, by + bh / 2);
     const item = addItem(world, entity, {
+    remote: true,
       x: px,
       y: py,
       z: 0.004,

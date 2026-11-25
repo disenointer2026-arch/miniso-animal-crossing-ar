@@ -1,9 +1,9 @@
-/* Ajustes (panel UIKitML que sigue la mirada, arriba y de frente al usuario, solo mientras se personaliza):
+/* Ajustes (panel UIKitML fijo, arriba y de frente al usuario; se coloca al empezar a personalizar y no sigue la mirada):
    - Altura: sube o baja toda la fabrica unos centimetros sobre la calibrada.
    - Musica y efectos: volumenes independientes.
-   - Recalibrar con la mano: vuelve a medir altura y alcance; la fabrica se rehace y el
+   - Reposicionar la fabrica: vuelve a ubicarla con la mano (lugar, altura y giro); la fabrica se rehace y el
      personaje conserva todo lo elegido (avatarConfig) y regresa a su estacion. */
-import { createSystem, FollowBehavior, Follower, PokeInteractable, RayInteractable } from '@iwsdk/core';
+import { createSystem, PokeInteractable, RayInteractable, Vector3 } from '@iwsdk/core';
 import { sfx } from '../audio/sfx.js';
 import { touchOnly } from '../interaction/finger.js';
 import { Factory, FactoryPart } from '../components.js';
@@ -13,6 +13,8 @@ const HEIGHT_STEP = 0.02;
 const HEIGHT_LIMIT = 0.15;
 const VOLUME_STEP = 0.1;
 const PANEL_SCALE = 0.07;
+const PANEL_DISTANCE = 0.8; // metros al frente de la cabeza, en horizontal
+const PANEL_RISE = 0.2; // y un poco por encima de los ojos: se alcanza con el rayo sin estirarse
 
 export class SettingsSystem extends createSystem({
   factories: { required: [Factory] },
@@ -20,6 +22,9 @@ export class SettingsSystem extends createSystem({
 }) {
   init() {
     this.open = false;
+    this.placed = false;
+    this.spot = new Vector3();
+    this.dir = new Vector3();
     this.factory = null;
     if (import.meta.env.DEV && window.__miniso) window.__miniso.settings = this;
     this.panel = null;
@@ -37,14 +42,6 @@ export class SettingsSystem extends createSystem({
       this.entity = this.world.createTransformEntity(panel, { persistent: true });
       this.entity.addComponent(RayInteractable);
       this.entity.addComponent(PokeInteractable);
-      this.entity.addComponent(Follower, {
-        target: this.player.head,
-        offsetPosition: [0, 0.26, -0.7],
-        behavior: FollowBehavior.FaceTarget,
-        maxAngle: 35,
-        tolerance: 0.15,
-        speed: 3,
-      });
       this.bind();
       this.refresh();
     });
@@ -57,7 +54,10 @@ export class SettingsSystem extends createSystem({
       this.queries.factories.subscribe('disqualify', () => {
         this.factory = null;
       }),
-      phase.subscribe(() => this.refresh()),
+      phase.subscribe((value) => {
+        if (value !== Phase.Customizing) this.placed = false; // se recoloca al volver a personalizar (p. ej. tras reposicionar la fabrica)
+        this.refresh();
+      }),
       heightOffset.subscribe(() => {
         this.applyHeight();
         this.refresh();
@@ -92,6 +92,20 @@ export class SettingsSystem extends createSystem({
     on('recal', () => this.recalibrate());
   }
 
+  /** Coloca el panel UNA vez al frente del usuario (al empezar a personalizar) y lo deja fijo: ya no persigue la mirada. */
+  place() {
+    if (!this.panel) return;
+    const head = this.player.head;
+    head.getWorldPosition(this.spot);
+    head.getWorldDirection(this.dir); // hacia donde mira (la camara mira a -Z)
+    this.dir.y = 0;
+    if (this.dir.lengthSq() < 0.05) return; // mirando casi vertical: se conserva donde estaba
+    this.dir.normalize();
+    this.panel.position.set(this.spot.x + this.dir.x * PANEL_DISTANCE, this.spot.y + PANEL_RISE, this.spot.z + this.dir.z * PANEL_DISTANCE);
+    this.panel.lookAt(this.spot.x, this.panel.position.y, this.spot.z); // un Object3D (no camara) apunta su +Z al objetivo: de frente al usuario
+    this.placed = true;
+  }
+
   applyHeight() {
     const object = this.factory?.object3D;
     if (object) object.position.y = layout.peek().floorY + heightOffset.peek();
@@ -106,7 +120,9 @@ export class SettingsSystem extends createSystem({
 
   refresh() {
     if (!this.panel) return;
-    this.panel.visible = phase.peek() === Phase.Customizing;
+    const showing = phase.peek() === Phase.Customizing;
+    if (showing && !this.placed) this.place();
+    this.panel.visible = showing && this.placed;
     const set = (id, props) => this.panel.getElementById(id)?.setProperties(props);
     set('body', { display: this.open ? 'flex' : 'none' });
     set('toggle', { text: this.open ? 'Cerrar ajustes' : 'Ajustes' });

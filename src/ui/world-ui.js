@@ -254,7 +254,7 @@ export function createUiPanel({ width, height, title, subtitle, pxPerMeter = 140
 
 /** Elemento pulsable dentro de un panel o de la fabrica. Devuelve { entity, mesh, redraw, setShown }.
     onPress se llama al pulsar (dedo o rayo + pellizco). x, y, z en metros respecto al padre. */
-export function addItem(world, parentEntity, { x = 0, y = 0, z = 0.004, width, height, pxPerMeter = 1400, draw, onPress, name = 'ui-item' }) {
+export function addItem(world, parentEntity, { x = 0, y = 0, z = 0.004, width, height, pxPerMeter = 1400, draw, onPress, name = 'ui-item', remote = false }) {
   const plane = canvasPlane(width, height, pxPerMeter, draw);
   plane.mesh.name = name;
   plane.mesh.renderOrder = 12;
@@ -262,6 +262,7 @@ export function addItem(world, parentEntity, { x = 0, y = 0, z = 0.004, width, h
   plane.mesh.userData.onPress = onPress;
   plane.mesh.userData.baseScale = 1;
   plane.mesh.userData.shown = true;
+  plane.mesh.userData.remote = remote; // true: tambien se elige a distancia (rayo + pellizco); false: solo tocando con el dedo
   const entity = world.createTransformEntity(plane.mesh, { parent: parentEntity });
   entity.addComponent(FactoryPart);
   entity.addComponent(UiItem);

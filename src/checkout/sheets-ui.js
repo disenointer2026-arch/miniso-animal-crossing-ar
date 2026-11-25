@@ -149,6 +149,7 @@ export function createSharePanel(world, { download, device, social, copy, close 
   });
   const buttonSize = { width: 0.47, height: 0.075 };
   const downloadButton = addItem(world, sheet.entity, {
+    remote: true,
     x: 0,
     y: yAt(H, 0.365),
     width: buttonSize.width,
@@ -160,6 +161,7 @@ export function createSharePanel(world, { download, device, social, copy, close 
   });
   downloadButton.redraw({ label: 'Descargar imagen', icon: 'drawDownload', primary: true });
   const deviceButton = addItem(world, sheet.entity, {
+    remote: true,
     x: 0,
     y: yAt(H, 0.465),
     width: buttonSize.width,
@@ -172,6 +174,7 @@ export function createSharePanel(world, { download, device, social, copy, close 
   deviceButton.redraw({ label: 'Compartir desde el dispositivo', icon: 'drawShare', primary: false });
   ['Instagram', 'Facebook', 'X', 'WhatsApp'].forEach((kind, i) => {
     const item = addItem(world, sheet.entity, {
+    remote: true,
       x: (i - 1.5) * 0.1175,
       y: yAt(H, 0.715),
       width: 0.108,
@@ -184,6 +187,7 @@ export function createSharePanel(world, { download, device, social, copy, close 
     item.redraw({ kind });
   });
   const copyButton = addItem(world, sheet.entity, {
+    remote: true,
     x: -W / 2 + 0.075 + 0.105,
     y: yAt(H, 0.835),
     width: 0.21,
@@ -195,6 +199,7 @@ export function createSharePanel(world, { download, device, social, copy, close 
   });
   copyButton.redraw({});
   const closeButton = addItem(world, sheet.entity, {
+    remote: true,
     x: W / 2 - 0.05,
     y: H / 2 - 0.05,
     width: 0.06,
