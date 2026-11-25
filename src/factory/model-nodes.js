@@ -81,6 +81,7 @@ export function addModelButton(world, factoryEntity, name, { slot, radius = 0, d
   mesh.userData.pressK = 0;
   mesh.userData.onPress = onPress;
   mesh.userData.silent = false;
+  mesh.userData.direct = true; // con manos tambien se pulsa por contacto directo del indice (ver UiSystem), sin depender del SDK
 
   // Insignia de "elegido": circulo rojo con chulo, en la esquina de arriba a la derecha del boton
   const badge = canvasPlane(0.04, 0.04, 1400, (ctx, w, h) => {

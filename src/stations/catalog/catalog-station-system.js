@@ -337,9 +337,7 @@ export class CatalogStationSystem extends createSystem({
     entity.addComponent(FactoryPart);
     entity.addComponent(StickerBook);
     entity.addComponent(Carryable, { kind: 'book', home: [home.x, home.y, home.z], homeYaw: home.rotY });
-    // rotate: false -> el sistema de agarre solo traslada el libro; su orientacion la fija updateHeldBook (derecho y de frente a la cabeza)
-    // sin que el giro de la muñeca la pise
-    entity.addComponent(OneHandGrabbable, { rotate: false });
+    entity.addComponent(OneHandGrabbable); // se mueve y gira libremente con la mano
 
     // Todo lo impreso va plano sobre la hoja (paralelo a ella), a la altura de su superficie en ese punto
     const onPage = (item, x, z, half, lift = 0.002) => {
@@ -376,6 +374,8 @@ export class CatalogStationSystem extends createSystem({
       item.mesh.position.set((i - 1) * 0.105, tabY + 0.022, -0.128);
       item.mesh.rotation.x = -0.75; // la parte de arriba se inclina hacia atras: la cara mira hacia arriba y al usuario
       item.mesh.userData.silent = false;
+      item.mesh.userData.reach = 0.012; // solo responde al dedo que la toca, no a un sticker agarrado cerca
+      item.mesh.userData.noPinch = true; // y no a una mano que esta pellizcando
       return { item, index: i };
     });
     this.bookUi = { entity, swatches, tabs };
@@ -869,7 +869,6 @@ export class CatalogStationSystem extends createSystem({
   update(delta, time) {
     if (this.cooldown > 0) this.cooldown -= delta;
     if (this.pendingIcons.length && this.frame++ % 6 === 0) this.drawNextIcon();
-    this.updateHeldBook(delta);
     this.updateCharmHold();
     this.updateChests(delta);
     this.updateItems(delta, time);

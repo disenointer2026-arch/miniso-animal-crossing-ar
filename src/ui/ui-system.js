@@ -4,9 +4,12 @@
 import { createSystem, Hovered, Pressed } from '@iwsdk/core';
 import { sfx } from '../audio/sfx.js';
 import { UiItem } from '../components.js';
-import { pokeAllowedOnObject, sampleFingers } from '../interaction/finger.js';
+import { interactionBusy } from '../interaction/carryable-system.js';
+import { handsTracked, pokeAllowedOnObject, sampleFingers } from '../interaction/finger.js';
 
 const FINGER_REACH = 0.04; // metros del borde del elemento a la punta del indice para contar como presion
+const DIRECT_REACH = 0.008; // contacto: la punta del indice llega a menos de esto de la cara del boton
+const DIRECT_REARM = 0.03; // el boton se rearma cuando el dedo se aleja mas que esto
 const PRESS_COOLDOWN = 0.22; // segundos entre dos pulsaciones del mismo elemento
 
 export class UiSystem extends createSystem({
@@ -21,12 +24,17 @@ export class UiSystem extends createSystem({
         if (!data?.shown || data.cooldown > 0) return;
         // Con manos solo cuenta presionar con el indice; apuntar desde lejos y pellizcar no acciona el boton
         // (salvo los botones marcados `remote`: seleccion a distancia con rayo + pellizco)
-        if (!data.remote && !pokeAllowedOnObject(object, FINGER_REACH)) return;
-        data.cooldown = PRESS_COOLDOWN;
-        if (!data.silent) sfx.select();
-        data.onPress?.(entity);
+        if (!data.remote && !pokeAllowedOnObject(object, data.reach ?? FINGER_REACH, !!data.noPinch)) return;
+        if (data.noPinch && interactionBusy()) return; // con algo en la mano (o recien soltado) no se pulsa
+        this.fire(entity, data);
       }),
     );
+  }
+
+  fire(entity, data) {
+    data.cooldown = PRESS_COOLDOWN;
+    if (!data.silent) sfx.select();
+    data.onPress?.(entity);
   }
 
   update(delta) {
@@ -36,6 +44,18 @@ export class UiSystem extends createSystem({
       if (!object) continue;
       const data = object.userData;
       if (data.cooldown > 0) data.cooldown -= delta;
+      // Contacto directo (manos): el indice de CUALQUIER mano toca el boton. Funciona desde la primera vez, a la izquierda o a la derecha,
+      // sin depender de que el SDK registre la pulsacion. El borde de bajada (dedo lejos) rearma el boton.
+      if (data.direct && handsTracked()) {
+        if (data.shown && pokeAllowedOnObject(object, DIRECT_REACH, true)) {
+          if (!data.touching && !(data.cooldown > 0) && !interactionBusy()) {
+            data.touching = true;
+            this.fire(entity, data);
+          }
+        } else if (!data.shown || !pokeAllowedOnObject(object, DIRECT_REARM, true)) {
+          data.touching = false;
+        }
+      }
       // Boton del modelo: el nodo del glb se hunde al pulsarlo y se adelanta un poco al pasar el dedo
       if (data.node) {
         const want = entity.hasComponent(Pressed) ? 1 : entity.hasComponent(Hovered) ? -0.25 : 0;

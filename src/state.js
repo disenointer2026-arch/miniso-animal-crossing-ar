@@ -32,6 +32,9 @@ export const beltRequest = signal(null);
 /** Las instrucciones ya se mostraron (al recalibrar no se repiten). */
 export const instructionsSeen = signal(false);
 
+/** Se esta reposicionando la fabrica (Ajustes): el avatar se queda en su estacion, sin reaparecer en el portal ni recorrer la banda. */
+export const repositioning = signal(false);
+
 /** Ajuste fino de la altura de la fabrica sobre la calibrada, en metros. */
 export const heightOffset = signal(0);
 
@@ -92,6 +95,7 @@ export function resetExperience() {
   layout.value = { ...DEFAULT_LAYOUT };
   beltMoving.value = false;
   instructionsSeen.value = false;
+  repositioning.value = false;
   heightOffset.value = 0;
   phase.value = Phase.Welcome;
 }
