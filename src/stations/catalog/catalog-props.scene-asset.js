@@ -2,12 +2,12 @@
    sobre las paginas del libro del modelo. Unidades en metros. */
 import { AssetManager, BoxGeometry, CanvasTexture, DoubleSide, Group, Mesh, MeshBasicMaterial, PlaneGeometry, SRGBColorSpace } from '@iwsdk/core';
 
-export const STICKER = { paper: 0.056, picture: 0.043, grab: 0.09 };
+export const STICKER = { paper: 0.056, picture: 0.043, grab: 0.052 };
 const PX = 256;
 const geometry = new PlaneGeometry(STICKER.paper, STICKER.paper).rotateX(-Math.PI / 2);
-// Zona de agarre: un bloque invisible mas grande que el papel (9 cm de lado y 4 cm de alto) para que el pellizco o la mano cerca lo
-// alcancen sin precision; la malla del papel, finisima, era dificil de acertar.
-const grabGeometry = new BoxGeometry(STICKER.grab, 0.04, STICKER.grab);
+// Zona de agarre: un bloque invisible casi del tamano del papel (5,2 cm de lado y 3 cm de alto). Los stickers del libro estan a 6 y 7,2 cm
+// entre centros: las zonas NO se superponen (antes median 9 cm y se pisaban, y el agarre tomaba el vecino o rozaba las pestanas).
+const grabGeometry = new BoxGeometry(STICKER.grab, 0.03, STICKER.grab);
 const grabMaterial = new MeshBasicMaterial({ transparent: true, opacity: 0, depthWrite: false });
 
 function roundRect(ctx, x, y, w, h, r) {
@@ -56,7 +56,7 @@ export function createSticker(textureKey) {
   group.add(mesh);
   const grab = new Mesh(grabGeometry, grabMaterial);
   grab.name = 'GrabZone';
-  grab.position.y = 0.012;
+  grab.position.y = 0.008;
   group.add(grab);
   return group;
 }

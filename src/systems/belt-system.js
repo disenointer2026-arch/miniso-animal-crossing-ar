@@ -30,6 +30,7 @@ import {
   layout,
   phase,
   Phase,
+  repositioning,
 } from '../state.js';
 
 /** El muñeco mide lo que el muñeco de referencia del modelo (AVATAR_UNITS unidades del modelo): su altura en
@@ -71,7 +72,7 @@ export class BeltSystem extends createSystem({
       }),
       // Si la fase llega a Arriving DESPUES de crear el avatar reposicionado, se pasa directo a personalizar
       phase.subscribe((value) => {
-        if (value === Phase.Arriving && instructionsSeen.peek() && this.queries.avatars.entities.size > 0) {
+        if (value === Phase.Arriving && (instructionsSeen.peek() || repositioning.peek()) && this.queries.avatars.entities.size > 0) {
           const moving = [...this.queries.avatars.entities].some((e) => e.getValue(AvatarFigure, 'moving'));
           if (!moving) phase.value = Phase.Customizing;
         }
@@ -95,7 +96,8 @@ export class BeltSystem extends createSystem({
     avatar.root.scale.setScalar(0.0001);
     const slot = stationSlot(categoryIndex.peek()); // al reposicionar la fabrica el avatar sigue en la estacion donde estaba
     // Reposicionar (las instrucciones ya se vieron): el avatar queda directamente en su estacion, sin recorrido ni aparicion
-    if (instructionsSeen.peek()) {
+    if (repositioning.peek() || instructionsSeen.peek()) {
+      repositioning.value = false;
       const here = slotS(slot);
       this.facing = slotPose(layout.peek(), slot).rotY;
       avatar.root.scale.setScalar(avatar.root.userData.baseScale);

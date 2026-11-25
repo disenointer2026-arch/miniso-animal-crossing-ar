@@ -7,7 +7,7 @@ import { createSystem, PokeInteractable, RayInteractable, Vector3 } from '@iwsdk
 import { sfx } from '../audio/sfx.js';
 import { touchOnly } from '../interaction/finger.js';
 import { Factory, FactoryPart } from '../components.js';
-import { heightOffset, layout, phase, Phase } from '../state.js';
+import { heightOffset, layout, phase, Phase, repositioning } from '../state.js';
 
 const HEIGHT_STEP = 0.02;
 const HEIGHT_LIMIT = 0.15;
@@ -113,6 +113,7 @@ export class SettingsSystem extends createSystem({
 
   /** Retira la fabrica y vuelve a medir con la mano; el avatar se conserva en avatarConfig. */
   recalibrate() {
+    repositioning.value = true; // la fabrica nueva recibe al avatar ya en su estacion
     for (const part of Array.from(this.queries.parts.entities)) part.dispose();
     for (const factory of Array.from(this.queries.factories.entities)) factory.dispose();
     phase.value = Phase.Calibrating;
