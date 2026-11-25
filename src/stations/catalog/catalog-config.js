@@ -20,8 +20,12 @@ const ids = (station, group) =>
   CATEGORIES[station].groups[group].options.map((o) => o.id).filter((id) => id !== 'none');
 
 /** Imagen del sticker de cada opcion (ver src/assets.js). */
+/** Numero del icono (botones-ojos-0N.png) de cada estilo de ojos. OJO: no es el numero del mapa de la cabeza (EYE_MAPS) ni la posicion
+    en la lista de opciones; se comprobo por apariencia comparando cada icono con la textura que se pinta en la cabeza. */
+export const EYE_ICON = { lashes: 1, classic: 2, lashesTop: 3, sleepy: 4, happy: 5, lashesBottom: 6, brow: 7, soft: 8 };
+
 export const stickerTexture = {
-  eyes: (id) => `sticker-ojos-${EYE_MAPS[id]}`,
+  eyes: (id) => `sticker-ojos-${EYE_ICON[id]}`,
   mouth: (id) => `sticker-boca-${id}`,
   nose: (id) => `sticker-nariz-${id}`,
 };
@@ -107,13 +111,18 @@ export const FACE_TABS = [
   { label: 'Nariz', group: 3, color: '#F48FB1' },
 ];
 
-/** Posicion [x, z] (metros, sistema del libro: x a la derecha, z hacia el usuario; el lomo en x = 0) de un sticker o una muestra.
-    Los stickers van en una cuadricula alineada de 4 columnas (x = -0,108 / -0,036 / 0,036 / 0,108: ninguna cae sobre el lomo ni
-    se acerca a los bordes de las hojas, que llegan a x = ±0,16 y z = ±0,117), en filas desde arriba. Las muestras de color de
-    ojos (12) van debajo, en 2 filas de 6. */
-export function bookSlot(group, index) {
+/** Posicion [x, z] (metros, sistema del libro: x a la derecha, z hacia el usuario) de un sticker o una muestra. Las hojas van de
+    x = ±0,16 y z = ±0,117 y, aplanadas, no tienen lomo marcado. Los stickers van en una cuadricula CENTRADA y alineada: columnas cada
+    0,072 m (1 a 4 por fila, centradas) y filas cada 0,06 m desde arriba; con 3 (boca, nariz) una sola fila centrada; con 8 (ojos)
+    dos filas de 4. Las muestras de color de ojos (12) van debajo, en 2 filas de 6. */
+export function bookSlot(group, index, count) {
   if (group.kind === 'swatch') {
     return [((index % 6) - 2.5) * 0.045, 0.045 + Math.floor(index / 6) * 0.04];
   }
-  return [((index % 4) - 1.5) * 0.072, -0.075 + Math.floor(index / 4) * 0.06];
+  const cols = Math.min(count, 4);
+  const rows = Math.ceil(count / cols);
+  const col = index % cols;
+  const row = Math.floor(index / cols);
+  const top = rows === 1 ? -0.03 : -0.075; // una fila: algo mas centrada en la hoja
+  return [(col - (cols - 1) / 2) * 0.072, top + row * 0.06];
 }
