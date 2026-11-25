@@ -18,8 +18,8 @@ import { touchOnly } from '../interaction/finger.js';
 import { FactoryPart, InstructionsPanel } from '../components.js';
 import { instructionsSeen, phase, Phase } from '../state.js';
 
-const PANEL_DISTANCE = 0.6; // metros desde los ojos: al alcance de la mano, para presionar el boton con el indice
-const PANEL_SCALE = 0.063; // se ve del mismo tamano que a 0,95 m
+const PANEL_DISTANCE = 0.45; // metros desde los ojos: dentro de los 42-46 cm que Meta recomienda para lo que se toca con el indice
+const PANEL_SCALE = 0.047; // se ve del mismo tamano que a 0,95 m
 const MAX_PITCH = 0.45; // limite de la componente vertical de la mirada (el panel no sube ni baja de mas)
 const FOLLOW_ANGLE = 0.7; // radianes (unos 40 grados) que puede apartar la vista antes de que el panel la siga
 const FOLLOW = 5; // rapidez con que el panel alcanza la mirada (1/s)
