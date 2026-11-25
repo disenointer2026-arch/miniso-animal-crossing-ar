@@ -339,7 +339,6 @@ export class CheckoutSystem extends createSystem({}) {
       this.panels.share.setStatus('');
       this.refresh();
     });
-    on('finish', () => (phase.value = Phase.Thanks));
     on('back', () => (phase.value = Phase.Choose));
     this.cardBound = true;
   }

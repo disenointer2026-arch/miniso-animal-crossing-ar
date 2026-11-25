@@ -39,7 +39,6 @@
     <div class="ready">Tu tarjeta esta lista!</div>
     <div class="row">
       <div id="share" class="btn primary">Compartir</div>
-      <div id="finish" class="btn">Finalizar</div>
     </div>
     <div class="row"><div id="back" class="btn">Volver a mi avatar</div></div>
     <div class="small">Tarjeta digital conceptual inspirada en el formato de las tarjetas Amiibo; no es un producto oficial de Nintendo.</div>
