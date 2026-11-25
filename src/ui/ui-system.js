@@ -8,8 +8,8 @@ import { interactionBusy } from '../interaction/carryable-system.js';
 import { handsTracked, pokeAllowedOnObject, sampleFingers } from '../interaction/finger.js';
 
 const FINGER_REACH = 0.04; // metros del borde del elemento a la punta del indice para contar como presion
-const DIRECT_REACH = 0.008; // contacto: la punta del indice llega a menos de esto de la cara del boton
-const DIRECT_REARM = 0.03; // el boton se rearma cuando el dedo se aleja mas que esto
+const DIRECT_REACH = 0.015; // contacto: la punta del indice llega a menos de esto de la cara del boton
+const DIRECT_REARM = 0.04; // el boton se rearma cuando el dedo se aleja mas que esto
 const PRESS_COOLDOWN = 0.22; // segundos entre dos pulsaciones del mismo elemento
 
 export class UiSystem extends createSystem({
@@ -25,7 +25,6 @@ export class UiSystem extends createSystem({
         // Con manos solo cuenta presionar con el indice; apuntar desde lejos y pellizcar no acciona el boton
         // (salvo los botones marcados `remote`: seleccion a distancia con rayo + pellizco)
         if (!data.remote && !pokeAllowedOnObject(object, data.reach ?? FINGER_REACH, !!data.noPinch)) return;
-        if (data.noPinch && interactionBusy()) return; // con algo en la mano (o recien soltado) no se pulsa
         this.fire(entity, data);
       }),
     );
