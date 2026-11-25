@@ -20,7 +20,8 @@ export class UiSystem extends createSystem({
         const data = object?.userData;
         if (!data?.shown || data.cooldown > 0) return;
         // Con manos solo cuenta presionar con el indice; apuntar desde lejos y pellizcar no acciona el boton
-        if (!pokeAllowedOnObject(object, FINGER_REACH)) return;
+        // (salvo los botones marcados `remote`: seleccion a distancia con rayo + pellizco)
+        if (!data.remote && !pokeAllowedOnObject(object, FINGER_REACH)) return;
         data.cooldown = PRESS_COOLDOWN;
         if (!data.silent) sfx.select();
         data.onPress?.(entity);

@@ -29,7 +29,7 @@ export class WelcomeSystem extends createSystem({
       if (!immersive) this.world.launchXR();
       else if (phase.peek() === Phase.Welcome) phase.value = Phase.Calibrating; // sin reconocimiento de suelo: se ubica la fabrica con las manos
     };
-    const onTouch = touchOnly(() => panel, onClick);
+    const onTouch = touchOnly(() => panel, onClick, { remote: true }); // seleccion a distancia: rayo + pellizco
     // pointerdown: el dedo en el visor; click: el raton en el navegador (solo el clic cuenta como gesto para abrir la sesion XR)
     const onDown = () => {
       if (this.world.visibilityState.peek() !== VisibilityState.NonImmersive) onTouch();
