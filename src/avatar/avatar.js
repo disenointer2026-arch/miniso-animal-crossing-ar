@@ -109,6 +109,12 @@ function onFace(x, y, lift, target) {
 }
 
 /** Dibuja un SVG en una textura (el navegador lo rasteriza a buena resolucion). */
+const loading = new Set(); // dibujos SVG en descarga (boca): quien dibuja fuera de pantalla espera a texturesReady()
+/** Promesa que se cumple cuando todos los dibujos pendientes de los avatares ya estan en su textura. */
+export function texturesReady() {
+  return Promise.all([...loading]);
+}
+
 function svgTexture(url, width, height) {
   const canvas = document.createElement('canvas');
   canvas.width = width;
@@ -116,11 +122,19 @@ function svgTexture(url, width, height) {
   const texture = new CanvasTexture(canvas);
   texture.colorSpace = SRGBColorSpace;
   const image = new Image();
-  image.onload = () => {
-    canvas.getContext('2d').drawImage(image, 0, 0, width, height);
-    texture.needsUpdate = true;
-  };
-  image.onerror = () => console.warn(`[avatar] No se pudo cargar ${url}`);
+  const done = new Promise((resolve) => {
+    image.onload = () => {
+      canvas.getContext('2d').drawImage(image, 0, 0, width, height);
+      texture.needsUpdate = true;
+      resolve();
+    };
+    image.onerror = () => {
+      console.warn(`[avatar] No se pudo cargar ${url}`);
+      resolve();
+    };
+  });
+  loading.add(done);
+  done.then(() => loading.delete(done));
   image.src = url;
   return texture;
 }

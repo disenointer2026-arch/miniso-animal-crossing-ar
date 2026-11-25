@@ -8,7 +8,7 @@ import { CATEGORIES } from './data/categories.js';
 /** Fases del recorrido, en orden. */
 export const Phase = {
   Welcome: 'welcome', // panel de bienvenida
-  Space: 'space', // reconocimiento del piso y del espacio libre
+  Space: 'space', // (sin uso) reconocimiento del piso: se quito, el piso se toma del nivel del visor
   Calibrating: 'calibrating', // la mano marca la altura y el alcance comodos
   Arriving: 'arriving', // el personaje sale del portal hacia la estacion 1
   Instructions: 'instructions', // panel de instrucciones

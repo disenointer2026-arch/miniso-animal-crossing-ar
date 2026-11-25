@@ -65,6 +65,9 @@ const ZONE_RADIUS = 0.1;
 
 const easeOutBack = (k) => 1 + 2.7 * (k - 1) ** 3 + 1.7 * (k - 1) ** 2;
 
+/** Nodos del modelo pegados a la maquina de cabello. */
+const STICKER_NODES = ['Personaje_stikcer', 'Logo_animal_crossing'];
+
 /** Panel de la propia maquina de cabello (gris con borde rojo, en la malla "maquina" del modelo, como la pantalla de la piel).
     Medidas del modelo, en unidades del modelo: centro de su cara gris [x, y, z] (y apenas por delante de la cara), giro
     de la cara y espacio gris disponible. Las opciones se dibujan encima, de frente al usuario. */
@@ -178,6 +181,12 @@ export class HairStationSystem extends createSystem({
 
     // La maquina es la del modelo: la cupula se sacude y las tijeras giran mientras fabrica
     const nodes = factory.object3D?.userData.parts?.nodes ?? {};
+    // Los adhesivos de la maquina (Tom Nook y el logo) se adhieren a su superficie: son hijos de la maquina (attach conserva su posicion
+    // actual) y asi siguen cada movimiento suyo sin flotar ni deformarse
+    for (const name of STICKER_NODES) {
+      const sticker = nodes[name];
+      if (sticker && nodes.maquina && sticker.parent !== nodes.maquina) nodes.maquina.attach(sticker);
+    }
     const machine = new Group();
     machine.name = 'HairMachineRig';
     machine.userData.parts = { body: nodes.maquina, spinner: nodes.tijeras };
@@ -265,12 +274,12 @@ export class HairStationSystem extends createSystem({
     this.queue = STYLES.filter((o) => o.id !== 'none').map((o) => o.id);
   }
 
-  drawNextPortrait() {
+  async drawNextPortrait() {
     const id = this.queue.shift();
     const card = this.panels?.cards.find((c) => c.id === id);
     if (!card) return;
     const config = { ...avatarConfig.peek(), hair: id, hairColor: this.portraitColor, accHead: 'none', companion: 'none' };
-    const url = renderPortrait(this.renderer, config, PORTRAIT_SIZE, HEAD_VIEW);
+    const url = await renderPortrait(this.renderer, config, PORTRAIT_SIZE, HEAD_VIEW);
     const image = new Image();
     image.onload = () => card.item.redraw({ image });
     image.src = url;

@@ -1,5 +1,5 @@
-/* Efectos de sonido sintetizados con Web Audio: no usan archivos, asi que no hay
-   derechos de autor de por medio. Mismo enfoque que la pagina original.
+/* Efectos de sonido. Seleccion y confirmacion usan los audios de la pagina original (public/audio/boton.mp3 y confirmar.mp3);
+   el resto (aerosol, maquina, golpes...) se sintetiza con Web Audio. Si un archivo no carga, suena la version sintetizada.
    El navegador bloquea el audio hasta un gesto: unlock() se llama al pulsar "Comenzar".
    Dos buses de volumen independientes (efectos y musica). */
 
@@ -9,6 +9,37 @@ const bus = { sfx: null, music: null };
 let spray = null;
 let music = null;
 const volume = { sfx: 0.7, music: 0.3 };
+const files = { select: null, confirm: null }; // AudioBuffer decodificados (boton.mp3 y confirmar.mp3)
+let filesRequested = false;
+
+/** Descarga y decodifica boton.mp3 y confirmar.mp3 una sola vez (tras el primer gesto del usuario). */
+function loadFiles(c) {
+  if (filesRequested) return;
+  filesRequested = true;
+  const base = import.meta.env.BASE_URL;
+  for (const [key, name] of [['select', 'boton'], ['confirm', 'confirmar']]) {
+    fetch(`${base}audio/${name}.mp3`)
+      .then((response) => response.arrayBuffer())
+      .then((data) => c.decodeAudioData(data))
+      .then((buffer) => {
+        files[key] = buffer;
+      })
+      .catch(() => {});
+  }
+}
+
+/** Reproduce un archivo ya decodificado por el bus de efectos; devuelve false si todavia no esta. */
+function playFile(key, gain = 1) {
+  const c = ensure();
+  if (!c || !files[key]) return false;
+  const src = c.createBufferSource();
+  const amp = c.createGain();
+  src.buffer = files[key];
+  amp.gain.value = gain;
+  src.connect(amp).connect(bus.sfx);
+  src.start();
+  return true;
+}
 
 function ensure() {
   if (!ctx) {
@@ -27,6 +58,7 @@ function ensure() {
     for (let i = 0; i < data.length; i++) data[i] = Math.random() * 2 - 1;
   }
   if (ctx.state === 'suspended') ctx.resume();
+  loadFiles(ctx);
   return ctx;
 }
 
@@ -95,9 +127,9 @@ export const sfx = {
     });
   },
   /** Boton pulsado / opcion elegida */
-  select: () => notes([660, 880], { step: 0.05, dur: 0.09 }),
-  /** Pieza que llega a su sitio */
-  ding: () => notes([523, 659, 784], { step: 0.09, dur: 0.16 }),
+  select: () => playFile('select') || notes([660, 880], { step: 0.05, dur: 0.09 }),
+  /** Confirmacion: la accion se completo (pieza en su sitio, cambio de estacion) */
+  ding: () => playFile('confirm') || notes([523, 659, 784], { step: 0.09, dur: 0.16 }),
   /** Golpe seco: la lata cae, el objeto se coloca */
   thunk() {
     notes([140, 90], { step: 0.04, dur: 0.12, type: 'triangle', gain: 0.4 });

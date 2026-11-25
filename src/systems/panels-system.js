@@ -8,10 +8,13 @@ import {
   createSystem,
   Mesh,
   MeshBasicMaterial,
+  PokeInteractable,
   RayInteractable,
   SphereGeometry,
   Vector3,
 } from '@iwsdk/core';
+import { sfx } from '../audio/sfx.js';
+import { touchOnly } from '../interaction/finger.js';
 import { FactoryPart, InstructionsPanel } from '../components.js';
 import { instructionsSeen, phase, Phase } from '../state.js';
 
@@ -89,15 +92,20 @@ export class PanelsSystem extends createSystem({
     panel.visible = false;
     const entity = this.world.createTransformEntity(panel);
     entity.addComponent(RayInteractable);
+    entity.addComponent(PokeInteractable);
     entity.addComponent(FactoryPart); // se retira junto con la fabrica al salir de la sesion
     entity.addComponent(InstructionsPanel);
     this.panel = panel;
-    panel.getElementById('close-button')?.addEventListener('click', () => {
-      if (phase.peek() === Phase.Instructions) {
-        instructionsSeen.value = true;
-        phase.value = Phase.Arriving; // la experiencia empieza aqui
-      }
-    });
+    panel.getElementById('close-button')?.addEventListener(
+      'click',
+      touchOnly(() => panel, () => {
+        if (phase.peek() === Phase.Instructions) {
+          sfx.ding();
+          instructionsSeen.value = true;
+          phase.value = Phase.Arriving; // la experiencia empieza aqui
+        }
+      }),
+    );
   }
 
   refreshVisibility() {

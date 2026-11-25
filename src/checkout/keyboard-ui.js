@@ -3,6 +3,7 @@
    tarjeta. Los campos numericos solo admiten digitos; los de nombre y direccion ponen en mayuscula cada
    palabra; "Mayus" mayuscula la siguiente letra. */
 import { sfx } from '../audio/sfx.js';
+import { touchOnly } from '../interaction/finger.js';
 import { FIELD_LABELS, FIELD_META } from '../data/shop.js';
 import { focusField } from './checkout-state.js';
 
@@ -29,10 +30,13 @@ export class KeyboardUI {
   }
 
   on(id, handler) {
-    this.el(id)?.addEventListener('click', () => {
-      sfx.select();
-      handler();
-    });
+    this.el(id)?.addEventListener(
+      'click',
+      touchOnly(() => this.panel, () => {
+        sfx.select();
+        handler();
+      }),
+    );
   }
 
   bind() {

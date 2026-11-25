@@ -25,7 +25,8 @@ import {
 import { Factory, FactoryPart, NavButton } from '../components.js';
 import { SLOT, STATION_COUNT, beltTangent, modelPoint, slotPose, standPoint, stationSlot } from '../core/layout.js';
 import { interactionBusy } from '../interaction/carryable-system.js';
-import { jointWorld } from '../interaction/hand-joints.js';
+import { fingerDistance, handsTracked } from '../interaction/finger.js';
+import { sfx } from '../audio/sfx.js';
 import { CATEGORIES } from '../data/categories.js';
 import { beltMoving, beltRequest, categoryIndex, layout, phase, Phase, stepCategory } from '../state.js';
 
@@ -69,7 +70,7 @@ const NAV_SPOTS = {
     para que ninguna barra de la malla tape las caras. Caja en coordenadas del modelo [[x, y, z] minimo, [x, y, z] maximo]. */
 const NAV_WINDOWS = [{ node: 'reja', box: [[24.9, 25.2, 7.05], [27.0, 36.8, 8.8]] }];
 /** Con el dedo: se hunde y se mantiene este tiempo para activar. Con rayo + pellizco (o controles) basta un toque. */
-const POKE_HOLD = 0.4;
+const POKE_HOLD = 2.0; // segundos que hay que mantener el dedo presionado para cambiar de estacion
 const FINGER_NEAR = 0.09; // el dedo esta tan cerca del boton: es un toque con el dedo, no un rayo
 /** Despues de la ultima estacion, "siguiente" pasa a ser el boton de terminar. */
 const FINISH = { label: 'Terminar avatar', icon: 'boton-llavero.svg', tag: 'LISTO' };
@@ -215,7 +216,6 @@ export class NavigationSystem extends createSystem({
     if (import.meta.env.DEV && window.__miniso) window.__miniso.nav = this; // solo desarrollo: para comprobar los botones en el emulador
     this.held = new Map(); // boton -> segundos que lleva presionado con el dedo
     this.clicks = new Map(); // boton -> { t, cancelled }: clic de rayo + pellizco en curso
-    this.tip = new Vector3();
     this.center = new Vector3();
     this.capGeometry = keycapGeometry();
     this.faceGeometry = new PlaneGeometry(WIDTH * 0.94, WIDTH * 0.94 * (TEX_H / TEX_W)).rotateX(-Math.PI / 2);
@@ -371,25 +371,20 @@ export class NavigationSystem extends createSystem({
     }
   }
 
-  /** Verdadero si un dedo (seguimiento de manos) esta sobre el boton: es un toque con el dedo y exige mantener la presion. */
+  /** Verdadero si la punta de un indice esta sobre el boton (lectura de UiSystem de este cuadro). */
   fingerOn(button) {
     button.getWorldPosition(this.center);
-    for (const side of ['right', 'left']) {
-      if (jointWorld(this.renderer, this.player, side, 'index-finger-tip', this.tip) && this.tip.distanceTo(this.center) < FINGER_NEAR) {
-        return true;
-      }
-    }
-    return false;
+    return fingerDistance(this.center) < FINGER_NEAR;
   }
 
   onPressed(entity) {
     if (!this.canPress(entity)) return;
-    if (this.fingerOn(entity.object3D)) {
-      this.held.set(entity, 0); // con el dedo: se activa al mantener la presion (ver update)
+    if (handsTracked()) {
+      // Con manos solo cuenta presionar con el dedo y mantener: apuntar desde lejos y pellizcar no hace nada
+      if (this.fingerOn(entity.object3D)) this.held.set(entity, 0);
       return;
     }
-    // Rayo + pellizco o controles: es un CLIC, se activa al SOLTAR si fue un toque corto y el pellizco no agarro nada. Asi el pellizco con
-    // el que se agarra un objeto, aunque el rayo apunte a un boton, nunca cambia de estacion.
+    // Controles: es un CLIC, se activa al SOLTAR si fue un toque corto y no agarro nada
     this.clicks.set(entity, { t: 0, cancelled: false });
   }
 
@@ -407,6 +402,7 @@ export class NavigationSystem extends createSystem({
   }
 
   activate(entity) {
+    sfx.ding();
     const direction = entity.getValue(NavButton, 'direction');
     if (stepCategory(direction)) {
       this.cooldown = COOLDOWN_SECONDS;

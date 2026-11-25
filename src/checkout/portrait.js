@@ -12,13 +12,14 @@ import {
   Vector3,
   WebGLRenderTarget,
 } from '@iwsdk/core';
-import { Avatar } from '../avatar/avatar.js';
+import { Avatar, texturesReady } from '../avatar/avatar.js';
 
 /** view: encuadre de la camara. Por defecto el cuerpo entero; { y: 1.5, z: 2.3 } encuadra la cabeza. */
-export function renderPortrait(renderer, config, size = 640, view = { y: 0.95, z: 5.4 }) {
+export async function renderPortrait(renderer, config, size = 640, view = { y: 0.95, z: 5.4 }) {
   const scene = litScene();
   const avatar = new Avatar(config).build();
   scene.add(avatar.root);
+  await texturesReady(); // la boca (SVG) carga aparte: sin esperarla el retrato salia sin boca
   const camera = new PerspectiveCamera(24, 1, 0.1, 30);
   camera.position.set(0, view.y, view.z);
   camera.lookAt(0, view.y, 0);
