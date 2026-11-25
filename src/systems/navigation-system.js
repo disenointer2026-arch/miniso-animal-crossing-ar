@@ -211,6 +211,7 @@ export class NavigationSystem extends createSystem({
 }) {
   init() {
     this.cooldown = 0;
+    if (import.meta.env.DEV && window.__miniso) window.__miniso.nav = this; // solo desarrollo: para comprobar los botones en el emulador
     this.held = new Map(); // boton -> segundos que lleva presionado con el dedo
     this.tip = new Vector3();
     this.center = new Vector3();

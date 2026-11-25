@@ -143,6 +143,7 @@ export class HairStationSystem extends createSystem({
     this.position = new Vector3();
     this.other = new Vector3();
     this.lastSelection = { ...selection.peek() };
+    if (import.meta.env.DEV && window.__miniso) window.__miniso.hair = this; // solo desarrollo: para comprobar la estacion en el emulador
 
     this.cleanupFuncs.push(
       registerDropHandler('hair', (entity) => this.onDrop(entity)),
