@@ -4,6 +4,7 @@
 import { createSystem, Hovered, Pressed } from '@iwsdk/core';
 import { sfx } from '../audio/sfx.js';
 import { UiItem } from '../components.js';
+import { interactionBusy } from '../interaction/carryable-system.js';
 import { pokeAllowedOnObject, sampleFingers } from '../interaction/finger.js';
 
 const FINGER_REACH = 0.04; // metros del borde del elemento a la punta del indice para contar como presion
@@ -21,7 +22,8 @@ export class UiSystem extends createSystem({
         if (!data?.shown || data.cooldown > 0) return;
         // Con manos solo cuenta presionar con el indice; apuntar desde lejos y pellizcar no acciona el boton
         // (salvo los botones marcados `remote`: seleccion a distancia con rayo + pellizco)
-        if (!data.remote && !pokeAllowedOnObject(object, FINGER_REACH)) return;
+        if (!data.remote && !pokeAllowedOnObject(object, data.reach ?? FINGER_REACH, !!data.noPinch)) return;
+        if (data.noPinch && interactionBusy()) return; // con algo en la mano (o recien soltado) no se pulsa
         data.cooldown = PRESS_COOLDOWN;
         if (!data.silent) sfx.select();
         data.onPress?.(entity);

@@ -6,6 +6,9 @@ import { jointWorld } from './hand-joints.js';
 
 const SIDES = ['right', 'left'];
 const tips = { right: new Vector3(), left: new Vector3() };
+const thumbs = { right: new Vector3(), left: new Vector3() };
+const pinching = { right: false, left: false };
+const PINCH_DISTANCE = 0.05; // pulgar e indice a menos de esto: esa mano esta pellizcando (agarrando), no tocando
 const valid = { right: false, left: false };
 const wrist = new Vector3();
 let tracked = false;
@@ -17,6 +20,7 @@ export function sampleFingers(renderer, player) {
   let any = false;
   for (const side of SIDES) {
     valid[side] = jointWorld(renderer, player, side, 'index-finger-tip', tips[side]);
+    pinching[side] = valid[side] && jointWorld(renderer, player, side, 'thumb-tip', thumbs[side]) && thumbs[side].distanceTo(tips[side]) < PINCH_DISTANCE;
     any = any || valid[side] || jointWorld(renderer, player, side, 'wrist', wrist);
   }
   tracked = any;
@@ -42,8 +46,13 @@ export function fingerDistanceToObject(object) {
 }
 
 /** Con manos, el dedo debe estar a menos de `margin` metros del objeto; con controles siempre cuenta. */
-export function pokeAllowedOnObject(object, margin = 0.04) {
-  return !tracked || fingerDistanceToObject(object) < margin;
+export function pokeAllowedOnObject(object, margin = 0.04, noPinch = false) {
+  if (!tracked) return true;
+  if (!noPinch) return fingerDistanceToObject(object) < margin;
+  // noPinch: solo cuenta un indice que TOCA (mano sin pellizcar): agarrar un sticker cercano no debe pulsar este boton
+  box.setFromObject(object);
+  for (const side of SIDES) if (valid[side] && !pinching[side] && box.distanceToPoint(tips[side]) < margin) return true;
+  return false;
 }
 
 /** Verdadero si el toque cuenta: con manos, el dedo debe estar a menos de `radius` del punto; con controles siempre. */
