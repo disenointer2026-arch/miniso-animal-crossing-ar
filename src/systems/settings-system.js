@@ -14,6 +14,8 @@ const HEIGHT_LIMIT = 0.15;
 const VOLUME_STEP = 0.1;
 const PANEL_SCALE = 0.07;
 const PANEL_DISTANCE = 0.8; // metros al frente de la cabeza, en horizontal
+const FOLLOW_DISTANCE = 0.3; // metros que puede alejarse el usuario antes de que el panel lo siga
+const FOLLOW_ANGLE = 0.6; // radianes (unos 35 grados) que puede girar antes de que el panel lo siga
 const PANEL_RISE = 0.2; // y un poco por encima de los ojos: se alcanza con el rayo sin estirarse
 
 export class SettingsSystem extends createSystem({
@@ -24,6 +26,9 @@ export class SettingsSystem extends createSystem({
     this.open = false;
     this.placed = false;
     this.spot = new Vector3();
+    this.goal = new Vector3();
+    this.goalYaw = 0;
+    this.following = false;
     this.dir = new Vector3();
     this.factory = null;
     if (import.meta.env.DEV && window.__miniso) window.__miniso.settings = this;
@@ -92,18 +97,46 @@ export class SettingsSystem extends createSystem({
     on('recal', () => this.recalibrate());
   }
 
-  /** Coloca el panel UNA vez al frente del usuario (al empezar a personalizar) y lo deja fijo: ya no persigue la mirada. */
-  place() {
-    if (!this.panel) return;
+  /** Punto y giro donde debe estar el panel: PANEL_DISTANCE al frente (solo en horizontal, sin contar si miras arriba o abajo) y
+      PANEL_RISE sobre los ojos. Devuelve false si la mirada es casi vertical (no hay un "frente" fiable). */
+  target() {
     const head = this.player.head;
     head.getWorldPosition(this.spot);
     head.getWorldDirection(this.dir); // hacia donde mira (la camara mira a -Z)
     this.dir.y = 0;
-    if (this.dir.lengthSq() < 0.05) return; // mirando casi vertical: se conserva donde estaba
+    if (this.dir.lengthSq() < 0.05) return false;
     this.dir.normalize();
-    this.panel.position.set(this.spot.x + this.dir.x * PANEL_DISTANCE, this.spot.y + PANEL_RISE, this.spot.z + this.dir.z * PANEL_DISTANCE);
-    this.panel.lookAt(this.spot.x, this.panel.position.y, this.spot.z); // un Object3D (no camara) apunta su +Z al objetivo: de frente al usuario
+    this.goal.set(this.spot.x + this.dir.x * PANEL_DISTANCE, this.spot.y + PANEL_RISE, this.spot.z + this.dir.z * PANEL_DISTANCE);
+    this.goalYaw = Math.atan2(this.spot.x - this.goal.x, this.spot.z - this.goal.z); // el +Z del panel mira a la cabeza
+    return true;
+  }
+
+  /** Coloca el panel de golpe al empezar a personalizar. */
+  place() {
+    if (!this.panel || !this.target()) return;
+    this.panel.position.copy(this.goal);
+    this.panel.rotation.set(0, this.goalYaw, 0);
     this.placed = true;
+    this.following = false;
+  }
+
+  /** Acompana al usuario por el espacio: si se aleja o gira mas de la tolerancia, el panel lo alcanza suavemente. Mirar arriba o abajo
+      no lo mueve (solo cuenta la posicion y el giro horizontal), asi siempre esta "arriba" y a la vista sin perseguir la cabeza. */
+  follow(delta) {
+    if (!this.placed || !this.panel.visible || !this.target()) return;
+    const off = Math.hypot(this.goal.x - this.panel.position.x, this.goal.z - this.panel.position.z);
+    const yawOff = Math.abs(Math.atan2(Math.sin(this.goalYaw - this.panel.rotation.y), Math.cos(this.goalYaw - this.panel.rotation.y)));
+    if (off > FOLLOW_DISTANCE || yawOff > FOLLOW_ANGLE || Math.abs(this.goal.y - this.panel.position.y) > 0.12) this.following = true;
+    if (!this.following) return;
+    const k = 1 - Math.exp(-3 * delta);
+    this.panel.position.lerp(this.goal, k);
+    const diff = Math.atan2(Math.sin(this.goalYaw - this.panel.rotation.y), Math.cos(this.goalYaw - this.panel.rotation.y));
+    this.panel.rotation.set(0, this.panel.rotation.y + diff * k, 0);
+    if (this.panel.position.distanceTo(this.goal) < 0.02 && Math.abs(diff) < 0.04) this.following = false;
+  }
+
+  update(delta) {
+    if (this.panel) this.follow(delta);
   }
 
   applyHeight() {
