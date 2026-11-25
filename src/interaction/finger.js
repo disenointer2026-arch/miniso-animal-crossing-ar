@@ -1,7 +1,7 @@
 /* Los botones se accionan al PRESIONARLOS con la punta del indice, no apuntando desde lejos con el rayo.
    Cada cuadro, UiSystem llama a sampleFingers(): guarda la punta del indice de cada mano y si hay
    seguimiento de manos. Con controles (sin manos) todo se acepta, porque no hay dedos que medir. */
-import { Vector3 } from '@iwsdk/core';
+import { Box3, Vector3 } from '@iwsdk/core';
 import { jointWorld } from './hand-joints.js';
 
 const SIDES = ['right', 'left'];
@@ -10,6 +10,7 @@ const valid = { right: false, left: false };
 const wrist = new Vector3();
 let tracked = false;
 const local = new Vector3();
+const box = new Box3();
 
 /** Lee las manos de este cuadro (solo valido dentro del cuadro XR). */
 export function sampleFingers(renderer, player) {
@@ -30,6 +31,19 @@ export function fingerDistance(point) {
   let best = Infinity;
   for (const side of SIDES) if (valid[side]) best = Math.min(best, tips[side].distanceTo(point));
   return best;
+}
+
+/** Distancia de la punta del indice mas cercana a la caja del objeto (los botones son anchos: el centro no basta). */
+export function fingerDistanceToObject(object) {
+  box.setFromObject(object);
+  let best = Infinity;
+  for (const side of SIDES) if (valid[side]) best = Math.min(best, box.distanceToPoint(tips[side]));
+  return best;
+}
+
+/** Con manos, el dedo debe estar a menos de `margin` metros del objeto; con controles siempre cuenta. */
+export function pokeAllowedOnObject(object, margin = 0.04) {
+  return !tracked || fingerDistanceToObject(object) < margin;
 }
 
 /** Verdadero si el toque cuenta: con manos, el dedo debe estar a menos de `radius` del punto; con controles siempre. */

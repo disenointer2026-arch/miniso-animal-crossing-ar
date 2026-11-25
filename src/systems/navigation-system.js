@@ -25,7 +25,7 @@ import {
 import { Factory, FactoryPart, NavButton } from '../components.js';
 import { SLOT, STATION_COUNT, beltTangent, modelPoint, slotPose, standPoint, stationSlot } from '../core/layout.js';
 import { interactionBusy } from '../interaction/carryable-system.js';
-import { fingerDistance, handsTracked } from '../interaction/finger.js';
+import { fingerDistanceToObject, handsTracked } from '../interaction/finger.js';
 import { sfx } from '../audio/sfx.js';
 import { CATEGORIES } from '../data/categories.js';
 import { beltMoving, beltRequest, categoryIndex, layout, phase, Phase, stepCategory } from '../state.js';
@@ -71,7 +71,7 @@ const NAV_SPOTS = {
 const NAV_WINDOWS = [{ node: 'reja', box: [[24.9, 25.2, 7.05], [27.0, 36.8, 8.8]] }];
 /** Con el dedo: se hunde y se mantiene este tiempo para activar. Con rayo + pellizco (o controles) basta un toque. */
 const POKE_HOLD = 2.0; // segundos que hay que mantener el dedo presionado para cambiar de estacion
-const FINGER_NEAR = 0.09; // el dedo esta tan cerca del boton: es un toque con el dedo, no un rayo
+const FINGER_NEAR = 0.04; // el dedo esta tan cerca del boton: es un toque con el dedo, no un rayo
 /** Despues de la ultima estacion, "siguiente" pasa a ser el boton de terminar. */
 const FINISH = { label: 'Terminar avatar', icon: 'boton-llavero.svg', tag: 'LISTO' };
 const targetFor = (direction) => CATEGORIES[categoryIndex.peek() + direction] ?? (direction > 0 ? FINISH : null);
@@ -373,8 +373,7 @@ export class NavigationSystem extends createSystem({
 
   /** Verdadero si la punta de un indice esta sobre el boton (lectura de UiSystem de este cuadro). */
   fingerOn(button) {
-    button.getWorldPosition(this.center);
-    return fingerDistance(this.center) < FINGER_NEAR;
+    return fingerDistanceToObject(button) < FINGER_NEAR;
   }
 
   onPressed(entity) {

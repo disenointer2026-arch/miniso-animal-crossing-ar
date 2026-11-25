@@ -4,6 +4,7 @@
      (colocarlos en el avatar, tirarlos al bote).
    - Si se sueltan lejos de todo, vuelven solos a su sitio: nunca se pierden. */
 import { createSystem, Grabbed, Quaternion, Vector3 } from '@iwsdk/core';
+import { sfx } from '../audio/sfx.js';
 import { Carryable } from '../components.js';
 
 const RETURN_DELAY = 1.4; // segundos quieto antes de volver
@@ -49,6 +50,7 @@ export class CarryableSystem extends createSystem({
     this.cleanupFuncs.push(
       this.queries.held.subscribe('qualify', (entity) => {
         heldCount++;
+        sfx.select(); // respuesta sonora al agarrar
         entity.setValue(Carryable, 'idle', 0);
       }),
       this.queries.held.subscribe('disqualify', (entity) => {

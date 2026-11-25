@@ -1,12 +1,12 @@
 /* Acciona los elementos de la interfaz espacial (UiItem): al pulsarlos llama a su onPress y
    mientras el dedo o el rayo los senala se agrandan un poco (halo de hover de la guia). Los
    elementos ocultos (userData.shown = false) quedan sin volumen para que no se toquen por accidente. */
-import { createSystem, Hovered, Pressed, Vector3 } from '@iwsdk/core';
+import { createSystem, Hovered, Pressed } from '@iwsdk/core';
 import { sfx } from '../audio/sfx.js';
 import { UiItem } from '../components.js';
-import { pokeAllowed, sampleFingers } from '../interaction/finger.js';
+import { pokeAllowedOnObject, sampleFingers } from '../interaction/finger.js';
 
-const FINGER_REACH = 0.07; // metros del centro del elemento a la punta del indice para contar como presion
+const FINGER_REACH = 0.04; // metros del borde del elemento a la punta del indice para contar como presion
 const PRESS_COOLDOWN = 0.22; // segundos entre dos pulsaciones del mismo elemento
 
 export class UiSystem extends createSystem({
@@ -14,16 +14,13 @@ export class UiSystem extends createSystem({
   pressed: { required: [UiItem, Pressed] },
 }) {
   init() {
-    this.center = new Vector3();
     this.cleanupFuncs.push(
       this.queries.pressed.subscribe('qualify', (entity) => {
         const object = entity.object3D;
         const data = object?.userData;
         if (!data?.shown || data.cooldown > 0) return;
         // Con manos solo cuenta presionar con el indice; apuntar desde lejos y pellizcar no acciona el boton
-        object.getWorldPosition(this.center);
-        const reach = FINGER_REACH + (data.reach ?? 0);
-        if (!pokeAllowed(this.center, reach)) return;
+        if (!pokeAllowedOnObject(object, FINGER_REACH)) return;
         data.cooldown = PRESS_COOLDOWN;
         if (!data.silent) sfx.select();
         data.onPress?.(entity);
