@@ -15,6 +15,7 @@ import {
   Matrix4,
   createSystem,
   Grabbed,
+  GrabSystem,
   Group,
   Mesh,
   MeshBasicMaterial,
@@ -41,7 +42,8 @@ import {
 import { modelFrame, modelScale } from '../../core/layout.js';
 import { EYE_COLORS } from '../../data/categories.js';
 import { addModelButton } from '../../factory/model-nodes.js';
-import { interactionBusy, registerDropHandler } from '../../interaction/carryable-system.js';
+import { beginExternalHold, endExternalHold, interactionBusy, registerDropHandler } from '../../interaction/carryable-system.js';
+import { jointWorld } from '../../interaction/hand-joints.js';
 import {
   avatarConfig,
   beltMoving,
@@ -87,6 +89,11 @@ const CHARM_FIT = { width: 1.55, height: 1.4, rest: 0.02 }; // espacio util (anc
 const DISPLAY_FIX = {};
 
 const noRaycast = () => {};
+// Agarre propio del charm de una caja abierta (seguimiento de manos): pellizco = pulgar e indice a menos de PINCH_CLOSE; se suelta al
+// separarlos mas de PINCH_OPEN. El charm se toma si el punto de pellizco esta a menos de CHARM_REACH de su centro.
+const PINCH_CLOSE = 0.028;
+const PINCH_OPEN = 0.045;
+const CHARM_REACH = 0.08;
 const charmGrabGeometry = new BoxGeometry(1, 1, 1);
 const charmGrabMaterial = new MeshBasicMaterial({ transparent: true, opacity: 0, depthWrite: false });
 
@@ -185,6 +192,12 @@ export class CatalogStationSystem extends createSystem({
     this.bookUnit = 0.1; // metros por unidad local del libro del modelo
     this.bookNode = null;
     this.bookGrab = [];
+    this.grab = this.world.getSystem(GrabSystem);
+    this.handsTracked = false;
+    this.charmHold = null; // { entity, side }: charm tomado con el agarre propio
+    this.pinchA = new Vector3();
+    this.pinchB = new Vector3();
+    this.pinchPoint = new Vector3();
     if (import.meta.env.DEV && window.__miniso) window.__miniso.catalog = this; // solo desarrollo: para comprobar el libro en el emulador
     this.closetButtons = [];
     this.pendingIcons = [];
@@ -619,7 +632,7 @@ export class CatalogStationSystem extends createSystem({
     entity.addComponent(FactoryPart);
     entity.addComponent(CatalogItem, { key: 'companion', itemId: id, target: 'body', kind: 'part' });
     entity.addComponent(Carryable, { kind: 'catalog', locked: true });
-    entity.addComponent(OneHandGrabbable);
+    if (!this.handsTracked) entity.addComponent(OneHandGrabbable); // con manos se toma con el agarre propio (updateCharmHold)
     return entity;
   }
 
@@ -680,7 +693,7 @@ export class CatalogStationSystem extends createSystem({
       object.scale.setScalar(Math.max(object.userData.base * k, 0.0001));
       // Los stickers y los charms siguen a su libro o caja (si nadie los sostiene)
       const anchor = object.userData.anchor;
-      if (anchor?.object && !this.queries.held.entities.has(entity)) this.placeAnchored(object);
+      if (anchor?.object && !this.queries.held.entities.has(entity) && entity !== this.charmHold?.entity) this.placeAnchored(object);
     }
   }
 
@@ -724,6 +737,56 @@ export class CatalogStationSystem extends createSystem({
     book.quaternion.slerp(this.bookQuaternion, 1 - Math.exp(-14 * delta));
   }
 
+  /** Distancia entre pulgar e indice de una mano (la deja en this.pinchPoint el punto medio); null si esa mano no esta seguida. */
+  readPinch(side) {
+    if (!jointWorld(this.renderer, this.player, side, 'thumb-tip', this.pinchA)) return null;
+    if (!jointWorld(this.renderer, this.player, side, 'index-finger-tip', this.pinchB)) return null;
+    this.pinchPoint.copy(this.pinchA).add(this.pinchB).multiplyScalar(0.5);
+    return this.pinchA.distanceTo(this.pinchB);
+  }
+
+  /** Charm de una caja abierta con el seguimiento de manos: el sistema de agarre del SDK fallaba con objetos que viajan dentro de una caja
+      sostenida (tomaba una caja vecina o nada). Aqui el charm se toma por la posicion del pellizco de la mano LIBRE: sigue al punto
+      medio entre pulgar e indice y se suelta al separarlos (si queda cerca del personaje se coloca; si no, vuelve a su caja). */
+  updateCharmHold() {
+    const factoryObject = this.factory?.object3D;
+    this.handsTracked =
+      jointWorld(this.renderer, this.player, 'right', 'wrist', this.pinchA) || jointWorld(this.renderer, this.player, 'left', 'wrist', this.pinchA);
+    if (!factoryObject) return;
+    if (this.charmHold) {
+      const { entity, side } = this.charmHold;
+      const object = entity.object3D;
+      const distance = this.readPinch(side);
+      if (!entity.active || !object || distance === null || distance > PINCH_OPEN) {
+        this.charmHold = null;
+        endExternalHold();
+        if (entity.active) this.onDrop(entity);
+        return;
+      }
+      this.other.copy(this.pinchPoint);
+      factoryObject.worldToLocal(this.other);
+      object.position.copy(this.other);
+      return;
+    }
+    if (!this.handsTracked) return;
+    for (const chestEntity of this.queries.heldChests.entities) {
+      const charm = chestEntity.object3D?.userData.charm;
+      if (!charm?.active || !charm.object3D) continue;
+      const holder = this.grab.getHolderHand(chestEntity);
+      for (const side of ['right', 'left']) {
+        if (side === holder) continue; // la mano que sostiene la caja no la toma
+        const distance = this.readPinch(side);
+        if (distance === null || distance > PINCH_CLOSE) continue;
+        charm.object3D.getWorldPosition(this.point);
+        if (this.pinchPoint.distanceTo(this.point) > CHARM_REACH) continue;
+        this.charmHold = { entity: charm, side };
+        beginExternalHold();
+        sfx.select();
+        return;
+      }
+    }
+  }
+
   /** Activa o desactiva el apuntado (rayo, dedo y agarre cercano) sobre las mallas de la caja. */
   setChestPickable(chest, pickable) {
     if (chest.userData.pickable === pickable) return;
@@ -750,6 +813,13 @@ export class CatalogStationSystem extends createSystem({
       // Abierta y en la mano, la caja deja de ser un objetivo de agarre: su malla ocupa el mismo volumen que el charm de
       // dentro y la otra mano "agarraba" la caja (ya sostenida) en lugar del charm. Al soltarla vuelve a ser agarrable.
       this.setChestPickable(chest, !(data.open > 0.05 || data.charm || (anyHeld && !held)));
+      // El agarre cercano del SDK no respeta el apuntado desactivado: con una caja en la mano, a las demas se les quita el agarre
+      const grabbable = !(anyHeld && !held);
+      if (grabbable && !chestEntity.hasComponent(OneHandGrabbable)) {
+        chestEntity.addComponent(OneHandGrabbable, { rotateMin: [0, -Infinity, 0], rotateMax: [0, Infinity, 0] });
+      } else if (!grabbable && chestEntity.hasComponent(OneHandGrabbable)) {
+        chestEntity.removeComponent(OneHandGrabbable);
+      }
       const previous = data.open;
       data.open += (target - data.open) * Math.min(1, delta * 9);
       if (Math.abs(data.open - target) < 0.004) data.open = target;
@@ -793,6 +863,7 @@ export class CatalogStationSystem extends createSystem({
     if (this.cooldown > 0) this.cooldown -= delta;
     if (this.pendingIcons.length && this.frame++ % 6 === 0) this.drawNextIcon();
     this.updateHeldBook(delta);
+    this.updateCharmHold();
     this.updateChests(delta);
     this.updateItems(delta, time);
     this.updateZones();

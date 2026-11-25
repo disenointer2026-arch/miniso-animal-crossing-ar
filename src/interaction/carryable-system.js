@@ -21,6 +21,15 @@ const RELEASE_GRACE = 0.9; // despues de soltar, todavia no se puede retirar nad
     nada de lo ya puesto, para que al colocar una pieza el dedo no retire otra por accidente. */
 export const interactionBusy = () => heldCount > 0 || performance.now() / 1000 - lastRelease < RELEASE_GRACE;
 
+/** Agarres propios (con el seguimiento de manos, sin el sistema de agarre del SDK): cuentan como "mano ocupada" igual que los del SDK. */
+export function beginExternalHold() {
+  heldCount++;
+}
+export function endExternalHold() {
+  heldCount = Math.max(0, heldCount - 1);
+  lastRelease = performance.now() / 1000;
+}
+
 /** Registra que hacer al soltar un objeto de este tipo. Devuelve como quitarlo. */
 export function registerDropHandler(kind, handler) {
   dropHandlers.set(kind, handler);
