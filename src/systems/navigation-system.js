@@ -70,8 +70,8 @@ const NAV_SPOTS = {
     para que ninguna barra de la malla tape las caras. Caja en coordenadas del modelo [[x, y, z] minimo, [x, y, z] maximo]. */
 const NAV_WINDOWS = [{ node: 'reja', box: [[24.9, 25.2, 7.05], [27.0, 36.8, 8.8]] }];
 /** Con el dedo: se hunde y se mantiene este tiempo para activar. Con rayo + pellizco (o controles) basta un toque. */
-const POKE_HOLD = 2.0; // segundos que hay que mantener el dedo presionado para cambiar de estacion
-const FINGER_NEAR = 0.04; // el dedo esta tan cerca del boton: es un toque con el dedo, no un rayo
+const POKE_HOLD = 1.0; // segundos que hay que mantener el dedo presionado para cambiar de estacion
+const FINGER_NEAR = 0.03; // el dedo esta tan cerca del boton: es un toque con el dedo, no un rayo
 /** Despues de la ultima estacion, "siguiente" pasa a ser el boton de terminar. */
 const FINISH = { label: 'Terminar avatar', icon: 'boton-llavero.svg', tag: 'LISTO' };
 const targetFor = (direction) => CATEGORIES[categoryIndex.peek() + direction] ?? (direction > 0 ? FINISH : null);
@@ -378,17 +378,13 @@ export class NavigationSystem extends createSystem({
 
   onPressed(entity) {
     if (!this.canPress(entity)) return;
-    if (handsTracked()) {
-      // Con manos solo cuenta presionar con el dedo y mantener: apuntar desde lejos y pellizcar no hace nada
-      if (this.fingerOn(entity.object3D)) this.held.set(entity, 0);
-      return;
-    }
+    if (handsTracked()) return; // con manos el boton lo gestiona update(): el dedo (de cualquier mano) sobre el boton
     // Controles: es un CLIC, se activa al SOLTAR si fue un toque corto y no agarro nada
     this.clicks.set(entity, { t: 0, cancelled: false });
   }
 
   onReleased(entity) {
-    this.held.delete(entity);
+    if (!handsTracked()) this.held.delete(entity);
     const click = this.clicks.get(entity);
     if (!click) return;
     this.clicks.delete(entity);
@@ -419,12 +415,22 @@ export class NavigationSystem extends createSystem({
       click.t += delta;
       if (interactionBusy()) click.cancelled = true; // el pellizco agarro algo (o ya habia algo en la mano): no es un clic
     }
+    // Con manos: el indice de CUALQUIER mano sobre el boton, sin depender de que el SDK atribuya el toque a una mano concreta
+    const hands = handsTracked();
+    if (hands) {
+      for (const entity of this.queries.buttons.entities) {
+        const button = entity.object3D;
+        if (button?.visible && this.canPress(entity) && this.fingerOn(button)) {
+          if (!this.held.has(entity)) this.held.set(entity, 0);
+        } else this.held.delete(entity);
+      }
+    }
     // El boton se hunde mientras esta presionado
     for (const entity of this.queries.buttons.entities) {
       const cap = entity.object3D?.userData.cap;
       if (!cap) continue;
       // Con el dedo se hunde poco a poco mientras se mantiene (progreso hacia POKE_HOLD)
-      let target = entity.hasComponent(Pressed) ? -0.007 : 0;
+      let target = !hands && entity.hasComponent(Pressed) ? -0.007 : 0;
       if (this.held.has(entity)) {
         const time = this.held.get(entity) + delta;
         if (!this.canPress(entity)) {
