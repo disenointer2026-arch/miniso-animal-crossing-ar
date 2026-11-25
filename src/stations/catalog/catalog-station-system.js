@@ -805,7 +805,12 @@ export class CatalogStationSystem extends createSystem({
     for (const chestEntity of this.queries.chests.entities) {
       const chest = chestEntity.object3D;
       if (!chest) continue;
-      const held = this.queries.heldChests.entities.has(chestEntity);
+      let held = this.queries.heldChests.entities.has(chestEntity);
+      // Agarre fantasma: la caja figura como agarrada pero ninguna mano la tiene (p. ej. otra mano la "tomo" y soltó): se libera
+      if (held && !this.grab.getHolderHand(chestEntity)) {
+        this.grab.forceRelease(chestEntity);
+        held = false;
+      }
       // Colision con la balda: sostenida, la caja no baja de su altura de reposo (su fondo no atraviesa la balda)
       if (held && chest.position.y < chest.userData.homeY) chest.position.y = chest.userData.homeY;
       const data = chest.userData;
