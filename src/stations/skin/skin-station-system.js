@@ -4,7 +4,7 @@
    2. La lata (modelo del equipo, con la textura del tono) se agarra con UNA MANO como un aerosol de verdad. Con el
       seguimiento de manos (Quest 3): se cierra la mano alrededor de la lata (medio, anular y menique flexionados; la
       palma la rodea) y la lata queda sujeta con el eje a lo largo de la palma (de menique a indice), la valvula hacia
-      el lado del indice y la boquilla al frente. Abrir la mano la suelta. Con controles se agarra con el pellizco
+      el lado del indice y la boquilla al frente. Abrir la mano ~1 s la suelta y la lata cae a su sitio. Con controles se agarra con el pellizco
       (OneHandGrabbable) como antes.
    3. El aerosol se acciona FLEXIONANDO EL INDICE de la misma mano sobre la VALVULA (el boton de arriba): sale pintura
       (particulas + sonido) y, si la boquilla apunta al personaje, su color se mezcla poco a poco con el de la lata.
@@ -56,6 +56,7 @@ const PRESS_RADIUS = 0.055; // distancia de la punta del indice a la valvula par
 // Agarre anatomico (distancias en metros, de la punta de cada dedo al centro de la palma)
 const CURL_CLOSE = 0.088; // un dedo esta flexionado (envolviendo la lata) por debajo de esto
 const CURL_OPEN = 0.115; // y se considera abierto por encima de esto (histeresis)
+const RELEASE_HOLD = 1.0; // segundos con la mano abierta para confirmar que se quiere soltar la lata
 const GRASP_REACH = 0.09; // distancia maxima de la palma al eje de la lata para poder agarrarla
 const INDEX_BENT = 0.078; // el indice esta flexionado si su punta queda a menos de esto del nudillo (estirado mide ~0,09)
 const HOLD_OFFSET = 0.03; // la lata queda a esta distancia de la palma, hacia el lado de los dedos
@@ -92,6 +93,7 @@ export class SkinStationSystem extends createSystem({
     this.hand = { palm: new Vector3(), X: new Vector3(), Y: new Vector3(), Z: new Vector3() };
     for (const [key] of HAND_JOINTS) this.hand[key] = new Vector3();
     this.grip = null; // { entity, side }
+    this.openTime = 0; // cuanto lleva la mano sujetando la lata abierta
     this.handsTracked = false;
     this.basis = new Matrix4();
     this.heldQuaternion = new Quaternion();
@@ -292,13 +294,17 @@ export class SkinStationSystem extends createSystem({
     if (this.grip) {
       const { entity, side } = this.grip;
       const object = entity.object3D;
-      if (!entity.active || !object || !this.readHand(side) || this.curledFingers(CURL_OPEN) < 2) {
-        // Mano abierta: suelta la lata (vuelve a su sitio si queda lejos)
+      const tracked = entity.active && object && this.readHand(side);
+      // Mano abierta = ya no envuelve la lata con los tres dedos. Si sigue asi RELEASE_HOLD segundos seguidos, se suelta.
+      this.openTime = tracked && this.curledFingers(CURL_OPEN) >= 3 ? 0 : this.openTime + delta;
+      if (!tracked || this.openTime >= RELEASE_HOLD) {
         if (entity.active) {
           entity.setValue(Carryable, 'locked', false);
-          entity.setValue(Carryable, 'idle', 0);
+          entity.setValue(Carryable, 'idle', 1.0); // casi de inmediato cae/vuelve a su sitio en la banda
+          sfx.select();
         }
         this.grip = null;
+        this.openTime = 0;
         return;
       }
       this.holdCan(object, delta, factoryObject);
@@ -312,6 +318,7 @@ export class SkinStationSystem extends createSystem({
         if (!this.readHand(side) || this.curledFingers(CURL_CLOSE) < 3) continue;
         if (this.distanceToCan(object, this.hand.palm) > GRASP_REACH) continue;
         this.grip = { entity, side };
+        this.openTime = 0;
         entity.setValue(Carryable, 'locked', true); // mientras la mano la sujeta no vuelve sola a su sitio
         sfx.select();
         return;
