@@ -244,6 +244,7 @@ export class HairStationSystem extends createSystem({
         onPress: () => select('hair', option.id),
       });
       item.mesh.userData.silent = true;
+      item.mesh.userData.direct = true; // contacto directo del indice (cualquier mano), rapido y sin depender del SDK
       return { item, id: option.id };
     });
     const swatches = HAIR_COLORS.map((color, i) => {
@@ -261,6 +262,7 @@ export class HairStationSystem extends createSystem({
         onPress: () => select('hairColor', color.id),
       });
       item.mesh.userData.silent = true;
+      item.mesh.userData.direct = true;
       return { item, id: color.id };
     });
     this.panels = { board: group, cards, swatches };

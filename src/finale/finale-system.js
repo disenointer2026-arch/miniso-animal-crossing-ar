@@ -18,6 +18,7 @@ import {
   OneHandGrabbable,
   Points,
   PointsMaterial,
+  Quaternion,
   signal,
   Vector3,
 } from '@iwsdk/core';
@@ -67,6 +68,9 @@ export class FinaleSystem extends createSystem({
     this.avatarCurrent = new Vector3();
     this.tmp = new Vector3();
     this.headPos = new Vector3();
+    this.qa = new Quaternion();
+    this.qb = new Quaternion();
+    this.up = new Vector3(0, 1, 0);
     this.boxYaw = 0;
     this.targetYaw = 0;
     this.cursor = 0;
@@ -177,7 +181,7 @@ export class FinaleSystem extends createSystem({
       this.goal.copy(factoryObject.worldToLocal(framePoint(this.tmp, s.right, s.forward + BAG_BACK * s.scale, SHOWCASE_DROP)));
       this.avatarGoal.copy(factoryObject.worldToLocal(framePoint(this.tmp, s.right, s.forward, SHOWCASE_DROP + AVATAR_FLOAT)));
       this.current.copy(this.boxStart);
-      this.targetYaw = this.yawToUser(framePoint(this.tmp, s.right, s.forward + BAG_BACK * s.scale, SHOWCASE_DROP));
+      this.startYaw = this.boxYaw + this.factoryYaw(); // giro de la bolsa en el mundo al salir
       // La fabrica se desvanece en destellos; solo quedan la caja y el personaje
       const keep = [this.box?.object3D, this.avatarEntity?.object3D];
       this.hidden.length = 0;
@@ -252,13 +256,14 @@ export class FinaleSystem extends createSystem({
       const g = 1 + (BOX_SCALE * showcase.peek().scale - 1) * e;
       gift.scale.setScalar(g);
       // Gira una vuelta completa mientras viaja y termina exactamente de frente al usuario (por el camino mas corto, sin sobrar media vuelta)
-      this.targetYaw = this.yawToUser(framePoint(this.tmp, showcase.peek().right, showcase.peek().forward + BAG_BACK * showcase.peek().scale, SHOWCASE_DROP));
-      const turn = Math.atan2(Math.sin(this.targetYaw - this.boxYaw), Math.cos(this.targetYaw - this.boxYaw));
-      gift.rotation.y = this.boxYaw + turn * e + Math.PI * 2 * e;
+      const sc = showcase.peek();
+      this.targetYaw = this.yawToUser(framePoint(this.tmp, sc.right, sc.forward + BAG_BACK * sc.scale, SHOWCASE_DROP));
+      const turn = Math.atan2(Math.sin(this.targetYaw - this.startYaw), Math.cos(this.targetYaw - this.startYaw));
+      this.setWorldYaw(gift, this.startYaw + turn * e + Math.PI * 2 * e);
       // El personaje va dentro de la bolsa: se mueve, gira y crece con ella
       figure.position.set(gift.position.x, gift.position.y + floor * g, gift.position.z);
       figure.scale.setScalar(base * INSIDE_SCALE * g);
-      figure.rotation.y = gift.rotation.y;
+      this.setWorldYaw(figure, this.startYaw + turn * e + Math.PI * 2 * e);
       gift.getWorldPosition(this.tmp);
       if (Math.random() < 0.6) this.burst(1, this.tmp, 0.5);
       if (k >= 1) {
@@ -297,11 +302,30 @@ export class FinaleSystem extends createSystem({
     return FINAL_HEIGHT / avatarHeight(layout.peek());
   }
 
-  /** Giro (en el espacio de la fabrica) para que el frente (+Z) de un objeto situado en el punto del mundo `world` mire a la cabeza del usuario. */
+  /** Giro en Y (mundo) hacia el que apunta el +Z de la fabrica. Se mide con vectores, no con rotation.y: si la fabrica pasa de
+      90 grados, el Euler de Three.js trae x = z = 180 y rotation.y solo no sirve (daba bolsas de espaldas segun la orientacion). */
+  factoryYaw() {
+    const object = this.factory?.object3D;
+    if (!object) return 0;
+    object.getWorldQuaternion(this.qa);
+    this.tmp.set(0, 0, 1).applyQuaternion(this.qa);
+    return Math.atan2(this.tmp.x, this.tmp.z);
+  }
+
+  /** Giro en Y (mundo) para que el frente (+Z, donde esta el logo) de un objeto en el punto `world` mire a la cabeza del usuario. */
   yawToUser(world) {
     this.player.head.getWorldPosition(this.headPos);
-    const yaw = Math.atan2(this.headPos.x - world.x, this.headPos.z - world.z);
-    return yaw - (this.factory?.object3D.rotation.y ?? 0);
+    return Math.atan2(this.headPos.x - world.x, this.headPos.z - world.z);
+  }
+
+  /** Deja al objeto solo girado `yaw` (mundo) alrededor de la vertical, sea cual sea la orientacion de su padre. */
+  setWorldYaw(object, yaw) {
+    this.qb.setFromAxisAngle(this.up, yaw);
+    if (object.parent) {
+      object.parent.getWorldQuaternion(this.qa).invert();
+      this.qb.premultiply(this.qa);
+    }
+    object.quaternion.copy(this.qb);
   }
 
   /** La bolsa (de fondo) y el personaje (delante, flotando) siguen la posicion que piden los paneles (senal "showcase"). */
@@ -315,7 +339,7 @@ export class FinaleSystem extends createSystem({
     gift.scale.setScalar(BOX_SCALE * s.scale);
     // El frente (logo) mira siempre a la cabeza del usuario, dondequiera que este la fabrica o el usuario
     this.targetYaw = this.yawToUser(framePoint(this.tmp, s.right, s.forward + BAG_BACK * s.scale, SHOWCASE_DROP));
-    gift.rotation.y = this.targetYaw;
+    this.setWorldYaw(gift, this.targetYaw);
     framePoint(this.tmp, s.right, s.forward, SHOWCASE_DROP + AVATAR_FLOAT);
     this.avatarCurrent.lerp(factoryObject.worldToLocal(this.tmp), k);
     figure.position.set(this.avatarCurrent.x, this.avatarCurrent.y + Math.sin(time * 1.8) * 0.008, this.avatarCurrent.z);

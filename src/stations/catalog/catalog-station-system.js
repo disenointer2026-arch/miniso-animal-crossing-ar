@@ -374,7 +374,7 @@ export class CatalogStationSystem extends createSystem({
       item.mesh.position.set((i - 1) * 0.105, tabY + 0.022, -0.128);
       item.mesh.rotation.x = -0.75; // la parte de arriba se inclina hacia atras: la cara mira hacia arriba y al usuario
       item.mesh.userData.silent = false;
-      item.mesh.userData.reach = 0.012; // solo responde al dedo que la toca, no a un sticker agarrado cerca
+      item.mesh.userData.reach = 0.02; // solo responde al dedo que la toca (a menos de 2 cm), no a un sticker agarrado cerca
       item.mesh.userData.noPinch = true; // y no a una mano que esta pellizcando
       return { item, index: i };
     });
