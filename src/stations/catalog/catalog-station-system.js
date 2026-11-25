@@ -320,7 +320,7 @@ export class CatalogStationSystem extends createSystem({
     for (const [w, d, x, z] of [
       [0.07, 0.34, -0.2, 0], // izquierda
       [0.07, 0.34, 0.2, 0], // derecha
-      [0.46, 0.07, 0, -0.16], // arriba (lejos)
+      [0.46, 0.04, 0, -0.19], // arriba (lejos): detras de las pestañas (z -0,17 a -0,21), sin taparlas
       [0.46, 0.07, 0, 0.16], // abajo (cerca)
     ]) {
       const zone = new Mesh(charmGrabGeometry, charmGrabMaterial);
@@ -376,6 +376,8 @@ export class CatalogStationSystem extends createSystem({
       item.mesh.userData.silent = false;
       item.mesh.userData.reach = 0.02; // solo responde al dedo que la toca (a menos de 2 cm), no a un sticker agarrado cerca
       item.mesh.userData.noPinch = true; // y no a una mano que esta pellizcando
+      item.mesh.userData.direct = true; // contacto directo del indice (cualquier mano): el SDK no registraba el toque en la pestaña
+      item.mesh.userData.allowBusy = true; // se puede tocar con una mano mientras la otra sostiene el libro o un sticker
       return { item, index: i };
     });
     this.bookUi = { entity, swatches, tabs };

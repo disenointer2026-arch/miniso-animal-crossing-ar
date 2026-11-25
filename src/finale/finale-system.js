@@ -259,7 +259,7 @@ export class FinaleSystem extends createSystem({
       const sc = showcase.peek();
       this.targetYaw = this.yawToUser(framePoint(this.tmp, sc.right, sc.forward + BAG_BACK * sc.scale, SHOWCASE_DROP));
       const turn = Math.atan2(Math.sin(this.targetYaw - this.startYaw), Math.cos(this.targetYaw - this.startYaw));
-      this.setWorldYaw(gift, this.startYaw + turn * e + Math.PI * 2 * e);
+      this.setWorldYaw(gift, this.startYaw + turn * e + Math.PI * 2 * e, gift.userData.frontYaw);
       // El personaje va dentro de la bolsa: se mueve, gira y crece con ella
       figure.position.set(gift.position.x, gift.position.y + floor * g, gift.position.z);
       figure.scale.setScalar(base * INSIDE_SCALE * g);
@@ -319,8 +319,8 @@ export class FinaleSystem extends createSystem({
   }
 
   /** Deja al objeto solo girado `yaw` (mundo) alrededor de la vertical, sea cual sea la orientacion de su padre. */
-  setWorldYaw(object, yaw) {
-    this.qb.setFromAxisAngle(this.up, yaw);
+  setWorldYaw(object, yaw, frontYaw = 0) {
+    this.qb.setFromAxisAngle(this.up, yaw - frontYaw); // frontYaw: el frente del modelo no apunta a +Z
     if (object.parent) {
       object.parent.getWorldQuaternion(this.qa).invert();
       this.qb.premultiply(this.qa);
@@ -339,7 +339,7 @@ export class FinaleSystem extends createSystem({
     gift.scale.setScalar(BOX_SCALE * s.scale);
     // El frente (logo) mira siempre a la cabeza del usuario, dondequiera que este la fabrica o el usuario
     this.targetYaw = this.yawToUser(framePoint(this.tmp, s.right, s.forward + BAG_BACK * s.scale, SHOWCASE_DROP));
-    this.setWorldYaw(gift, this.targetYaw);
+    this.setWorldYaw(gift, this.targetYaw, gift.userData.frontYaw);
     framePoint(this.tmp, s.right, s.forward, SHOWCASE_DROP + AVATAR_FLOAT);
     this.avatarCurrent.lerp(factoryObject.worldToLocal(this.tmp), k);
     figure.position.set(this.avatarCurrent.x, this.avatarCurrent.y + Math.sin(time * 1.8) * 0.008, this.avatarCurrent.z);

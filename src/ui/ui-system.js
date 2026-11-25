@@ -47,7 +47,7 @@ export class UiSystem extends createSystem({
       // sin depender de que el SDK registre la pulsacion. El borde de bajada (dedo lejos) rearma el boton.
       if (data.direct && handsTracked()) {
         if (data.shown && pokeAllowedOnObject(object, DIRECT_REACH, true)) {
-          if (!data.touching && !(data.cooldown > 0) && !interactionBusy()) {
+          if (!data.touching && !(data.cooldown > 0) && (data.allowBusy || !interactionBusy())) {
             data.touching = true;
             this.fire(entity, data);
           }
