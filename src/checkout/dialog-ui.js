@@ -97,6 +97,7 @@ export function createDialog(world) {
   const handlers = [null, null, null];
   const make = (index, size, name) => {
     const item = addItem(world, entity, {
+    remote: true,
       width: size.width,
       height: size.height,
       pxPerMeter: PX,

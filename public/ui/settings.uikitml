@@ -19,7 +19,7 @@
       <div class="row"><div class="label">Altura</div><div id="h-minus" class="chip">-</div><div id="h-out" class="value">0</div><div id="h-plus" class="chip">+</div></div>
       <div class="row"><div class="label">Musica</div><div id="m-minus" class="chip">-</div><div id="m-out" class="value">0</div><div id="m-plus" class="chip">+</div></div>
       <div class="row"><div class="label">Efectos</div><div id="e-minus" class="chip">-</div><div id="e-out" class="value">0</div><div id="e-plus" class="chip">+</div></div>
-      <div id="recal" class="recal">Recalibrar con la mano</div>
+      <div id="recal" class="recal">Reposicionar la fabrica</div>
     </div>
   </div>
 </div>

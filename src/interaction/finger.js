@@ -65,13 +65,13 @@ export function pokeAllowedOnPanel(panel, depth = 0.1) {
 }
 
 /** Envuelve un manejador de pulsacion (pointerdown: el dedo no siempre llega a generar un clic) de un panel: con manos solo responde si el dedo esta presionando el panel. */
-export function touchOnly(getPanel, handler, { remote = false } = {}) {
+export function touchOnly(getPanel, handler, { remote = true } = {}) {
   let last = 0;
   return (...args) => {
     const now = performance.now();
     if (now - last < 300) return; // un dedo que roza el panel puede repetir el evento
     const panel = getPanel();
-    // remote: panel con seleccion a distancia (rayo de la mano + pellizco): no exige tocarlo con el dedo
+    // remote (por defecto): seleccion a distancia (rayo de la mano + pellizco) ademas de tocar con el dedo; con remote:false solo cuenta tocar
     if (!remote && panel && !pokeAllowedOnPanel(panel)) return;
     last = now;
     handler(...args);

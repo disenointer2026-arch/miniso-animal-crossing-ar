@@ -136,8 +136,6 @@ export class CheckoutSystem extends createSystem({}) {
       keyboard,
       card,
     };
-    // Panel "Tu avatar esta listo": solo sus dos botones (tarjeta y pedido) se eligen a distancia, con rayo + pellizco
-    for (const key of ['order', 'card']) this.panels.choose.items[key].mesh.userData.remote = true;
     this.confetti = new Confetti(this.world);
     this.order = new OrderUI(order);
     this.keyboard = new KeyboardUI(keyboard, {
