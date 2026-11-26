@@ -98,11 +98,11 @@ Configuración en `iwsdk.config.json` (modo `ar`, manos, anclas, planos, hit-tes
 | **Grabbing** (`OneHandGrabbable`) | Latas, cabello, stickers, prendas, charms, cajas y libro; el sistema propio `CarryableSystem` añade soltar al abrir la mano y colocar el objeto en su zona |
 | **Spatial UI (UIKitML)** | Bienvenida, instrucciones, ajustes, pedido, teclado y tarjeta (`public/ui/*.uikitml`, fuente Nunito); interfaz de estaciones dibujada en lienzos (`src/ui/`) |
 | **Built-in Interactions** (`PokeInteractable`, `RayInteractable`) | Toque con el dedo y rayo + pellizco en paneles |
-| **Scene Understanding** (`planeDetection`, `XRPlane`) | Reconoce el piso y muebles cercanos para ubicar la fábrica |
-| **Anclas** (`XRAnchor`) | Fija la fábrica al espacio real tras calibrar |
-| **Hit-test / environmentRaycast** | Activados; la colocación final usa la mano del usuario |
+| **Anclas** (`XRAnchor`) | Fija la fábrica al espacio real tras calibrar con la mano (`src/systems/calibration-system.js`) |
 | **External Assets** | Modelos `.glb`, texturas y paneles registrados en `src/assets.js` |
 | **ECS propio** | Sistemas de banda, navegación, estaciones, calibración, ajustes, pedido y cierre (`src/systems/`, `src/stations/`, `src/checkout/`, `src/finale/`) |
+
+**Activados en `iwsdk.config.json` pero sin uso en la versión final:** Scene Understanding (`sceneUnderstanding`, `planeDetection`), Environment Raycast y hit-test. Las primeras versiones reconocían el piso; falló en las gafas y la fábrica se coloca con la mano.
 
 **No usados a propósito:** física (Havok), locomoción, detección de mallas, oclusión por profundidad y acceso a cámara; así se cuida el rendimiento del Quest 3.
 
