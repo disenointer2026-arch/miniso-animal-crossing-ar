@@ -50,7 +50,7 @@ function pathRibbon(width) {
 }
 
 const HINTS = {
-  calibrate: 'Pon la mano a la altura donde trabajarias comodo, con el codo a 90 grados, y pellizca para ubicar la fabrica',
+  calibrate: 'Pon la mano a la altura donde trabajarías cómodo, con el codo a 90 grados, y pellizca para ubicar la fábrica',
 };
 
 export class CalibrationSystem extends createSystem({}) {

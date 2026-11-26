@@ -1,6 +1,8 @@
 <!-- Indicacion breve que sigue la mirada del usuario, de frente (sistema visual: panel crema, Nunito). -->
 <style>
-  .hint-root { flex-direction: column; align-items: center; width: 460px; padding: 16px; font-family: nunito; background-color: #FAF6D4; border-radius: 28px; border-width: 4px; border-color: #FDD885; }
+  @font-face { font-family: Nunito; font-weight: 400; src: url(../fonts/Nunito_400Regular.ttf); }
+  @font-face { font-family: Nunito; font-weight: 700; src: url(../fonts/Nunito_700Bold.ttf); }
+  .hint-root { flex-direction: column; align-items: center; width: 460px; padding: 16px; font-family: Nunito; background-color: #FAF6D4; border-radius: 28px; border-width: 4px; border-color: #FDD885; }
   .hint-text { color: #3A2E28; font-size: 21px; font-weight: 700; line-height: 1.25; text-align: center; }
 </style>
 <div class="hint-root">

@@ -1,6 +1,8 @@
 <!-- Instrucciones de uso: aparecen cuando el personaje llega y se cierran con el boton. -->
 <style>
-  .panel-root { flex-direction: column; width: 520px; font-family: nunito; background-color: #FAF6D4; border-radius: 28px; border-width: 4px; border-color: #FDD885; }
+  @font-face { font-family: Nunito; font-weight: 400; src: url(../fonts/Nunito_400Regular.ttf); }
+  @font-face { font-family: Nunito; font-weight: 700; src: url(../fonts/Nunito_700Bold.ttf); }
+  .panel-root { flex-direction: column; width: 520px; font-family: Nunito; background-color: #FAF6D4; border-radius: 28px; border-width: 4px; border-color: #FDD885; }
   .panel-content { flex-direction: column; gap: 10px; padding: 26px; }
   .title { color: #E60012; font-size: 32px; font-weight: 700; margin-bottom: 4px; }
   .step { flex-direction: row; align-items: center; gap: 12px; }
@@ -11,10 +13,10 @@
 </style>
 <div class="panel-root">
   <div class="panel-content">
-    <div class="title">Como funciona</div>
+    <div class="title">Cómo funciona</div>
     <div class="step">
       <div class="number">1</div>
-      <div class="text">Camina hasta el circulo del piso: asi quedas de frente a cada estacion</div>
+      <div class="text">Camina hasta el círculo del piso: así quedas de frente a cada estación</div>
     </div>
     <div class="step">
       <div class="number">2</div>
@@ -22,19 +24,19 @@
     </div>
     <div class="step">
       <div class="number">3</div>
-      <div class="text">Sueltalo sobre tu personaje: se coloca solo</div>
+      <div class="text">Suéltalo sobre tu personaje: se coloca solo</div>
     </div>
     <div class="step">
       <div class="number">4</div>
-      <div class="text">Cambia de estacion presionando con el indice, durante 3 segundos, los botones del borde de la banda</div>
+      <div class="text">Cambia de estación presionando con el índice, durante 3 segundos, los botones del borde de la banda</div>
     </div>
     <div class="step">
       <div class="number">5</div>
-      <div class="text">Al final del recorrido podras terminar tu personaje</div>
+      <div class="text">Al final del recorrido podrás terminar tu personaje</div>
     </div>
     <div class="step">
       <div class="number">6</div>
-      <div class="text">En Ajustes (arriba, frente a ti) puedes reubicar la fabrica cuando quieras, sin perder tu personaje</div>
+      <div class="text">En Ajustes (arriba, frente a ti) puedes reubicar la fábrica cuando quieras, sin perder tu personaje</div>
     </div>
   </div>
   <Button id="close-button" class="button">

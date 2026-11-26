@@ -1,7 +1,6 @@
 /* Indicacion breve (panel UIKitML) que acompana la mirada del usuario.
    Cualquier sistema la cambia escribiendo en la senal "hint". */
 import { createSystem, FollowBehavior, Follower } from '@iwsdk/core';
-import { plain } from '../data/categories.js';
 import { hint } from '../state.js';
 
 export class HintSystem extends createSystem({}) {
@@ -28,7 +27,7 @@ export class HintSystem extends createSystem({}) {
       this.cleanupFuncs.push(
         hint.subscribe((value) => {
           panel.visible = value !== '';
-          if (value) text?.setProperties({ text: plain(value) });
+          if (value) text?.setProperties({ text: value });
         }),
       );
     });

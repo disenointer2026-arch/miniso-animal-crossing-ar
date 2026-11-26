@@ -50,7 +50,7 @@
     <div id="s1" class="box">
       <div class="h2">Tus datos</div>
       <div id="session" class="small">-</div>
-      <div id="login" class="chip">Iniciar sesion MINISO (simulado)</div>
+      <div id="login" class="chip">Iniciar sesión MINISO (simulado)</div>
       <div class="row"><div id="f-name" class="field">-</div><div id="f-lastName" class="field">-</div></div>
       <div id="f-email" class="field">-</div>
       <div class="row"><div id="f-phone" class="field">-</div></div>
@@ -60,8 +60,8 @@
     </div>
 
     <div id="s2" class="box">
-      <div class="h2">Metodo de pago</div>
-      <div class="small">Esto es una simulacion: no se realiza ningun cobro y no debes ingresar datos reales.</div>
+      <div class="h2">Método de pago</div>
+      <div class="small">Esto es una simulación: no se realiza ningun cobro y no debes ingresar datos reales.</div>
       <div class="row"><div id="m-card" class="chip">Tarjeta</div><div id="m-pse" class="chip">PSE</div><div id="m-nequi" class="chip">Nequi</div></div>
       <div id="g-card" class="box">
         <div id="f-ccNumber" class="field">-</div>
@@ -69,18 +69,18 @@
       </div>
       <div id="g-pse" class="box">
         <div class="row"><div id="b-prev" class="chip">-</div><div id="b-name" class="value">-</div><div id="b-next" class="chip">-</div></div>
-        <div class="small">Al finalizar, simularemos la redireccion a tu banco.</div>
+        <div class="small">Al finalizar, simularemos la redirección a tu banco.</div>
       </div>
       <div id="g-nequi" class="box">
         <div id="f-nequi" class="field">-</div>
-        <div class="small">Simularemos una notificacion de pago en tu celular.</div>
+        <div class="small">Simularemos una notificación de pago en tu celular.</div>
       </div>
       <div id="p-totals2" class="small">-</div>
     </div>
 
     <div id="err" class="err"> </div>
     <div class="foot">
-      <div id="back" class="btn">Atras</div>
+      <div id="back" class="btn">Atrás</div>
       <div id="next" class="btn primary">Continuar</div>
     </div>
   </div>

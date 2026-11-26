@@ -23,10 +23,10 @@
 <div class="root">
   <div class="content">
     <div class="title">Crea tu tarjeta Amiibo</div>
-    <div class="text">Se genero a partir de tu avatar. Ajusta sus datos y el fondo: la tarjeta cambia al instante.</div>
+    <div class="text">Se generó a partir de tu avatar. Ajusta sus datos y el fondo: la tarjeta cambia al instante.</div>
     <div class="label">NOMBRE (toca para escribir)</div>
     <div class="row"><div id="f-cardName" class="field">-</div></div>
-    <div class="label">CUMPLEANOS</div>
+    <div class="label">CUMPLEAÑOS</div>
     <div class="row">
       <div id="d-minus" class="chip">-</div><div id="d-day" class="value">-</div><div id="d-plus" class="chip">+</div>
       <div id="mo-prev" class="chip">-</div><div id="mo-name" class="value">-</div><div id="mo-next" class="chip">-</div>
@@ -36,7 +36,7 @@
       <div id="th-0" class="chip">-</div><div id="th-1" class="chip">-</div><div id="th-2" class="chip">-</div>
       <div id="th-3" class="chip">-</div><div id="th-4" class="chip">-</div>
     </div>
-    <div class="ready">Tu tarjeta esta lista!</div>
+    <div class="ready">¡Tu tarjeta está lista!</div>
     <div class="row">
       <div id="share" class="btn primary">Compartir</div>
     </div>

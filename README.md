@@ -23,48 +23,38 @@ npm run build    # versión para publicar, en dist/
 Pruebas en el visor: publicar (GitHub Actions lo hace al fusionar a `main`), abrir la URL en el
 navegador de la Quest, pulsar **Entrar en RA** y aceptar los permisos de espacio.
 
-## Estado: versión 5 (correcciones de la prueba en el Quest 3)
+## Cómo se usa (solo con las manos)
 
-La versión 5 aplica las correcciones del equipo tras probar en el visor y la **guía de sistema visual** de la Entrega #3
-(paleta, Nunito, radios de 12 a 40 px, sombras cálidas, botón píldora roja, fondos crema con triángulos).
+1. Abrir la URL pública en el navegador del Quest 3 (seguimiento de manos activado, sin controles) y pulsar **Entrar en RA**; aceptar los permisos de espacio.
+2. **Calibrar:** poner la mano a la altura cómoda y pellizcar. La fábrica queda a esa altura y orientada hacia donde miras. Si hace falta moverla, **Ajustes → Reposicionar la fábrica** (conserva el avatar y no repite el viaje de la banda).
+3. **Caminar** hasta el círculo del piso de cada estación (se pone verde al llegar).
+4. **Agarrar:** acercar la mano al objeto y **pellizcar**; al **abrir los dedos se suelta**. Soltado sobre el personaje, el objeto se coloca solo.
+5. **Tocar botones** con la punta del índice (cualquiera de las dos manos). Los botones del borde de la banda piden **mantener el dedo 3 segundos** para evitar toques sin querer. Los paneles también se manejan a distancia con rayo + pellizco.
+6. **Ajustes** va arriba y al frente, y sigue al usuario en horizontal sin subir si levanta la cabeza (altura ±2 cm, volumen de música y efectos, reposicionar).
 
-| Cambio | Dónde |
-|---|---|
-| **Fábrica más grande** (1 unidad del modelo = 3,4 cm): el personaje y los botones ya no atraviesan el modelo | `src/core/layout.js` (`MODEL.scale`) |
-| **Hay que caminar:** cada estación tiene su **punto de pie**. En el piso aparece un círculo con huellas, una columna de luz y una flecha que apunta hacia él; al llegar se pone verde con un chulo. Un aviso invita a caminar si estás lejos | `src/systems/stand-system.js`, `MODEL.stands` |
-| **Todo de frente:** los marcos de las estaciones miran al punto de pie, así que los paneles y el personaje quedan de cara al usuario. «Ajustes» va arriba y al frente | `layout.js`, `settings-system.js` |
-| **Zonas de colocación más amplias** (hasta ~28 cm) y zonas táctiles más grandes | cada sistema de estación |
-| **No se quita lo puesto** mientras se sostiene otro objeto (ni 0,9 s después de soltarlo) | `src/interaction/carryable-system.js` (`interactionBusy`) |
-| **Colisión de la ropa exacta:** las piezas con huesos se «hornean» a mallas estáticas, así que la caja de colisión coincide con lo que se ve (antes se agarraban por encima de la prenda) | `catalog-station-system.js` (`bakeSkinned`) |
-| Interfaz espacial **dibujada en lienzos** con tildes y la paleta de la guía | `src/ui/` |
-
-**Estaciones** (sin paneles flotantes: se maneja con los objetos del modelo)
+**Estaciones**
 
 | Estación | Cómo se juega | Dónde |
 |---|---|---|
-| **1 · Piel** | Pantalla crema de muestras redondas sobre el nodo `pantalla` del modelo. Elegir un tono hace caer una lata. **El aerosol se activa pulsando la válvula** (el botón de arriba) con la punta del índice (articulación `index-finger-tip` de WebXR Hand Input); con controles, el gatillo de la mano que sostiene la lata. Si la boquilla apunta al personaje, su color se mezcla con el de la lata | `src/stations/skin/` |
-| **2 · Cabello** | Dos paneles crema sobre la máquina: **estilos** (tarjetas con mini avatar) y **colores**. Elegir un estilo pone a trabajar la máquina y el cabello sale en la bandeja; se agarra y se suelta sobre la cabeza. Tocar lo puesto lo retira; el bote lo descarta | `src/stations/hair/` |
-| **3 · Rostro** | **El libro de stickers se agarra con una mano y se abre**: cuatro páginas (ojos, color de ojos, boca, nariz) con flechas. Con la otra mano se saca un sticker y se lleva a la cara. Soltar el libro lo cierra y vuelve a su sitio | `src/stations/catalog/` |
-| **4 · Ropa** | Las prendas del grupo activo están en las **baldas del armario**. **Tres botones** en los bloques de al lado cambian entre camisetas, pantalones y zapatos. Se conserva la cadera blanca del avatar base | `catalog-station-system.js` |
-| **5 · Charms y accesorios** | **Seis cajas cerradas** (tres sobre la mesa y tres abajo) con el icono de su charm: bolsa de dinero, guitarra, moneda / tulipán, nota musical, regalo. **Se agarran con una mano y se abren**; con la otra se saca el charm. Al soltarla se cierra y vuelve a su sitio. Los accesorios flotan en dos filas sobre las cajas, al fondo de la mesa | `catalog-station-system.js`, `catalog-objects.js` |
+| **1 · Piel** | Pantalla de muestras de color sobre el modelo; elegir un tono hace caer una lata. Se agarra con el pellizco y **el aerosol se activa pulsando la válvula con el índice**. Al abrir la mano se suelta la lata. El color rociado se conserva | `src/stations/skin/` |
+| **2 · Cabello** | Paneles de estilos y colores (toque directo con el dedo); la máquina fabrica el cabello, se agarra y se suelta sobre la cabeza | `src/stations/hair/` |
+| **3 · Rostro** | **Libro de stickers** que se agarra con una mano, se mueve y gira libremente; pestañas para cambiar de página; tres opciones de ojos, cuatro colores, boca y nariz. Con la otra mano se saca un sticker y se lleva a la cara | `src/stations/catalog/` |
+| **4 · Ropa** | Prendas en las baldas del armario; tres botones cambian entre camisetas, pantalones y zapatos | `catalog-station-system.js` |
+| **5 · Charms y accesorios** | Seis cajas cerradas con el icono de su charm; se agarran, se abren y con la otra mano se saca el charm. Los accesorios flotan sobre las cajas | `catalog-station-system.js`, `catalog-objects.js` |
 
-**Cierre.** Tras la estación 5, «Terminar avatar» lleva al personaje a la caja de regalo (la caja de regalo se rehará y se aplicará en una sesión
-posterior). Los tres paneles del final siguen el boceto del equipo y el modal de la web, con el sistema visual (`src/checkout/sheets-ui.js`), y aparecen al frente del usuario:
+**Cierre.** Tras la estación 5, «Terminar avatar» lleva al personaje a la bolsa MINISO (`src/finale/`), que se orienta hacia el usuario. Después:
 
-1. **«¡Tu avatar está listo!»:** «Esta es tu obra maestra. ¿Quieres hacer algo más con ella?», con dos botones (*Pedir mi producto*, con camión, y *Crear tarjeta Amiibo*, con tarjeta y lápiz) y el enlace **← Seguir editando** (también la X de la esquina).
-2. **Pedir mi producto:** pedido simulado en tres pasos. Nombre, apellido, correo, teléfono, dirección y datos de pago se llenan con un **teclado completo** (letras con tilde y ñ, números y signos).
-3. **«Compra satisfactoria»:** hoja de Animal Crossing, **N.º guía de pedido**, «Rastrea desde nuestro sitio web oficial www.miniso.com», **confeti**, el botón *Crear tarjeta Amiibo* y **← Salir de la experiencia** (cierra la sesión de realidad aumentada).
-4. **Tarjeta Amiibo:** el nombre se escribe con el mismo teclado; cumpleaños y fondo se eligen con botones. La tarjeta es un plano transparente (sin esquinas negras).
-5. **«Comparte tu tarjeta»** (el mismo modal de la web; **la tarjeta queda detrás** del panel, más grande y asomando arriba y abajo). Funcionan de verdad: **Descargar imagen** (PNG de la tarjeta, `tarjeta-amiibo-<nombre>.png`), **Compartir desde el dispositivo** (menú de compartir del navegador, con la imagen si lo admite) y **Copiar enlace** (si el navegador no deja copiar, muestra el enlace para copiarlo a mano). **Instagram, Facebook, X y WhatsApp son simulados** (no publican nada) y lo avisan en el panel.
-6. «Finalizar» lleva a un cierre con «Crear otro avatar».
+1. **«¡Tu avatar está listo!»:** *Pedir mi producto* o *Crear tarjeta Amiibo*, y «← Seguir editando».
+2. **Pedido simulado** en tres pasos con un teclado completo (tildes y ñ); no se envía nada ni se cobra.
+3. **«Compra satisfactoria»:** número de guía, confeti y **Salir de la experiencia**.
+4. **Tarjeta Amiibo:** nombre (teclado), cumpleaños y fondo; el panel solo deja **Compartir** (rojo) y **Volver a mi avatar**.
+5. **Compartir:** descargar imagen, compartir desde el dispositivo y copiar enlace funcionan según el navegador; Instagram, Facebook, X y WhatsApp son simulados.
 
 La tarjeta es un coleccionable digital conceptual inspirado en el formato de las tarjetas Amiibo; no es un producto oficial de Nintendo.
 
-**Versiones anteriores.** La fase A (espacio y calibración), B (estaciones 1 y 2), C (3 a 5), D (cierre) y E (ajustes y guía de pruebas) siguen
-vigentes; la V5 cambia cómo se manejan las estaciones. Música de fondo en bucle (`public/audio/ambiente.mp3`, de la web original, solo uso
-académico) y efectos sintetizados (`src/audio/sfx.js`) con volúmenes independientes. `avatarConfig` (en `src/state.js`) es la fuente de verdad.
+`avatarConfig` (en `src/state.js`) es la fuente de verdad del personaje. Música de fondo en bucle y efectos con volúmenes independientes (ver `CREDITOS.md`).
 
-Capturas del emulador de esta versión: `docs/capturas/v5/` (las anteriores, en `v3` y `v4`).
+Capturas: `docs/capturas/` (versiones v1 a v5 y finales en `docs/capturas/entrega/`).
 
 ### Pruebas en el emulador
 
@@ -98,30 +88,32 @@ estaciones de color, cabello, ojos-boca, ropa y charms. Se convierte con `tools/
 - **Animación:** al fabricar cabello, la cúpula se sacude y las tijeras del modelo giran.
 - **Para cambiar el modelo:** editar el `.blend`, volver a exportar y, si se mueve algo, ajustar `MODEL` y `ANCHORS` mirándolo en el emulador.
 
-### Funciones de IWSDK en uso
+### Sistemas de IWSDK aplicados
 
-| Función | Uso |
+Configuración en `iwsdk.config.json` (modo `ar`, manos, anclas, planos, hit-test) y sistemas registrados en `src/index.js`.
+
+| Sistema / función de IWSDK | Qué hace aquí |
 |---|---|
-| Spatial UI (UIKitML) | Bienvenida, indicaciones, instrucciones, ajustes, pedido, teclado y editor de tarjeta (Nunito) |
-| Interfaz en lienzos | Pantallas y paneles de las estaciones y el diálogo de cierre (`src/ui/`) |
-| Scene Understanding | Planos detectados (`XRPlane`) para el piso y muebles cercanos; ancla (`XRAnchor`) |
-| Built-in Interactions | Rayo + pellizco y toque con el dedo (`PokeInteractable`) |
-| External Assets | Modelos `.glb`, texturas y paneles registrados en `src/assets.js` |
-| Grabbing | Activado; latas, cabello, stickers, prendas, charms, libro y cajas |
+| **Seguimiento de manos** (`handTracking`) | Única entrada: pellizco para agarrar, índice para tocar y pulsar la válvula; se lee en cada fotograma de XR |
+| **Grabbing** (`OneHandGrabbable`) | Latas, cabello, stickers, prendas, charms, cajas y libro; el sistema propio `CarryableSystem` añade soltar al abrir la mano y colocar el objeto en su zona |
+| **Spatial UI (UIKitML)** | Bienvenida, instrucciones, ajustes, pedido, teclado y tarjeta (`public/ui/*.uikitml`, fuente Nunito); interfaz de estaciones dibujada en lienzos (`src/ui/`) |
+| **Built-in Interactions** (`PokeInteractable`, `RayInteractable`) | Toque con el dedo y rayo + pellizco en paneles |
+| **Scene Understanding** (`planeDetection`, `XRPlane`) | Reconoce el piso y muebles cercanos para ubicar la fábrica |
+| **Anclas** (`XRAnchor`) | Fija la fábrica al espacio real tras calibrar |
+| **Hit-test / environmentRaycast** | Activados; la colocación final usa la mano del usuario |
+| **External Assets** | Modelos `.glb`, texturas y paneles registrados en `src/assets.js` |
+| **ECS propio** | Sistemas de banda, navegación, estaciones, calibración, ajustes, pedido y cierre (`src/systems/`, `src/stations/`, `src/checkout/`, `src/finale/`) |
 
-Desactivados a propósito: física (Havok) y detección de mallas, para cuidar el rendimiento.
+**No usados a propósito:** física (Havok), locomoción, detección de mallas, oclusión por profundidad y acceso a cámara; así se cuida el rendimiento del Quest 3.
 
 ### Pendiente
 
-- **Prueba en el Quest 3** con la lista de `docs/PRUEBAS.md`, y las evidencias en primera y tercera persona.
-- Reemplazar el modelo de la fábrica (versión nueva del equipo) y rehacer la caja de regalo.
-- Reemplazar la música por una pista libre de derechos.
-- Medir los fotogramas por segundo en el visor y optimizar si hace falta (ver el apartado de rendimiento de la guía).
+- Medir los fotogramas por segundo, las llamadas de dibujo y el tiempo de carga en el visor (ver `docs/PRUEBAS.md`, apartado 4) y anotar las cifras.
+- Pruebas con personas ajenas al equipo y registro de incomodidades (ver `docs/PRUEBAS.md`, apartado 5).
 
 ### Limitaciones conocidas
 
-- **No probado en el Quest 3 todavía** con esta versión: las pruebas se hicieron en el emulador IWER (sin GPU, a pocos fotogramas por segundo).
-  Lo que depende del tamaño real, de la luz o de los gestos reales de la mano hay que verlo en el visor (ver `docs/PRUEBAS.md`).
+- Las correcciones más recientes (libro y pestañas, orientación de la bolsa, reposicionar sin repetir el viaje, soltar al abrir la mano) se verifican en el visor por el equipo; el emulador IWER no reproduce los gestos reales de la mano (ver `docs/PRUEBAS.md`).
 - **Spray con manos:** se agarra la lata con el pellizco y la válvula se pulsa con el índice (de cualquiera de las dos manos). Si la lata se sostiene con la
   mano que la pinza, el índice de esa mano queda en el cuerpo de la lata, no en la válvula; para pulsarla usa la otra mano o toma la lata por abajo.
   Si hay dudas en el visor, ajustar `PRESS_RADIUS` en `skin-station-system.js`.
@@ -135,5 +127,4 @@ Desactivados a propósito: física (Havok) y detección de mallas, para cuidar e
 - Pedido y tarjeta: el pedido y las redes sociales son simulados. **Descargar imagen, Compartir desde el dispositivo y Copiar enlace sí funcionan**, pero dependen del navegador: el del Quest puede no ofrecer el menú de compartir ni el portapapeles dentro de una sesión de RA (en ese caso el panel lo dice y ofrece descargar o ver el enlace).
 - Gorra y sombrero ocultan el pelo entero (la web lo recorta bajo el borde).
 - El juego carga todos los modelos del avatar al inicio (~6 MB).
-- Audio: `public/audio/ambiente.mp3` viene de la web original y se usa solo con fines académicos
-  (los derechos son de sus titulares). Debe reemplazarse por una pista libre de derechos antes de cualquier uso fuera del proyecto.
+- Audio: música y efectos vienen de la web original y se usan solo con fines académicos; detalles y licencias en `CREDITOS.md`.
