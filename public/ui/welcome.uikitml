@@ -1,6 +1,8 @@
 <!-- Bienvenida. En el navegador el boton entra a la realidad aumentada; dentro del visor inicia la experiencia. -->
 <style>
-  .panel-root { flex-direction: column; width: 480px; font-family: nunito; background-color: #FAF6D4; border-radius: 28px; border-width: 4px; border-color: #FDD885; }
+  @font-face { font-family: Nunito; font-weight: 400; src: url(../fonts/Nunito_400Regular.ttf); }
+  @font-face { font-family: Nunito; font-weight: 700; src: url(../fonts/Nunito_700Bold.ttf); }
+  .panel-root { flex-direction: column; width: 480px; font-family: Nunito; background-color: #FAF6D4; border-radius: 28px; border-width: 4px; border-color: #FDD885; }
   .panel-content { flex-direction: column; align-items: center; gap: 6px; padding: 28px; }
   .brand { color: #E60012; font-size: 38px; font-weight: 700; letter-spacing: 3px; }
   .cross { color: #2F5D46; font-size: 20px; font-weight: 700; }

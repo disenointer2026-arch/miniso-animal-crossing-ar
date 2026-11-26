@@ -114,18 +114,18 @@ export class OrderUI {
     } else if (d.step === 1) {
       if (!RULES.name(d.customer.name)) return this.error('Escribe tu nombre.');
       if (!RULES.lastName(d.customer.lastName)) return this.error('Escribe tu apellido.');
-      if (!RULES.email(d.customer.email)) return this.error('Escribe un correo valido (con @).');
-      if (!RULES.phone(d.customer.phone)) return this.error('El telefono debe tener al menos 7 digitos.');
-      if (!RULES.address(d.customer.address)) return this.error('Escribe tu direccion.');
+      if (!RULES.email(d.customer.email)) return this.error('Escribe un correo válido (con @).');
+      if (!RULES.phone(d.customer.phone)) return this.error('El teléfono debe tener al menos 7 dígitos.');
+      if (!RULES.address(d.customer.address)) return this.error('Escribe tu dirección.');
       focusField.value = null;
       patchDraft({ step: 2 });
     } else {
       if (d.payment === 'card') {
-        if (!RULES.ccNumber(d.card.ccNumber)) return this.error('El numero debe tener 15 o 16 digitos.');
-        if (!RULES.ccExp(d.card.ccExp)) return this.error('Usa el formato MM/AA (4 digitos).');
-        if (!RULES.ccCvc(d.card.ccCvc)) return this.error('El CVC tiene 3 o 4 digitos.');
+        if (!RULES.ccNumber(d.card.ccNumber)) return this.error('El número debe tener 15 o 16 dígitos.');
+        if (!RULES.ccExp(d.card.ccExp)) return this.error('Usa el formato MM/AA (4 dígitos).');
+        if (!RULES.ccCvc(d.card.ccCvc)) return this.error('El CVC tiene 3 o 4 dígitos.');
       } else if (d.payment === 'nequi' && !RULES.nequi(d.nequi)) {
-        return this.error('El celular debe tener 10 digitos.');
+        return this.error('El celular debe tener 10 dígitos.');
       }
       focusField.value = null;
       this.finish(d);
@@ -163,7 +163,7 @@ export class OrderUI {
       });
       this.el(this.order, `s${i}`)?.setProperties({ display: i === d.step ? 'flex' : 'none' });
     }
-    const totalsLine = `Subtotal ${cop(t.subtotal)} - Envio ${t.shipping ? cop(t.shipping) : 'Gratis'} - Total ${cop(t.total)}`;
+    const totalsLine = `Subtotal ${cop(t.subtotal)} - Envío ${t.shipping ? cop(t.shipping) : 'Gratis'} - Total ${cop(t.total)}`;
 
     this.text('p-name', `${PRODUCT.name} de ${cardProfile.peek().name}`);
     this.text('p-detail', PRODUCT.detail);
@@ -175,8 +175,8 @@ export class OrderUI {
     this.text('p-totals', totalsLine);
     this.text('p-totals2', totalsLine);
 
-    this.text('session', d.session ? `Sesion simulada iniciada como ${d.customer.email}` : 'Puedes continuar sin iniciar sesion.');
-    this.text('login', d.session ? 'Cerrar sesion MINISO (simulado)' : 'Iniciar sesion MINISO (simulado)');
+    this.text('session', d.session ? `Sesión simulada iniciada como ${d.customer.email}` : 'Puedes continuar sin iniciar sesión.');
+    this.text('login', d.session ? 'Cerrar sesión MINISO (simulado)' : 'Iniciar sesión MINISO (simulado)');
     this.text('c-name', d.customer.city);
     this.text('b-name', d.bank);
     for (const method of PAYMENTS) {
@@ -191,7 +191,7 @@ export class OrderUI {
       this.text(`f-${key}`, `${FIELD_LABELS[key]}: ${formatField(key, this.getField(key))}`);
       this.el(this.order, `f-${key}`)?.setProperties({ borderColor: focus === key ? FOCUS : EDGE });
     }
-    this.text('back', d.step === 0 ? 'Volver' : 'Atras');
+    this.text('back', d.step === 0 ? 'Volver' : 'Atrás');
     this.text('next', d.step === 0 ? 'Continuar' : d.step === 1 ? 'Continuar al pago' : `Finalizar pago - ${cop(t.total)}`);
   }
 }

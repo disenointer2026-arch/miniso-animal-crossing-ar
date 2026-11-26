@@ -5,17 +5,17 @@ export const PRODUCT = {
   id: 'figure',
   name: 'Figura',
   detail:
-    'Una figura de tu avatar con el charm que se selecciono, incluye una cadena para uso como llavero y una base de acrilico para su uso como figura coleccionable. Mide 17 cm de alto con la base, que tiene 10 cm de diametro.',
+    'Una figura de tu avatar con el charm que se seleccionó, incluye una cadena para uso como llavero y una base de acrílico para su uso como figura coleccionable. Mide 17 cm de alto con la base, que tiene 10 cm de diametro.',
   price: 89900,
-  days: '7 a 10 dias habiles',
+  days: '7 a 10 días hábiles',
 };
 
 export const SHIPPING = { cost: 9900, freeFrom: 150000 };
 export const CITIES = ['Cali', 'Bogotá', 'Medellín', 'Barranquilla', 'Pereira', 'Cartagena'];
 export const BANKS = ['Bancolombia', 'Banco de Bogotá', 'Davivienda', 'BBVA', 'Banco de Occidente', 'Nequi'];
 export const PAYMENTS = [
-  { id: 'card', label: 'Tarjeta', sub: 'Credito o debito' },
-  { id: 'pse', label: 'PSE', sub: 'Debito desde tu banco' },
+  { id: 'card', label: 'Tarjeta', sub: 'Crédito o débito' },
+  { id: 'pse', label: 'PSE', sub: 'Débito desde tu banco' },
   { id: 'nequi', label: 'Nequi', sub: 'Pago con tu celular' },
 ];
 
@@ -90,10 +90,10 @@ export const FIELD_LABELS = {
   name: 'Nombre',
   lastName: 'Apellido',
   email: 'Correo',
-  address: 'Direccion',
+  address: 'Dirección',
   cardName: 'Nombre de tu avatar',
-  phone: 'Telefono',
-  ccNumber: 'Numero de tarjeta',
+  phone: 'Teléfono',
+  ccNumber: 'Número de tarjeta',
   ccExp: 'Vence (MM/AA)',
   ccCvc: 'CVC',
   nequi: 'Celular Nequi',

@@ -15,14 +15,13 @@ import {
 } from '@iwsdk/core';
 import { Factory, FactoryPart } from '../components.js';
 import { MODEL, STAND_RADIUS, modelPoint, standPoint, stationSlot } from '../core/layout.js';
-import { plain } from '../data/categories.js';
 import { beltMoving, categoryIndex, hint, layout, phase, Phase } from '../state.js';
 import { C } from '../ui/theme.js';
 import { canvasPlane, drawCheck } from '../ui/world-ui.js';
 
 const DISC = 0.34; // radio del circulo (m)
 const ARROW_DISTANCE = 0.55; // la flecha se muestra si el usuario esta mas lejos que esto
-const HINT_TEXT = 'Camina hasta el circulo del piso: asi quedas de frente a la estacion';
+const HINT_TEXT = 'Camina hasta el círculo del piso: así quedas de frente a la estación';
 
 function drawFoot(ctx, x, y, s, mirror) {
   ctx.save();
@@ -165,9 +164,9 @@ export class StandSystem extends createSystem({
     if (on === this.hinted) return;
     this.hinted = on;
     if (on) {
-      if (hint.peek() === '') hint.value = plain(HINT_TEXT);
+      if (hint.peek() === '') hint.value = HINT_TEXT;
       else this.hinted = false;
-    } else if (hint.peek() === plain(HINT_TEXT)) {
+    } else if (hint.peek() === HINT_TEXT) {
       hint.value = '';
     }
   }

@@ -61,7 +61,7 @@ const LEGACY = [
     label: 'Cabello',
     icon: 'boton-cabello.svg',
     tool: 'scissors',
-    help: 'Elige un corte. Toma las tijeras y pasalas por el cabello',
+    help: 'Elige un corte. Toma las tijeras y pásalas por el cabello',
     groups: [
       {
         key: 'hair',
@@ -93,7 +93,7 @@ const LEGACY = [
     label: 'Ojos',
     icon: 'boton-ojos.svg',
     tool: 'sticker',
-    help: 'Elige forma y color. Toma el sticker y llevalo al rostro',
+    help: 'Elige forma y color. Toma el sticker y llévalo al rostro',
     groups: [
       {
         key: 'eyes',
@@ -113,7 +113,7 @@ const LEGACY = [
     label: 'Boca',
     icon: 'boton-narizboca.svg',
     tool: 'sticker',
-    help: 'Elige una boca. Toma el sticker y llevalo al rostro',
+    help: 'Elige una boca. Toma el sticker y llévalo al rostro',
     groups: [
       {
         key: 'mouth',
@@ -132,7 +132,7 @@ const LEGACY = [
     label: 'Nariz',
     icon: 'boton-narizboca.svg',
     tool: 'sticker',
-    help: 'Elige una nariz. Toma el sticker y llevalo al rostro',
+    help: 'Elige una nariz. Toma el sticker y llévalo al rostro',
     groups: [
       {
         key: 'nose',
@@ -151,7 +151,7 @@ const LEGACY = [
     label: 'Ropa',
     icon: 'boton-ropa.svg',
     tool: 'rack',
-    help: 'Toma una prenda del perchero y llevala al personaje',
+    help: 'Toma una prenda del perchero y llévala al personaje',
     groups: [
       {
         key: 'shirt',
@@ -195,7 +195,7 @@ const LEGACY = [
     label: 'Charms y accesorios',
     icon: 'boton-llavero.svg',
     tool: 'box',
-    help: 'Toma un charm o accesorio de la caja y llevalo al personaje',
+    help: 'Toma un charm o accesorio de la caja y llévalo al personaje',
     groups: [
       {
         key: 'companion',
