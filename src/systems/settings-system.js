@@ -102,7 +102,7 @@ export class SettingsSystem extends createSystem({
   target() {
     const head = this.player.head;
     head.getWorldPosition(this.spot);
-    head.getWorldDirection(this.dir); // hacia donde mira (la camara mira a -Z)
+    this.world.camera.getWorldDirection(this.dir); // hacia donde mira: la camara apunta a -Z (head es un grupo y su +Z queda a la espalda)
     this.dir.y = 0;
     if (this.dir.lengthSq() < 0.05) return false;
     this.dir.normalize();
