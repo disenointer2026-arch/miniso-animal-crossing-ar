@@ -8,6 +8,7 @@
    El color del cabello (muestras redondas, en el mismo tablero) repinta el puesto y el que esta en la bandeja.
    Retirar lo puesto no funciona mientras se sostiene otro objeto (ver interactionBusy). */
 import {
+  Box3,
   Color,
   createSystem,
   GrabSystem,
@@ -32,7 +33,8 @@ import {
   HairMachine,
   HairProp,
 } from '../../components.js';
-import { interactionBusy, registerDropHandler } from '../../interaction/carryable-system.js';
+import { beginExternalHold, endExternalHold, interactionBusy, registerDropHandler } from '../../interaction/carryable-system.js';
+import { jointWorld } from '../../interaction/hand-joints.js';
 import { renderPortrait } from '../../checkout/portrait.js';
 import { CATEGORIES } from '../../data/categories.js';
 import { modelFrame, modelPoint, modelScale } from '../../core/layout.js';
@@ -62,6 +64,12 @@ const GROW_SECONDS = 0.5;
 const HEAD_SNAP = 0.24; // metros del origen del cabello al centro de la cabeza
 const BIN_SNAP = 0.17;
 const ZONE_RADIUS = 0.1;
+// Agarre propio con el seguimiento de manos (el del SDK fallaba con el cabello): pulgar e indice a menos de PINCH_CLOSE lo toman si el
+// punto de pellizco esta cerca; se suelta al separarlos mas de PINCH_OPEN.
+const PINCH_CLOSE = 0.036;
+const PINCH_OPEN = 0.045;
+const HAIR_REACH = 0.16; // del punto de pellizco al centro del cabello
+const HAIR_EDGE = 0.06; // o a su caja envolvente
 
 const easeOutBack = (k) => 1 + 2.7 * (k - 1) ** 3 + 1.7 * (k - 1) ** 2;
 
@@ -145,6 +153,13 @@ export class HairStationSystem extends createSystem({
     this.frame = 0;
     this.position = new Vector3();
     this.other = new Vector3();
+    this.pinchA = new Vector3();
+    this.pinchB = new Vector3();
+    this.pinchPoint = new Vector3();
+    this.holdOffset = new Vector3();
+    this.graspBox = new Box3();
+    this.hold = null; // { entity, side }: cabello tomado con el agarre propio
+    this.handsTracked = false;
     this.lastSelection = { ...selection.peek() };
     if (import.meta.env.DEV && window.__miniso) window.__miniso.hair = this; // solo desarrollo: para comprobar la estacion en el emulador
 
@@ -153,6 +168,10 @@ export class HairStationSystem extends createSystem({
       this.queries.factories.subscribe('qualify', (factory) => this.build(factory)),
       this.queries.factories.subscribe('disqualify', () => {
         this.factory = null;
+        if (this.hold) {
+          this.hold = null;
+          endExternalHold();
+        }
         this.zone = null;
         this.bin = null;
         this.panels = null;
@@ -327,6 +346,10 @@ export class HairStationSystem extends createSystem({
   }
 
   removeProps() {
+    if (this.hold) {
+      this.hold = null;
+      endExternalHold();
+    }
     for (const entity of Array.from(this.queries.props.entities)) {
       this.grab.forceRelease(entity);
       entity.dispose();
@@ -370,7 +393,7 @@ export class HairStationSystem extends createSystem({
       home: [home.x, home.y, home.z],
       homeYaw: home.rotY,
     });
-    entity.addComponent(OneHandGrabbable);
+    if (!this.handsTracked) entity.addComponent(OneHandGrabbable);
   }
 
   removeWorn() {
@@ -454,10 +477,83 @@ export class HairStationSystem extends createSystem({
       this.avatar.headGroup.getWorldPosition(this.position);
       if (this.other.distanceTo(this.position) < HEAD_SNAP) near = true;
     }
+    if (this.hold?.entity.object3D) {
+      this.hold.entity.object3D.getWorldPosition(this.other);
+      this.avatar.headGroup.getWorldPosition(this.position);
+      if (this.other.distanceTo(this.position) < HEAD_SNAP) near = true;
+    }
     this.zoneMaterial.opacity = near ? 0.3 : 0;
   }
 
+  /** Pulgar e indice de una mano: devuelve su distancia y deja el punto medio en this.pinchPoint (null si no se sigue esa mano). */
+  readPinch(side) {
+    if (!jointWorld(this.renderer, this.player, side, 'thumb-tip', this.pinchA)) return null;
+    if (!jointWorld(this.renderer, this.player, side, 'index-finger-tip', this.pinchB)) return null;
+    this.pinchPoint.copy(this.pinchA).add(this.pinchB).multiplyScalar(0.5);
+    return this.pinchA.distanceTo(this.pinchB);
+  }
+
+  /** Con manos el cabello no usa el agarre del SDK (se quita); con controles se conserva. */
+  useGrabMode(entity) {
+    const has = entity.hasComponent(OneHandGrabbable);
+    if (this.handsTracked && has) {
+      if (this.queries.heldProps.entities.has(entity)) this.grab.forceRelease(entity);
+      entity.removeComponent(OneHandGrabbable);
+    } else if (!this.handsTracked && !has) {
+      entity.addComponent(OneHandGrabbable);
+    }
+  }
+
+  /** Agarre con pellizco propio: el cabello sigue al punto medio entre pulgar e indice y se suelta al separarlos. */
+  updateHold() {
+    this.handsTracked =
+      jointWorld(this.renderer, this.player, 'right', 'wrist', this.pinchA) || jointWorld(this.renderer, this.player, 'left', 'wrist', this.pinchA);
+    for (const entity of this.queries.props.entities) this.useGrabMode(entity);
+    const factoryObject = this.factory?.object3D;
+    if (!factoryObject) return;
+    if (this.hold) {
+      const { entity, side } = this.hold;
+      const object = entity.object3D;
+      const distance = this.readPinch(side);
+      if (!entity.active || !object || distance === null || distance > PINCH_OPEN) {
+        this.hold = null;
+        endExternalHold();
+        if (entity.active) {
+          entity.setValue(Carryable, 'locked', false);
+          entity.setValue(Carryable, 'idle', 0);
+          this.onDrop(entity);
+        }
+        return;
+      }
+      this.other.copy(this.pinchPoint);
+      factoryObject.worldToLocal(this.other);
+      object.position.copy(this.other).add(this.holdOffset);
+      return;
+    }
+    if (!this.handsTracked) return;
+    for (const entity of this.queries.props.entities) {
+      const object = entity.object3D;
+      if (!object || object.userData.grow !== undefined) continue; // aun creciendo en la bandeja
+      for (const side of ['right', 'left']) {
+        const distance = this.readPinch(side);
+        if (distance === null || distance > PINCH_CLOSE) continue;
+        object.getWorldPosition(this.position);
+        this.graspBox.setFromObject(object);
+        if (this.pinchPoint.distanceTo(this.position) > HAIR_REACH && this.graspBox.distanceToPoint(this.pinchPoint) > HAIR_EDGE) continue;
+        this.other.copy(this.pinchPoint);
+        factoryObject.worldToLocal(this.other);
+        this.holdOffset.copy(object.position).sub(this.other); // se conserva el punto por donde se tomo
+        this.hold = { entity, side };
+        entity.setValue(Carryable, 'locked', true);
+        beginExternalHold();
+        sfx.select();
+        return;
+      }
+    }
+  }
+
   update(delta, time) {
+    this.updateHold();
     if (this.queue.length && this.panels && this.frame++ % 5 === 0) this.drawNextPortrait();
     this.updateMachines(delta, time);
     this.updateProps(delta);

@@ -136,7 +136,11 @@ export class SettingsSystem extends createSystem({
   }
 
   update(delta) {
-    if (this.panel) this.follow(delta);
+    if (!this.panel) return;
+    // Si al empezar a personalizar se miraba casi vertical (p. ej. hacia la fabrica en el piso), no habia un "frente" fiable y el panel
+    // quedaba oculto para siempre: se reintenta cada cuadro hasta que se pueda colocar.
+    if (!this.placed && phase.peek() === Phase.Customizing) this.refresh();
+    this.follow(delta);
   }
 
   applyHeight() {
