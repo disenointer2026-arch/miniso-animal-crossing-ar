@@ -95,6 +95,7 @@ const PINCH_CLOSE = 0.036; // generoso: basta con acercar pulgar e indice, sin a
 const PINCH_OPEN = 0.045;
 const CHARM_REACH = 0.14; // del punto de pellizco al centro del charm
 const CHARM_EDGE = 0.05; // o a su zona de agarre (la caja que lo envuelve): cualquiera de las dos basta
+const ITEM_REACH = { sticker: 0.07, part: 0.13 }; // stickers (pegados cerca unos de otros) y prendas: del pellizco a su centro
 const charmGrabGeometry = new BoxGeometry(1, 1, 1);
 const charmGrabMaterial = new MeshBasicMaterial({ transparent: true, opacity: 0, depthWrite: false });
 
@@ -196,7 +197,8 @@ export class CatalogStationSystem extends createSystem({
     this.grab = this.world.getSystem(GrabSystem);
     this.handsTracked = false;
     this.graspBox = new Box3();
-    this.charmHold = null; // { entity, side }: charm tomado con el agarre propio
+    this.charmHold = null; // { entity, side }: charm, sticker o prenda tomado con el agarre propio
+    this.holdOffset = new Vector3();
     this.pinchA = new Vector3();
     this.pinchB = new Vector3();
     this.pinchPoint = new Vector3();
@@ -762,17 +764,64 @@ export class CatalogStationSystem extends createSystem({
       const object = entity.object3D;
       const distance = this.readPinch(side);
       if (!entity.active || !object || distance === null || distance > PINCH_OPEN) {
+        const { restoreLocked } = this.charmHold;
         this.charmHold = null;
         endExternalHold();
-        if (entity.active) this.onDrop(entity);
+        if (entity.active) {
+          if (restoreLocked !== undefined) entity.setValue(Carryable, 'locked', restoreLocked);
+          entity.setValue(Carryable, 'idle', 0);
+          this.onDrop(entity);
+        }
         return;
       }
       this.other.copy(this.pinchPoint);
       factoryObject.worldToLocal(this.other);
-      object.position.copy(this.other);
+      object.position.copy(this.other).add(this.holdOffset);
       return;
     }
+    // Stickers y prendas: con manos tampoco usan el agarre del SDK (fallaba); se toman con el pellizco, el mas cercano gana
+    for (const entity of this.queries.items.entities) {
+      if (entity.object3D?.userData.anchor?.chest) continue; // los charms van con su propia logica
+      const has = entity.hasComponent(OneHandGrabbable);
+      if (this.handsTracked && has) {
+        if (this.queries.held.entities.has(entity)) this.grab.forceRelease(entity);
+        entity.removeComponent(OneHandGrabbable);
+      } else if (!this.handsTracked && !has) {
+        entity.addComponent(OneHandGrabbable);
+      }
+    }
     if (!this.handsTracked) return;
+    const bookHolder = this.queries.heldBooks.entities.size ? this.grab.getHolderHand(this.queries.heldBooks.entities.values().next().value) : null;
+    for (const side of ['right', 'left']) {
+      if (side === bookHolder) continue; // la mano que sostiene el libro no toma stickers
+      const distance = this.readPinch(side);
+      if (distance === null || distance > PINCH_CLOSE) continue;
+      let best = null;
+      let bestDistance = Infinity;
+      for (const entity of this.queries.items.entities) {
+        const object = entity.object3D;
+        if (!object || object.userData.anchor?.chest || object.userData.grow !== undefined || !object.visible) continue;
+        const kind = entity.getValue(CatalogItem, 'kind');
+        if (kind === 'sticker' && !this.queries.books.entities.size) continue;
+        if (kind !== 'sticker' && entity.getValue(Carryable, 'locked')) continue;
+        object.getWorldPosition(this.point);
+        const d = this.pinchPoint.distanceTo(this.point);
+        if (d < (ITEM_REACH[kind] ?? ITEM_REACH.part) && d < bestDistance) {
+          best = entity;
+          bestDistance = d;
+        }
+      }
+      if (!best) continue;
+      const object = best.object3D;
+      this.other.copy(this.pinchPoint);
+      factoryObject.worldToLocal(this.other);
+      this.holdOffset.copy(object.position).sub(this.other);
+      this.charmHold = { entity: best, side, restoreLocked: best.getValue(Carryable, 'locked') };
+      best.setValue(Carryable, 'locked', true);
+      beginExternalHold();
+      sfx.select();
+      return;
+    }
     for (const chestEntity of this.queries.heldChests.entities) {
       const charm = chestEntity.object3D?.userData.charm;
       if (!charm?.active || !charm.object3D) continue;
@@ -784,6 +833,7 @@ export class CatalogStationSystem extends createSystem({
         charm.object3D.getWorldPosition(this.point);
         this.graspBox.setFromObject(charm.object3D);
         if (this.pinchPoint.distanceTo(this.point) > CHARM_REACH && this.graspBox.distanceToPoint(this.pinchPoint) > CHARM_EDGE) continue;
+        this.holdOffset.set(0, 0, 0);
         this.charmHold = { entity: charm, side };
         beginExternalHold();
         sfx.select();
